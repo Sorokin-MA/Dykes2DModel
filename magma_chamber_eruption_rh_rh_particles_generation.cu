@@ -872,10 +872,10 @@ int main() {
 
         blockSize1D.x = 512;
         gridSize1D.x = (npartcl + blockSize1D.x - 1) / blockSize1D.x;
-        advect_particles_eruption<<<gridSize1D, blockSize1D>>>(px, py, cell_idx, gamma, dxl, dyl, npartcl, maxVol, nxl, nyl);
+        advect_particles_eruption<<<gridSize1D, blockSize1D>>>(px, py, cell_idx, gamma, dxl, dyl, npartcl, 5, nxl, nyl);
         CUCHECK(cudaDeviceSynchronize());
         gridSize1D.x = (nmarker + blockSize1D.x - 1) / blockSize1D.x;
-        advect_particles_eruption<<<gridSize1D, blockSize1D>>>(mx, my, cell_idx, gamma, dxl, dyl, nmarker, maxVol, nxl, nyl);
+        advect_particles_eruption<<<gridSize1D, blockSize1D>>>(mx, my, cell_idx, gamma, dxl, dyl, nmarker, 5, nxl, nyl);
         CUCHECK(cudaDeviceSynchronize());
 
         cudaFree(cell_idx);
