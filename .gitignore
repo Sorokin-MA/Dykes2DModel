@@ -8,3 +8,7 @@ eruptions.bin
 eruptions2.bin
 script_read.asv
 script_read.m
+build
+init_data
+Manifest.toml
+Project.toml

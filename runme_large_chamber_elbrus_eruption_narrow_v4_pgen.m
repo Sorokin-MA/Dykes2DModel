@@ -3,7 +3,7 @@ seed = 123;
 rng(seed);
 % program config
 % cur_dir    =pwd;
-sim_dir    = '..\Q_0.038_elbrus_chamber_eruption_rh_rh_0.75_0.8_narrow_0.1_part';
+sim_dir    = 'init_data';
 sim_name   = 'magma_chamber_eruption_rh_rh_particles_generation';
 sim_files   = 'magma_chamber_eruption_rh_rh_particles_generation.*';
 sim_driver = mfilename('fullpath');
