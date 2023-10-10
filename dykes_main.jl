@@ -18,28 +18,28 @@ function main()
     ipa = Array{Int32,1}(undef, 12)
     
     #Initialization of main variables
-    Lx = 0.0
-    Ly = 0.0
+    Lx = 0.0                  #X size of researched area (m)
+    Ly = 0.0                  #Y size of researched area (m)
     lam_r_rhoCp = 0.0
     lam_m_rhoCp = 0.0
     L_Cp = 0.0
-    T_top = 0.0
-    T_bot = 0.0
-    T_magma = 0.0
+    T_top = 0.0               #Temperature on the top of area (C)
+    T_bot = 0.0               #Temperature at the bottom of the area (C)
+    T_magma = 0.0             #Temperature of magma (C)
     tsh = 0.0
     gamma = 0.0
     Ly_eruption = 0.0
     nu = 0.0
     G = 0.0
-    dt = 0.0
-    dx = 0.0
-    dy = 0.0
+    dt = 0.0                  #time step
+    dx = 0.0                  #X dimension step
+    dy = 0.0                  #Y dimension step
     eiter = 0.0
     pic_amount = 0.0
 
     pmlt = 0
-    nx = 0
-    ny = 0
+    nx = 0                    #Resolution for X dimension
+    ny = 0                    #Resolution for Y dimension
     nl = 0
     nt = 0
     niter = 0
@@ -52,6 +52,7 @@ function main()
 
     #char filename[1024];
     filename = Array{Char,1}(undef, 1024)
+
 
     io = open("pa.bin", "r")
     read!(io, dpa)
@@ -171,7 +172,7 @@ function main()
     dike_x = Array{Float64,1}(undef, ndikes_all)
     dike_y = Array{Float64,1}(undef, ndikes_all)
     dike_t = Array{Float64,1}(undef, ndikes_all)
-
+    #TODO:Dykes not have read?
     #=
      	io = open("dikes.bin", "r");
      	read!(io, dike_a)
@@ -256,7 +257,8 @@ function main()
         iSample = Int32(1)
 
         eruptionSteps = Vector{Int32}()
-
+        
+        #Main loop
         for it ∈ 1:nt
             #action
             @printf("%s it = %d", bar1, it)
@@ -273,7 +275,7 @@ function main()
                         (nyl + blockSizel[2] - 1) / blockSizel[2],
                     )
 
-                    #не работает
+                    #TODO:Fix average function
                     #@cuda blocks = gridSizel threads=blockSizel average(mfl, T, C, nl, nx, ny);
 
                     #average<<<gridSizel, blockSizel>>>(mfl, T, C, nl, nx, ny);

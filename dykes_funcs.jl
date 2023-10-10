@@ -1,4 +1,7 @@
 #Function that write which device we use
+#
+include("dykes_init.jl")
+
 function kernel()
     dev = Ref{Cint}()
     CUDA.cudaGetDevice(dev)
