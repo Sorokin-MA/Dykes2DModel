@@ -28,7 +28,7 @@ const char *bar2 = "\xb3  \xc3\xc4\xc4";
   do {                                                                                                                                                         \
     cudaError_t err = (f);                                                                                                                                     \
     if (err != cudaSuccess) {                                                                                                                                  \
-      fprintf(stderr, "Error: cuda call '%s' finished with error: '%s'\n", #f, cudaGetErrorString(err));                                                 \
+      fprintf(stderr, "Error: cuda call '%s' finished with error: '%s'\n", #f, cudaGetErrorString(err));                                                       \
       assert(err == cudaSuccess);                                                                                                                              \
     }                                                                                                                                                          \
   } while (0)
@@ -621,20 +621,10 @@ template <typename T> static void toc(const T &start) {
 }
 
 int main() {
-  if (H5Zfilter_avail(H5Z_FILTER_DEFLATE) <= 0) {
+  if (H5Zfilter_avail(H5Z_FILTER_BLOSC) <= 0) {
     fprintf(stderr, "Error: blosc filter is not available\n");
     exit(1);
   }
-
-  int dev_count = 0;
-
-
-	CUCHECK(cudaGetDeviceCount(&dev_count));
-  //cudaGetDeviceProperties(&deviceProperties, deviceId)
-
-
-  printf("dev_count - %d", dev_count);
-
 
   printDeviceProperties(GPU_ID);
   cudaSetDevice(GPU_ID);
@@ -1061,11 +1051,9 @@ int main() {
 
 void printDeviceProperties(int deviceId) {
   cudaDeviceProp deviceProperties;
+  CUCHECK(cudaGetDeviceProperties(&deviceProperties, deviceId));
 
   printf("Device:\n");
   printf("    id: %d\n", deviceId);
-
-  CUCHECK(cudaGetDeviceProperties(&deviceProperties, deviceId));
-
   printf("  name: %s\n\n", deviceProperties.name);
 }

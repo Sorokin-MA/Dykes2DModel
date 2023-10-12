@@ -3,7 +3,7 @@ seed = 123;
 rng(seed);
 % program config
 % cur_dir    =pwd;
-sim_dir    = '..\Q_0.038_elbrus_chamber_eruption_rh_rh_0.75_0.8_narrow_0.1_part';
+sim_dir    = 'init_data';
 sim_name   = 'magma_chamber_eruption_rh_rh_particles_generation';
 sim_files   = 'magma_chamber_eruption_rh_rh_particles_generation.*';
 sim_driver = mfilename('fullpath');
@@ -19,7 +19,7 @@ addpath([hdf5_path '\lib'], [hdf5_path '\lib\plugin'])
 bcx        = 'expx';
 bcy        = 'expy';
 gpuid      = 0;
-tyear=365*24*3600;
+tyear = 365*24*3600;
 % cleanup
 if ~exist(sim_dir,'dir')
     mkdir(sim_dir)
@@ -139,7 +139,7 @@ T           = T_top + dTdy*(Ly-y)/1e3;
 indx=find(xs > dike_x_rng(1) & xs < dike_x_rng(2));
 indy=find(ys >dike_y_rng(1)  &  ys <dike_y_rng(2));
 T(indx,indy)=T_ch;
-
+pcolor(x,y,T),shading flat,axis image;c= colorbar,drawnow
 
 C           = zeros(nx,ny);
 % generate dikes
@@ -258,13 +258,14 @@ h5write(fname,'/0/mx',mx);
 h5write(fname,'/0/my',my);
 h5write(fname,'/0/mT',mT);
 % copy source code
- system(['copy ', sim_files, ' ', sim_dir,'\']);
+ %{system(['copy ', sim_files, ' ', sim_dir,'\']);%}
 % system(['copy ', sim_driver, '.m  ', sim_dir,'\']);
 % % run CUDA
 % cur_dir=pwd;
 cd(sim_dir);
 % system(['start ',sim_name,'.exe']);
 % cd(cur_dir);
+%{
 system(['nvcc -ccbin ' cuda_ccbin                 ...
     '         -arch=' cuda_arch                   ...
     '         -Xcompiler "/MD"'                   ...
@@ -278,3 +279,4 @@ system(['nvcc -ccbin ' cuda_ccbin                 ...
     '         -lhdf5'                             ...
     ' -o ' exe_name]);
 % cd ..
+%}
