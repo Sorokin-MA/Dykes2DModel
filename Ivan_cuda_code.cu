@@ -626,6 +626,9 @@ int main() {
     exit(1);
   }
 
+  char c;
+  c = getchar();
+
   printDeviceProperties(GPU_ID);
   cudaSetDevice(GPU_ID);
   cudaDeviceReset();
