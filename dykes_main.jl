@@ -277,7 +277,8 @@ function main()
 
                     #average<<<gridSizel, blockSizel>>>(mfl, T, C, nl, nx, ny);
                     synchronize()
-
+                    
+                    #checked
                     ccl(mfl, L, tsh, nxl, nyl)
 
                     copyto!(L, L_host)

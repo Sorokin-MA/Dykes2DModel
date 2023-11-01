@@ -7,12 +7,12 @@ macro GPU_ID()
     return 0
 end
 
-function indices()
-    return blockIdx().x* blockDim().x + threadIdx().x, blockIdx().y* blockDim().y + threadIdx().y
+macro indices()
+    return :(blockIdx().x* blockDim().x + threadIdx().x, blockIdx().y* blockDim().y + threadIdx().y)
 end
 
-function idc(ix, iy, nx)
-    return (iy) * nx + (ix)
+macro idc(ix, iy)
+    return :(iy * nx + ix)
 end
 
 #Functon to write number of CUDA device
@@ -105,7 +105,7 @@ function mf_basalt(T)
 end
 
 function update_T(ALL_PARAMS)
-    #CUINDICES
+    #ix, iy = @indices()
     #TODO:fix indexes
     if ix > nx - 1 || iy > ny - 1
         return
@@ -116,33 +116,33 @@ function update_T(ALL_PARAMS)
     if ix == 0
         qxw = 0.0
     else
-        qxw = -(T[idc(ix, iy)] - T[idc(ix - 1, iy)]) / dx
+        qxw = -(T[iy * nx + ix] - T[idc(ix - 1, iy)]) / dx
     end
 
     if ix == nx - 1
         qxe = 0.0
     else
-        qxe = -(T[idc(ix + 1, iy)] - T[idc(ix, iy)]) / dx
+        qxe = -(T[iy * nx + ix +1] - T[iy * nx + ix]) / dx
     end
 
     if iy == 0
-        qys = -2.0 * (T[idc(ix, iy)] - T_bot) / dy
+        qys = -2.0 * (T[iy * nx + ix] - T_bot) / dy
     else
-        qys = -(T[idc(ix, iy)] - T[idc(ix, iy - 1)]) / dy
+        qys = -(T[iy * nx + ix] - T[idc(ix, iy - 1)]) / dy
     end
 
     if iy == ny - 1
-        qyn = -2.0 * (T_top - T[idc(ix, iy)]) / dy
+        qyn = -2.0 * (T_top - T[iy * nx + ix]) / dy
     else
-        qyn = -(T[idc(ix, iy + 1)] - T[idc(ix, iy)]) / dy
+        qyn = -(T[((iy + 1) * nx + ix)] - T[iy * nx + ix]) / dy
     end
 
-    dmf = dmf_magma(T[idc(ix, iy)]) * C[idc(ix, iy)] + dmf_rock(T[idc(ix, iy)]) * (1.0 - C[idc(ix, iy)])
-    lam_rhoCp = (lam_m_rhoCp * C[idc(ix, iy)]) + lam_r_rhoCp * (1.0 - C[idc(ix, iy)])
+    dmf = dmf_magma(T[iy * nx + ix]) * C[iy * nx + ix] + dmf_rock(T[iy * nx + ix]) * (1.0 - C[iy * nx + ix])
+    lam_rhoCp = (lam_m_rhoCp * C[iy * nx + ix]) + lam_r_rhoCp * (1.0 - C[iy * nx + ix])
 
     chi = lam_rhoCp / (1.0 + L_Cp * dmf)
 
-    T[idc(ix, iy)] += -dt * chi * ((qxe - qxw) / dx + (qyn - qys) / dy)
+    T[iy * nx + ix] += -dt * chi * ((qxe - qxw) / dx + (qyn - qys) / dy)
 end
 
 function init_particles_Ph(pPh::Ptr{Int8}, ph::Int8, npartcl::Int)
@@ -286,13 +286,13 @@ function p2g_project(ALL_PARAMS)
 end
 
 function p2g_weight(ALL_PARAMS)
-    CUINDICES
+    ix, iy = @indices()
     
     if ix > nx - 1 || iy > ny - 1
         return
     end
     
-    if wts[idc(ix, iy)] == 0.0
+    if wts[iy * nx + ix] == 0.0
         return
     end
 end
@@ -340,18 +340,18 @@ function p2g_project(ALL_PARAMS)
 end
 
 function p2g_weight(ALL_PARAMS)
-    CUINDICES
+    ix, iy = @indices()
     
     if ix > nx - 1 || iy > ny - 1
         return
     end
     
-    if wts[idc(ix, iy)] == 0.0
+    if wts[iy * nx + ix] == 0.0
         return
     end
     
-    T[idc(ix, iy)] /= wts[idc(ix, iy)]
-    C[idc(ix, iy)] /= wts[idc(ix, iy)]
+    T[iy * nx + ix] /= wts[iy * nx + ix]
+    C[iy * nx + ix] /= wts[iy * nx + ix]
 end
 
 function blerp(x1, x2, y1, y2, f11, f12, f21, f22, x, y)
@@ -392,15 +392,13 @@ function g2p(ALL_PARAMS)
 end
 
 function assignUniqueLables(mf, L, tsh, nx, ny)
-    ix, iy = indices()
-    #int ix = blockIdx.x * blockDim.x + threadIdx.x;                                                                                                              \
-    #int iy = blockIdx.y * blockDim.y + threadIdx.y;
+    ix, iy = @indices()
     
     if ix > nx - 1 || iy > ny - 1
         return
     end
     
-    if mf[idc(ix, iy, nx)] >= tsh
+    if mf[ix, iy] >= tsh
         L[iy * nx + ix] = iy * nx + ix
     else
         L[iy * nx + ix] = -1
@@ -416,8 +414,8 @@ function cwLabel(L, nx, ny)
     end
     
     for ix = nx - 2:-1:0
-        if L[idc(ix, iy)] >= 0 && L[idc(ix + 1, iy)] >= 0
-            L[idc(ix, iy)] = L[idc(ix + 1, iy)]
+        if L[iy * nx + ix] >= 0 && L[iy * nx + ix + 1] >= 0
+            L[iy * nx + ix] = L[iy * nx + ix + 1]
         end
     end
 end
@@ -431,31 +429,33 @@ function find_root(L, idx)
 end
 
 function merge_labels(L, div, nx, ny)
-    iy = (blockIdx().x - 1) * blockDim().x + threadIdx().x
+    iy = (blockIdx().x) * blockDim().x + threadIdx().x
     iy = div ÷ 2 + iy * div - 1
     if iy > ny - 2
         return
     end
 
     for ix in 1:nx
-        if L[idc(ix, iy)] >= 0 && L[idc(ix, iy + 1)] >= 0
-            lroot = find_root(L, idc(ix, iy))
-            rroot = find_root(L, idc(ix, iy + 1))
-            L[min(lroot, rroot)] = L[max(lroot, rroot)]
-        end
+        # if L[iy * nx + ix] >= 0 && L[((iy + 1) * nx + ix)] >= 0
+        #     lroot = find_root(L, iy * nx + ix)
+        #     rroot = find_root(L, ((iy + 1) * nx + ix))
+        #     L[min(lroot, rroot)] = L[max(lroot, rroot)]
+        # end
     end
+    return nothing
 end
 
 function relabel(L, nx, ny)
-    CUINDICES
+    ix, iy = @indices()
 
     if ix > nx - 1 || iy > ny - 1
         return
     end
 
-    if L[idc(ix, iy)] >= 0
-        L[idc(ix, iy)] = find_root(L, idc(ix, iy))
+    if L[iy * nx + ix] >= 0
+        L[iy * nx + ix] = find_root(L, iy * nx + ix)
     end
+    return nothing
 end
 
 
@@ -510,8 +510,8 @@ function average(mfl, T, C, nl, nx, ny)
             if iy > ny - 1
                 break
             end
-            vf = C[idc(ix, iy)]
-            avg += mf_magma(T[idc(ix, iy)]) * vf + mf_rock(T[idc(ix, iy)]) * (1 - vf)
+            vf = C[iy * nx + ix]
+            avg += mf_magma(T[iy * nx + ix]) * vf + mf_rock(T[iy * nx + ix]) * (1 - vf)
         end
     end
     avg /= nl * nl
@@ -531,7 +531,7 @@ function count_particles(pcnt, px, py, dx, dy, nx, ny, npartcl)
     ix = min(max(Int(pxi), 0), nx - 2)
     iy = min(max(Int(pyi), 0), ny - 2)
 
-    atomicAdd(pcnt[idc(ix, iy)], 1)
+    atomicAdd(pcnt[iy * nx + ix], 1)
 end
 
 function inject_particles(px, py, pT, pPh, npartcl, pcnt, T, C, dx, dy, nx, ny, min_pcount, max_npartcl)
@@ -539,7 +539,7 @@ function inject_particles(px, py, pT, pPh, npartcl, pcnt, T, C, dx, dy, nx, ny, 
         return
     end
 
-    if pcnt[idc(ix, iy)] < min_pcount
+    if pcnt[iy * nx + ix] < min_pcount
         for ioy = 1:2
             for iox = 1:2
                 inx = ix + iox
@@ -565,28 +565,29 @@ function ccl(mf, L, tsh, nx, ny)
     
     #to synch device
     CUDA.@sync begin
-    @cuda blocks = gridSize2D threads = blockSize2D assignUniqueLables(mf, L, tsh, nx, ny)
-end
+        @cuda blocks = gridSize2D threads = blockSize2D assignUniqueLables(mf, L, tsh, nx, ny)
+    end
 
     blockSize1D = 32
     gridSize1D = (ny + blockSize1D - 1) ÷ blockSize1D
-CUDA.@sync begin
-    @cuda  blocks = gridSize1D threads = blockSize1D cwLabel(L, nx, ny)
-end
+    CUDA.@sync begin
+        @device_code_warntype @cuda  blocks = gridSize1D threads = blockSize1D cwLabel(L, nx, ny)
+    end
 
     div = 2
-    npw = ceil(log2(ny))
+    npw = convert(Int64,ceil(log2(ny)))
     nyw = 1 << npw
     for i = 1:npw
-        gridSize1D.x = max((nyw + blockSize1D - 1) ÷ blockSize1D ÷ div, 1)
-CUDA.@sync begin
-    @cuda blocks = gridSize1D threads = blockSize1D merge_labels(L, div, nx, ny)
-end
+        gridSize1D = max((nyw + blockSize1D - 1) ÷ blockSize1D ÷ div, 1)
+        #CUDA.@sync begin
+            @cuda blocks = gridSize1D threads = blockSize1D merge_labels(L, div, nx, ny)
+        #end
         div *= 2
     end
-CUDA.@sync begin
-    @cuda blocks = gridSize2D threads = blockSize2D relabel(L, nx, ny)
-end
+    
+    CUDA.@sync begin
+        @cuda blocks = gridSize2D threads = blockSize2D relabel(L, nx, ny)
+    end
 
 end
 
