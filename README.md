@@ -13,7 +13,7 @@ CUDA.jl
 ### Executing program
 ```
 julia
-include("main_dykes.jl")
+include("dykes.jl")
 ```
 
 ## References

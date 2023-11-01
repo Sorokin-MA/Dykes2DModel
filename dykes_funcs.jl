@@ -1,12 +1,18 @@
 #Function that write which device we use
-include("dykes_init.jl")
-
 macro H5Z_FILTER_BLOSC()
     return 5
 end
 
 macro GPU_ID()
     return 0
+end
+
+function indices()
+    return blockIdx().x* blockDim().x + threadIdx().x, blockIdx().y* blockDim().y + threadIdx().y
+end
+
+function idc(ix, iy, nx)
+    return (iy) * nx + (ix)
 end
 
 #Functon to write number of CUDA device
@@ -63,9 +69,6 @@ function read_par(par, ipar)
     return par_name_2, ipar_2
 end
 
-function idc(ix, iy, nx)
-    return (iy) * nx + (ix)
-end
 
 function blerp(x1, x2, y1, y2, f11, f12, f21, f22, x, y)
     invDxDy = 1.0 / ((x2 - x1) * (y2 - y1))
@@ -390,16 +393,19 @@ end
 
 function assignUniqueLables(mf, L, tsh, nx, ny)
     ix, iy = indices()
+    #int ix = blockIdx.x * blockDim.x + threadIdx.x;                                                                                                              \
+    #int iy = blockIdx.y * blockDim.y + threadIdx.y;
     
     if ix > nx - 1 || iy > ny - 1
         return
     end
     
-    if mf[idc(ix, iy)] >= tsh
-        L[idc(ix, iy)] = idc(ix, iy)
+    if mf[idc(ix, iy, nx)] >= tsh
+        L[iy * nx + ix] = iy * nx + ix
     else
-        L[idc(ix, iy)] = -1
+        L[iy * nx + ix] = -1
     end
+    return nothing
 end
 
 function cwLabel(L, nx, ny)

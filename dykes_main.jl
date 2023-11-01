@@ -1,7 +1,5 @@
 import Random
 
-
-
 function main()
 
     #Initialization of inner random
@@ -11,7 +9,7 @@ function main()
 
     #TODO:Настроить девайс если не выбран
 
-    #Вывести свойства
+    #Print properties
     print_gpu_properties()
 
     dpa = Array{Float64,1}(undef, 18)
@@ -172,8 +170,8 @@ function main()
     dike_x = Array{Float64,1}(undef, ndikes_all)
     dike_y = Array{Float64,1}(undef, ndikes_all)
     dike_t = Array{Float64,1}(undef, ndikes_all)
-    #TODO:Dykes not have read?
-    #=
+    #NOTE:Dykes data upload takes time
+
      	io = open("dikes.bin", "r");
      	read!(io, dike_a)
      	read!(io, dike_b)
@@ -198,7 +196,6 @@ function main()
      	read(obj, "mT")
 
      	close(fid)
-     	=#
 
     NDIGITS = 4
 
