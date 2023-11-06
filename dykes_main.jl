@@ -172,12 +172,12 @@ function main()
     dike_t = Array{Float64,1}(undef, ndikes_all)
     #NOTE:Dykes data upload takes time
 
-     	io = open("dikes.bin", "r");
-     	read!(io, dike_a)
-     	read!(io, dike_b)
-     	read!(io, dike_x)
-     	read!(io, dike_y)
-     	read!(io, dike_t)
+    io = open("dikes.bin", "r");
+    read!(io, dike_a)
+    read!(io, dike_b)
+    read!(io, dike_x)
+    read!(io, dike_y)
+    read!(io, dike_t)
 
      	close(io)
 
