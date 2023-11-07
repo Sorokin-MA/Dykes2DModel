@@ -182,10 +182,26 @@ function main()
      	close(io)
 
      	fid = h5open("particles.h5", "r")
-     	px = read(fid,"px")
-     	py = read(fid,"py")
-     	px_dikes = read(fid,"px_dikes")
-     	py_dikes = read(fid,"py_dikes")
+
+        h_px = Array{Float64,1}(undef, max_npartcl)
+        h_py = Array{Float64,1}(undef, max_npartcl)
+
+        h_px = read(fid,"px")
+        h_py = read(fid,"py")
+
+        copyto!(px, h_px)
+        copyto!(py, h_py)
+
+        h_px_dikes = Array{Float64,1}(undef, np_dikes)
+        h_py_dikes = Array{Float64,1}(undef, np_dikes)
+
+        h_px_dikes = read(fid,"px_dikes")
+        h_py_dikes = read(fid,"py_dikes")
+
+        #TODO: fix this copy
+        #copyto!(px_dikes, h_px_dikes)
+        #copyto!(py_dikes, h_py_dikes)
+
      	close(fid)
 
      	fid = h5open("markers.h5", "r")

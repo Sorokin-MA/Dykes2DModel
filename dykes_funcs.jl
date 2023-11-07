@@ -183,18 +183,14 @@ function cart2ellipt(f, x, y)
 end
 
 function rot2d(x, y, sb, cb)
-    x_y = zeros(2)
-    x_y[1] = x * cb - y * sb
-    x_y[2] = x * sb + y * cb
-    return x_y
+    return  (x * cb - y * sb, x * sb + y * cb)
 end
 
 function crack_params(a, b, nu, G)
-    p_a0 = zeros(2)
+
     f = 2 * nu * (a + b) - 2 * a - b
-    p_a0[1] = -2 * b * G / f
-    p_a0[2] = 0.5 * f / (nu - 1)
-    return p_a0
+
+    return (-2 * b * G / f, 0.5 * f / (nu - 1))
 end
 
 function disp_inf_stress(s, st, ct, c, nu, G, shxi, chxi, seta, ceta)
@@ -257,6 +253,7 @@ function advect_particles_intrusion(px, py, a, b, x, y, theta, nu, G, ndikes, np
     u_v = displacements(st, ct, p_a0[1], 0, 0, p_a0[2], px[ip] - x, py[ip] - y, nu, G)
     px[ip] += u_v[1]
     py[ip] += u_v[2]
+    return nothing
 end
 
 function p2g_project(ALL_PARAMS)
@@ -476,7 +473,7 @@ end
 
 
 function advect_particles_eruption(px, py, idx, gamma, dxl, dyl, npartcl, ncells, nxl, nyl)
-    ip = (blockIdx().x - 1) * blockDim().x + threadIdx().x
+    ip = (blockIdx().x - 1 ) * blockDim().x + threadIdx().x
 
     if ip > npartcl - 1
         return
@@ -507,6 +504,7 @@ function advect_particles_eruption(px, py, idx, gamma, dxl, dyl, npartcl, ncells
 
     px[ip] += u
     py[ip] += v
+    return nothing
 end
 
 function average(mfl, T, C, nl, nx, ny)
