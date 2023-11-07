@@ -1,7 +1,5 @@
 import Random
 
-
-
 function main()
 
     #Initialization of inner random
@@ -11,7 +9,7 @@ function main()
 
     #TODO:Настроить девайс если не выбран
 
-    #Вывести свойства
+    #Print properties
     print_gpu_properties()
 
     dpa = Array{Float64,1}(undef, 18)
@@ -172,22 +170,38 @@ function main()
     dike_x = Array{Float64,1}(undef, ndikes_all)
     dike_y = Array{Float64,1}(undef, ndikes_all)
     dike_t = Array{Float64,1}(undef, ndikes_all)
-    #TODO:Dykes not have read?
-    #=
-     	io = open("dikes.bin", "r");
-     	read!(io, dike_a)
-     	read!(io, dike_b)
-     	read!(io, dike_x)
-     	read!(io, dike_y)
-     	read!(io, dike_t)
+    #NOTE:Dykes data upload takes time
+
+    io = open("dikes.bin", "r");
+    read!(io, dike_a)
+    read!(io, dike_b)
+    read!(io, dike_x)
+    read!(io, dike_y)
+    read!(io, dike_t)
 
      	close(io)
 
      	fid = h5open("particles.h5", "r")
-     	px = read(fid,"px")
-     	py = read(fid,"py")
-     	px_dikes = read(fid,"px_dikes")
-     	py_dikes = read(fid,"py_dikes")
+
+        h_px = Array{Float64,1}(undef, max_npartcl)
+        h_py = Array{Float64,1}(undef, max_npartcl)
+
+        h_px = read(fid,"px")
+        h_py = read(fid,"py")
+
+        copyto!(px, h_px)
+        copyto!(py, h_py)
+
+        h_px_dikes = Array{Float64,1}(undef, np_dikes)
+        h_py_dikes = Array{Float64,1}(undef, np_dikes)
+
+        h_px_dikes = read(fid,"px_dikes")
+        h_py_dikes = read(fid,"py_dikes")
+
+        #TODO: fix this copy
+        #copyto!(px_dikes, h_px_dikes)
+        #copyto!(py_dikes, h_py_dikes)
+
      	close(fid)
 
      	fid = h5open("markers.h5", "r")
@@ -198,7 +212,6 @@ function main()
      	read(obj, "mT")
 
      	close(fid)
-     	=#
 
     NDIGITS = 4
 
@@ -271,16 +284,17 @@ function main()
 
                     blockSizel = (16, 32)
                     gridSizel = (
-                        (nxl + blockSizel[1] - 1) / blockSizel[1],
-                        (nyl + blockSizel[2] - 1) / blockSizel[2],
+                        (nxl + blockSizel[1] - 1) ÷ blockSizel[1],
+                        (nyl + blockSizel[2] - 1) ÷ blockSizel[2],
                     )
 
-                    #TODO:Fix average function
-                    #@cuda blocks = gridSizel threads=blockSizel average(mfl, T, C, nl, nx, ny);
+                    #TODO:Wrong functionns with reologyy inside
+                    @cuda blocks = gridSizel threads=blockSizel average(mfl, T, C, nl, nx, ny);
 
                     #average<<<gridSizel, blockSizel>>>(mfl, T, C, nl, nx, ny);
                     synchronize()
-
+                    
+                    #checked
                     ccl(mfl, L, tsh, nxl, nyl)
 
                     copyto!(L, L_host)

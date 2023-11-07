@@ -13,3 +13,4 @@ init_data
 Manifest.toml
 Project.toml
 *.asv
+nvim-lspconfig
