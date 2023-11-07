@@ -268,12 +268,12 @@ function main()
 
                     blockSizel = (16, 32)
                     gridSizel = (
-                        (nxl + blockSizel[1] - 1) / blockSizel[1],
-                        (nyl + blockSizel[2] - 1) / blockSizel[2],
+                        (nxl + blockSizel[1] - 1) ÷ blockSizel[1],
+                        (nyl + blockSizel[2] - 1) ÷ blockSizel[2],
                     )
 
-                    #TODO:Fix average function
-                    #@cuda blocks = gridSizel threads=blockSizel average(mfl, T, C, nl, nx, ny);
+                    #TODO:Wrong functionns with reologyy inside
+                    @cuda blocks = gridSizel threads=blockSizel average(mfl, T, C, nl, nx, ny);
 
                     #average<<<gridSizel, blockSizel>>>(mfl, T, C, nl, nx, ny);
                     synchronize()

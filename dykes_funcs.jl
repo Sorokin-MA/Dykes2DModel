@@ -104,6 +104,22 @@ function mf_basalt(T)
     return 0.1 / (0.1 + t7)
 end
 
+#TODO: fix
+function mf_rhyolite(T)
+    T = T / 1000
+    t2 = T * T
+    t7 = exp(143.636887935970 - 494.427718497039 * T + 572.468110446565 * t2 - 221.444625682461 * t2 * T)
+    return 0.1 / (0.1 + t7)
+end
+
+macro mf_magma(T)
+    return dmf_rhyolite(T)
+end
+
+macro mf_rock(T)
+    return mf_rhyolite(T)
+end
+
 function update_T(ALL_PARAMS)
     #ix, iy = @indices()
     #TODO:fix indexes
@@ -494,8 +510,8 @@ function advect_particles_eruption(px, py, idx, gamma, dxl, dyl, npartcl, ncells
 end
 
 function average(mfl, T, C, nl, nx, ny)
-    ixl = (blockIdx().x - 1) * blockDim().x + threadIdx().x
-    iyl = (blockIdx().y - 1) * blockDim().y + threadIdx().y
+    ixl = (blockIdx().x) * blockDim().x + threadIdx().x
+    iyl = (blockIdx().y) * blockDim().y + threadIdx().y
 
     if ixl > (nx ÷ nl - 1) || iyl > (ny ÷ nl - 1)
         return
@@ -511,11 +527,12 @@ function average(mfl, T, C, nl, nx, ny)
                 break
             end
             vf = C[iy * nx + ix]
-            avg += mf_magma(T[iy * nx + ix]) * vf + mf_rock(T[iy * nx + ix]) * (1 - vf)
+            avg = avg + (mf_rhyolite(T[(iy * nx + ix)])) * vf + mf_rhyolite(T[(iy * nx + ix)]) * (1 - vf)
         end
     end
-    avg /= nl * nl
+    avg = div(avg, (nl * nl))
     mfl[iyl * (nx ÷ nl) + ixl] = avg
+    return nothing;
 end
 
 function count_particles(pcnt, px, py, dx, dy, nx, ny, npartcl)
@@ -571,7 +588,7 @@ function ccl(mf, L, tsh, nx, ny)
     blockSize1D = 32
     gridSize1D = (ny + blockSize1D - 1) ÷ blockSize1D
     CUDA.@sync begin
-        @device_code_warntype @cuda  blocks = gridSize1D threads = blockSize1D cwLabel(L, nx, ny)
+        @cuda  blocks = gridSize1D threads = blockSize1D cwLabel(L, nx, ny)
     end
 
     div = 2
