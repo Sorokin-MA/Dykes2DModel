@@ -1,3 +1,6 @@
+include("dykes_init.jl")
+include("dykes_funcs.jl")
+
 import Random
 
 function main()
@@ -238,12 +241,9 @@ function main()
 
 			blockSize1D = 768
 			gridSize1D = convert(Int64, floor((npartcl + blockSize1D - 1) / blockSize1D))
-
-
-			#gridSize1D
-
-			#@device_code_warntype
-
+#  ╭──────────────────────────────────────────────────────────╮
+#  │End of done part										  │
+#  ╰──────────────────────────────────────────────────────────╯
 
 			#@cuda blocks = gridSize1D threads=blockSize1D g2p(@ALL_ARGS())
 			#kekw = idc(2, 4, nx)
