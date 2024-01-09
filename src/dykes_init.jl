@@ -1,5 +1,8 @@
 	using Pkg
-	Pkg.status()
+
+	Pkg.add("JLArrays")
+	#Pkg.status()
+
 	#Pkg.add("HDF5")
 	#Pkg.add("CUDA")
 	#Pkg.add("JupyterFormatter")
@@ -12,4 +15,5 @@
 	using HDF5
 	using Random:Random
 
-	#TODO: particles and dykes initializtion
+	using JLArrays
+
