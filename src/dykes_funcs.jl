@@ -19,7 +19,7 @@ end
 function kernel()
 	dev = Ref{Cint}()
 	CUDA.cudaGetDevice(dev)
-	@cuprintln("Running on device $(dev[])")
+	@cuprint("Running on device $(dev[])\n")
 	return
 end
 
