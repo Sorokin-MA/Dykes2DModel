@@ -17,7 +17,7 @@ function main()
 
 	dpa = Array{Float64,1}(undef, 18)
 	ipa = Array{Int32,1}(undef, 12)
-	
+
 	#Initialization of main variables
 	Lx = 0.0				 #X size of researched area (m)
 	Ly = 0.0				#Y size of researched area (m)
@@ -269,7 +269,7 @@ function main()
 		iSample = Int32(1)
 
 		eruptionSteps = Vector{Int32}()
-		
+
 		#Main loop
 		for it ∈ 1:nt
 			#action
@@ -292,7 +292,7 @@ function main()
 
 					#average<<<gridSizel, blockSizel>>>(mfl, T, C, nl, nx, ny);
 					synchronize()
-					
+
 					#checked
 					ccl(mfl, L, tsh, nxl, nyl)
 
@@ -552,7 +552,7 @@ function main()
 				pic_amount_tmp = pic_amount
 				pic_amount = 1.0
 				#g2p<<<gridSize1D, blockSize1D>>>(T, T_old, C, wts, mx, my, mT, NULL, lam_r_rhoCp, lam_m_rhoCp, L_Cp, T_top, T_bot, dx, dy, dt, pic_amount, nx, ny, nmarker,
-				   #			 nmarker0);
+				#			 nmarker0);
 				#@cuda blocks = gridSize1D threads=blockSize1D g2p!(T, T_old, C, wts, px, py, pT, pPh, lam_r_rhoCp, lam_m_rhoCp, L_Cp, T_top, T_bot, dx, dy, dt, pic_amount, nx, ny, npartcl, npartcl0)
 				synchronize()
 				pic_amount = pic_amount_tmp
