@@ -15,41 +15,41 @@ function main()
 	#Print properties
 	print_gpu_properties()
 
-	dpa = Array{Float64,1}(undef, 18)
-	ipa = Array{Int32,1}(undef, 12)
+	dpa = Array{Float64,1}(undef, 18)	#array of double values from matlab script
+	ipa = Array{Int32,1}(undef, 12)		#array of int values from matlab script
 
 	#Initialization of main variables
 	Lx = 0.0				 #X size of researched area (m)
 	Ly = 0.0				#Y size of researched area (m)
-	lam_r_rhoCp = 0.0
-	lam_m_rhoCp = 0.0
-	L_Cp = 0.0
+	lam_r_rhoCp = 0.0		#Thermal conductivity of rock/(density*specific heat capacity)
+	lam_m_rhoCp = 0.0		#Thermal conductivity of magma/(density*specific heat capacity)
+	L_Cp = 0.0				#?
 	T_top = 0.0				#Temperature on the top of area (C)
 	T_bot = 0.0				#Temperature at the bottom of the area (C)
-	T_magma = 0.0			#Temperature of magma (C)
-	tsh = 0.0
-	gamma = 0.0
-	Ly_eruption = 0.0
-	nu = 0.0
-	G = 0.0
+	T_magma = 0.0			#Magma instrusion temperature(C)
+	tsh = 0.0				#nondimensonal 0.75
+	gamma = 0.0				#nondimensional 0.1
+	Ly_eruption = 0.0		#?
+	nu = 0.0				#Poisson ratio of rock
+	G = 0.0					#E/(2*(1+nu));
 	dt = 0.0				#time step
 	dx = 0.0				#X dimension step
 	dy = 0.0				#Y dimension step
-	eiter = 0.0
-	pic_amount = 0.0
+	eiter = 0.0				#epsilon?
+	pic_amount = 0.0		#?
 
-	pmlt = 0
+	pmlt = 0				#?
 	nx = 0					#Resolution for X dimension
 	ny = 0					#Resolution for Y dimension
-	nl = 0
-	nt = 0
-	niter = 0
-	nout = 0
-	nsub = 0
-	nerupt = 0
-	npartcl = 0
-	nmarker = 0
-	nSample = 0
+	nl = 0					#?
+	nt = 0					#?
+	niter = 0				#?
+	nout = 0				#?
+	nsub = 0				#?
+	nerupt = 0				#numbre of eruptions
+	npartcl = 0				#number of particles
+	nmarker = 0				#number of markers
+	nSample = 0				#?
 
 	#char filename[1024];
 	filename = Array{Char,1}(undef, 1024)
@@ -59,8 +59,8 @@ function main()
 	read!(io, dpa)
 	read!(io, ipa)
 
-	ipar = 1
-	Lx, ipar = read_par(dpa, ipar)
+	ipar = 1								#index to read parameters
+	Lx, ipar = read_par(dpa, ipar)			
 	Ly, ipar = read_par(dpa, ipar)
 	lam_r_rhoCp, ipar = read_par(dpa, ipar)
 	lam_m_rhoCp, ipar = read_par(dpa, ipar)
