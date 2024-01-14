@@ -3,7 +3,8 @@ seed = 123;
 rng(seed);
 % program config
 % cur_dir    =pwd;
-sim_dir    = 'init_data';
+
+sim_dir    = 'init_data';												%directory name where will be compilled files
 sim_name   = 'magma_chamber_eruption_rh_rh_particles_generation';
 sim_files   = 'magma_chamber_eruption_rh_rh_particles_generation.*';
 sim_driver = mfilename('fullpath');
@@ -13,23 +14,25 @@ cu_name    = [sim_name '.cu'];
 cu_path    = [sim_dir '/' cu_name];
 cuda_arch  = 'sm_86';
 %cuda_ccbin = '"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29910\bin\Hostx64\x64"';
-cuda_ccbin = '"c:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.34.31933\bin\Hostx64\x64"';
-hdf5_path  = 'C:\Program Files\HDF_Group\HDF5\1.14.1';
+cuda_ccbin = '"c:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.34.31933\bin\Hostx64\x64"';	%where cuda binaries
+hdf5_path  = 'C:\Program Files\HDF_Group\HDF5\1.14.1';		%where hdf5 library
 addpath([hdf5_path '\lib'], [hdf5_path '\lib\plugin'])
 bcx        = 'expx';
 bcy        = 'expy';
-gpuid      = 0;
-tyear = 365*24*3600;
+gpuid      = 0;				%gpu id
+tyear = 365*24*3600;		%seconds in year
+
 % cleanup
 if ~exist(sim_dir,'dir')
     mkdir(sim_dir)
 end
 delete([sim_dir '/*']);
+
 % physics
 % dimensionally independent
-Lx          = 20000; % m
-Ly          = 25000; % m
-Lx_Ly       = Lx/Ly; 
+Lx          = 20000; % x size of area, m
+Ly          = 25000; % y siez of area, m
+Lx_Ly       = Lx/Ly;
 narrow_fact = 0.6;
 dike_x_W    = 5000; %m 
 dike_x_Wn    = dike_x_W*narrow_fact; %m 
@@ -39,24 +42,24 @@ dike_b_rng  = [10 20]; %m
 dike_x_rng  = [ (Lx-dike_x_W)/2 (Lx+dike_x_W)/2] ;
 dike_x_rng_n  = [ (Lx-dike_x_Wn)/2 (Lx+dike_x_Wn)/2] ;
 
-dike_y_rng  = [1000 22000];
-dike_t_rng  = [0.95*pi/2 1.05*pi/2];
-dike_to_sill = 21000; %m
-dz           = 5000; %m
+dike_y_rng  = [1000 22000];				%dikes y distribution
+dike_t_rng  = [0.95*pi/2 1.05*pi/2];	%dykes time distribution
+dike_to_sill = 21000;					%boundary where dykes turn yourself to sill, m
+dz           = 5000;					%z dimension? i guess, m
 
-Lam_r       = 1.5; % W/m/K
-Lam_m       = 1.2; % W/m/K
-rho         = 2650; %kg/m^3
-Cp          = 1350; %J/kg/K
-Lheat       = 3.5e5;%J/kg
-T_top       = 100;  %C
-dTdy        = 20;   %K/km
-T_magma     = 950; %C
-T_ch        = 700; 
-Qv          = 0.038; %m^3/s
-dt          = 50*tyear;
-tfin        = 600e3*tyear;  terupt = 600e3*tyear;
-
+Lam_r       = 1.5;			%thermal conductivity of rock, W/m/K
+Lam_m       = 1.2;			%thermal conductivity of magma, W/m/K
+rho         = 2650;			%density, kg/m^3
+Cp          = 1350;			%scpecifiv heat capacity, J/kg/K
+Lheat       = 3.5e5;		%Latent heat of melting, J/kg
+T_top       = 100;			%temperature at depth 5 km, C
+dTdy        = 20;			%how fast temperature decreasing with depth, K/km
+T_magma     = 950;			%magma intrusion temperature, C
+T_ch        = 700;			%?
+Qv          = 0.038;		%m^3/s
+dt          = 50*tyear;		%time
+tfin        = 600e3*tyear;
+terupt      = 600e3*tyear;
 
 
 Ly_eruption = 2000; % m
@@ -64,14 +67,17 @@ lam_r_rhoCp = Lam_r/(rho*Cp); % m^2/s
 dT          = 500; % K
 E           = 1.56e10; % Pa
 nu          = 0.3;
+
 % scales
 tsc         = Ly^2/lam_r_rhoCp; % s
+
 % nondimensional
 tsh         = 0.75;
 lam_m_lam_r = Lam_m/Lam_r;
 gamma       = 0.1;
 
 Ste         = dT/(Lheat/Cp); % Ste = dT/L_Cp
+
 % dimensionally dependent
 lam_m_rhoCp = lam_r_rhoCp*lam_m_lam_r;
 Omx         = Lx/2 - Lx/3;
@@ -85,16 +91,18 @@ G           = E/(2*(1+nu));
 
 alpha       = 2; % parameter
 Nsample     = 1000; % size of a sample
+
 % distr       = random('exponential',alpha,1,Nsample);
 distr = -alpha .* log(rand(1,Nsample, 'like', alpha)); % == expinv(u, mu)
 rn          = (distr-min(distr))/(max(distr)-min(distr));
 critVol     = 10.^(9+3*rn)/dz/(1-gamma);
 % dike_x_rng  = [0.32 0.67]*Lx;
+
 % numerics
 steph       = 5;
 ny          = fix(Ly/steph);
 nx          = fix(Lx_Ly*ny);
-nl          = 4;
+nl          = 4;					%?
 nmy         = 200;
 nmx         = fix(Lmx/Lmy*nmy);
 pmlt        = 2;
@@ -106,6 +114,7 @@ nout        = 10000;
 nt          = tfin/dt;
 nt_erupt    = terupt/dt;
 nerupt      = 1;
+
 % preprocessing
 dx          = Lx/(nx-1);
 dy          = Ly/(ny-1);
@@ -224,6 +233,7 @@ mT(mx > dike_x_rng(1) & mx < dike_x_rng(2) & my > dike_y_rng(1)  & my <dike_y_rn
 
 partcl_edges = [0 cumsum(dike_npartcl)];
 marker_edges = [0 cumsum(dike_nmarker)];
+
 % save data
 fid        = fopen([sim_dir '/pa.bin'],'w');
 fwrite(fid,[Lx Ly lam_r_rhoCp lam_m_rhoCp L_Cp T_top T_bot T_magma tsh gamma Ly_eruption nu G dt_diff dx dy eiter pic_amount],'double');

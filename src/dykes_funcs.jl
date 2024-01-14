@@ -709,3 +709,19 @@ function average(mfl, T, C, nl, nx, ny)
 end
 =#
 
+function mailbox_out(filename)
+	@time begin
+		@printf("%s writing results to disk  | ", bar2)
+		filename = "grid." * string(it) * ".h5"
+		fid = h5open(filename, "w")
+
+		write_h5(fid, "T", T, staging, nx * ny)
+		write_h5(fid, "C", C, staging, nx * ny)
+
+		if (is_eruption)
+			write_h5(fid, "L", L, staging, nxl * nyl)
+		end
+
+		close(fid)
+	end
+end

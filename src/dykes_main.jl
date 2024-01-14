@@ -19,26 +19,26 @@ function main()
 	ipa = Array{Int32,1}(undef, 12)		#array of int values from matlab script
 
 	#Initialization of main variables
-	Lx = 0.0				 #X size of researched area (m)
+	Lx = 0.0				#X size of researched area (m)
 	Ly = 0.0				#Y size of researched area (m)
 	lam_r_rhoCp = 0.0		#Thermal conductivity of rock/(density*specific heat capacity)
 	lam_m_rhoCp = 0.0		#Thermal conductivity of magma/(density*specific heat capacity)
-	L_Cp = 0.0				#?
+	L_Cp = 0.0				#dT/Ste, Ste = dT/(Lheat/Cp); L_heat/Cp
 	T_top = 0.0				#Temperature on the top of area (C)
 	T_bot = 0.0				#Temperature at the bottom of the area (C)
 	T_magma = 0.0			#Magma instrusion temperature(C)
 	tsh = 0.0				#nondimensonal 0.75
 	gamma = 0.0				#nondimensional 0.1
-	Ly_eruption = 0.0		#?
+	Ly_eruption = 0.0		#? 2000, m
 	nu = 0.0				#Poisson ratio of rock
 	G = 0.0					#E/(2*(1+nu));
 	dt = 0.0				#time step
 	dx = 0.0				#X dimension step
 	dy = 0.0				#Y dimension step
 	eiter = 0.0				#epsilon?
-	pic_amount = 0.0		#?
+	pic_amount = 0.0		#?, 0.05
 
-	pmlt = 0				#?
+	pmlt = 0				#unused
 	nx = 0					#Resolution for X dimension
 	ny = 0					#Resolution for Y dimension
 	nl = 0					#?
@@ -46,10 +46,10 @@ function main()
 	niter = 0				#?
 	nout = 0				#?
 	nsub = 0				#?
-	nerupt = 0				#numbre of eruptions
+	nerupt = 0				#number of eruptions
 	npartcl = 0				#number of particles
 	nmarker = 0				#number of markers
-	nSample = 0				#?
+	nSample = 0				#size of a Sample, 1000
 
 	#char filename[1024];
 	filename = Array{Char,1}(undef, 1024)
@@ -60,11 +60,11 @@ function main()
 	read!(io, ipa)
 
 	ipar = 1								#index to read parameters
-	Lx, ipar = read_par(dpa, ipar)			
-	Ly, ipar = read_par(dpa, ipar)
-	lam_r_rhoCp, ipar = read_par(dpa, ipar)
-	lam_m_rhoCp, ipar = read_par(dpa, ipar)
-	L_Cp, ipar = read_par(dpa, ipar)
+	Lx, ipar = read_par(dpa, ipar)			#x length of area
+	Ly, ipar = read_par(dpa, ipar)			#y length of area
+	lam_r_rhoCp, ipar = read_par(dpa, ipar)	#a few coefficients multiplied
+	lam_m_rhoCp, ipar = read_par(dpa, ipar)	# a few coefficients multipled
+	L_Cp, ipar = read_par(dpa, ipar)		#
 	T_top, ipar = read_par(dpa, ipar)
 	T_bot, ipar = read_par(dpa, ipar)
 	T_magma, ipar = read_par(dpa, ipar)
@@ -290,6 +290,8 @@ function main()
 					#TODO:Wrong functionns with reologyy inside
 					@cuda blocks = gridSizel threads=blockSizel average(mfl, T, C, nl, nx, ny);
 
+					#Усредняется по температуре относительно содержания магмы и вмещающей породы
+					#для уменьшенной сетки
 					#average<<<gridSizel, blockSizel>>>(mfl, T, C, nl, nx, ny);
 					synchronize()
 
