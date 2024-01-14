@@ -102,9 +102,12 @@ function main()
 
 	ndikes_all = 0
 
-	for istep ∈ 1:nt
+	for istep in 1:nt
 		ndikes_all = ndikes_all + ndikes[istep]
 	end
+
+	println("ndikes_all")
+	println(ndikes_all)
 
 	particle_edges = Array{Int32,1}(undef, ndikes_all + 1)
 	read!(io, particle_edges)
@@ -116,13 +119,13 @@ function main()
 
 	cap_frac = 1.5
 	npartcl0 = npartcl
-	max_npartcl = convert(Int64, npartcl * cap_frac) + particle_edges[ndikes_all]
+	max_npartcl = convert(Int64, npartcl * cap_frac) + particle_edges[ndikes_all+1]
 
 	println(max_npartcl)
 
 	nmarker0 = nmarker
 
-	max_nmarker = nmarker + marker_edges[ndikes_all]
+	max_nmarker = nmarker + marker_edges[ndikes_all+1]
 
 
 	#dim3 blockSize(16, 32);
@@ -136,12 +139,12 @@ function main()
 
 	a = CuArray{Float64}(undef, (1, 2))
 
-	px = CuArray{Float64}(undef, max_npartcl)
+	px = CuArray{Float64}(undef, max_npartcl)			#x coordinate of particle
 	py = CuArray{Float64}(undef, max_npartcl)
 	pT = CuArray{Float64}(undef, max_npartcl)
 	pPh = CuArray{Int8}(undef, max_npartcl)
 
-	np_dikes = particle_edges[ndikes_all]
+	np_dikes = particle_edges[ndikes_all+1]
 
 	px_dikes = CuArray{Float64,1}(undef, np_dikes)
 	py_dikes = CuArray{Float64,1}(undef, np_dikes)
@@ -181,39 +184,37 @@ function main()
 	read!(io, dike_y)
 	read!(io, dike_t)
 
-	 	close(io)
+	close(io)
 
-	 	fid = h5open("particles.h5", "r")
+	fid = h5open("particles.h5", "r")
 
-		h_px = Array{Float64,1}(undef, max_npartcl)
-		h_py = Array{Float64,1}(undef, max_npartcl)
+	h_px = Array{Float64,1}(undef, max_npartcl)
+	h_py = Array{Float64,1}(undef, max_npartcl)
 
-		h_px = read(fid,"px")
-		h_py = read(fid,"py")
+	h_px = read(fid,"px")
+	h_py = read(fid,"py")
 
-		copyto!(px, h_px)
-		copyto!(py, h_py)
+	copyto!(px, h_px)
+	copyto!(py, h_py)
 
-		h_px_dikes = Array{Float64,1}(undef, np_dikes)
-		h_py_dikes = Array{Float64,1}(undef, np_dikes)
+	h_px_dikes = Array{Float64,1}(undef, np_dikes)
+	h_py_dikes = Array{Float64,1}(undef, np_dikes)
 
-		h_px_dikes = read(fid,"px_dikes")
-		h_py_dikes = read(fid,"py_dikes")
+	h_px_dikes = read(fid,"px_dikes")
+	h_py_dikes = read(fid,"py_dikes")
 
-		#TODO: fix this copy
-		#copyto!(px_dikes, h_px_dikes)
-		#copyto!(py_dikes, h_py_dikes)
+	copyto!(px_dikes, h_px_dikes)
+	copyto!(py_dikes, h_py_dikes)
+	close(fid)
 
-		close(fid)
+	fid = h5open("markers.h5", "r")
 
-		fid = h5open("markers.h5", "r")
+	obj = fid["0"]
+	read(obj, "mx")
+	read(obj, "my")
+	read(obj, "mT")
 
-		obj = fid["0"]
-		read(obj, "mx")
-		read(obj, "my")
-		read(obj, "mT")
-
-		close(fid)
+	close(fid)
 
 	NDIGITS = 4
 
@@ -241,16 +242,17 @@ function main()
 
 			blockSize1D = 768
 			gridSize1D = convert(Int64, floor((npartcl + blockSize1D - 1) / blockSize1D))
-#  ╭──────────────────────────────────────────────────────────╮
-#  │End of done part										  │
-#  ╰──────────────────────────────────────────────────────────╯
 
+		#__________________________________________________________
 			#@cuda blocks = gridSize1D threads=blockSize1D g2p(@ALL_ARGS())
+
 			#kekw = idc(2, 4, nx)
 			#println("$kekw");
 
+			#changing only pT
 			#@cuda blocks = gridSize1D threads=blockSize1D g2p!(T, T_old, C, wts, px, py, pT, pPh, lam_r_rhoCp, lam_m_rhoCp, L_Cp, T_top, T_bot, dx, dy, dt, pic_amount, nx, ny, npartcl, npartcl0)
 
+		#__________________________________________________________
 			gridSize1D = convert(
 				Int64,
 				floor((max_npartcl - npartcl + blockSize1D - 1) / blockSize1D),
@@ -265,6 +267,7 @@ function main()
 			pic_amount = pic_amount_tmp
 		end
 
+		
 		idike = 1
 		iSample = Int32(1)
 
@@ -339,8 +342,8 @@ function main()
 				dxl = dx * nl
 				dyl = dy * nl
 
-				#if (maxVol * dxl * dyl >= critVol[iSample])
-				if (true)
+				if (maxVol * dxl * dyl >= critVol[iSample])
+				#if (true)
 					@printf("%s erupting %07d cells   | ", bar2, maxVol)
 					@time begin
 
@@ -364,6 +367,7 @@ function main()
 						blockSize1D = 512
 						gridSize1D = (npartcl + blockSize1D - 1) ÷ blockSize1D
 						#advect_particles_eruption<<<gridSize1D, blockSize1D>>>(px, py, cell_idx, gamma, dxl, dyl, npartcl, maxVol, nxl, nyl);
+						#=
 						@cuda blocks = gridSize1D threads = blockSize1D advect_particles_eruption(
 							px,
 							py,
@@ -377,10 +381,11 @@ function main()
 							nyl,
 						)
 						synchronize()
-
+						=#
 						gridSize1D = (nmarker + blockSize1D - 1) ÷ blockSize1D
 
 						#advect_particles_eruption<<<gridSize1D, blockSize1D>>>(mx, my, cell_idx, gamma, dxl, dyl, nmarker, maxVol, nxl, nyl);
+						#=
 						@cuda blocks = gridSize1D threads = blockSize1D advect_particles_eruption(
 							mx,
 							my,
@@ -394,7 +399,7 @@ function main()
 							nyl,
 						)
 						synchronize()
-
+							=#
 						iSample = iSample + 1
 
 						is_eruption = true
@@ -413,6 +418,8 @@ function main()
 						gridSize1D = (npartcl + blockSize1D - 1) ÷ blockSize1D
 						#advect_particles_intrusion<<<gridSize1D, blockSize1D>>>(px, py, dike_a[idike], dike_b[idike], dike_x[idike], dike_y[idike], dike_t[idike], nu, G,
 								 #									ndikes[it - 1], npartcl);
+						#
+						#=
 						@cuda blocks = gridSize1D threads = blockSize1D advect_particles_intrusion(
 							px,
 							py,
@@ -426,7 +433,7 @@ function main()
 							ndikes[it],
 							npartcl,
 						)
-
+						=#
 						dike_start = particle_edges[idike]
 						dike_end = particle_edges[idike + 1]
 						np_dike = dike_end - dike_start
@@ -451,6 +458,7 @@ function main()
 
 						#advect_particles_intrusion<<<gridSize1D, blockSize1D>>>(mx, my, dike_a[idike], dike_b[idike], dike_x[idike], dike_y[idike], dike_t[idike], nu, G,
 						#ndikes[it - 1], nmarker);
+						#=
 						@cuda blocks = gridSize1D threads = blockSize1D advect_particles_intrusion(
 							mx,
 							my,
@@ -465,6 +473,7 @@ function main()
 							nmarker,
 						)
 						synchronize()
+						=#
 						nmarker += marker_edges[idike + 1] - marker_edges[idike]
 					end
 				end
@@ -560,6 +569,11 @@ function main()
 				pic_amount = pic_amount_tmp
 
 			end
+
+
+			@printf("%s writing debug results to disk  | ", bar2)
+			mailbox_out("julia_out.h5",T,C,staging,is_eruption,L,nx,ny,nxl,nyl);
+			return 0;
 
 			if (it % nout == 0 || is_eruption)
 				#auto tm = tic();

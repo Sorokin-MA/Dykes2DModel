@@ -16,4 +16,5 @@ Project.toml
 nvim-lspconfig
 *.vim
 *.norg
-
+*.h5
+untitled*

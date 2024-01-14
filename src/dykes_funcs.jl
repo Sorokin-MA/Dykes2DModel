@@ -709,17 +709,54 @@ function average(mfl, T, C, nl, nx, ny)
 end
 =#
 
-function mailbox_out(filename)
-	@time begin
-		@printf("%s writing results to disk  | ", bar2)
-		filename = "grid." * string(it) * ".h5"
-		fid = h5open(filename, "w")
+function write_h5(filename,data)
+    file = joinpath(dir, "$(filename)")    
+    open(file, "w") do fid
+         write(fid, data)
+    end
+end
 
-		write_h5(fid, "T", T, staging, nx * ny)
-		write_h5(fid, "C", C, staging, nx * ny)
+function read_h5()
+    file = readdir(dir,join=true)[1]
+    fid  = HDF5.h5open(file, "r")["Data"]
+    data = fid["data"] |> read
+    d = Dict("data" => data)
+    close(fid)
+    return d
+end
+
+
+#function to write data to hdf5 file for debug
+function mailbox_out(filename,T,C,staging,is_eruption,L,nx,ny,nxl,nyl)
+	@time begin
+		bar1 = "├──"
+		bar2 = "\t ├──"
+		#@printf("%s writing results to disk  | ", bar2)
+		#filename = "grid." * string(it) * ".h5"
+		
+		if isfile(filename)	
+			rm(filename)
+		end
+
+		fid = h5open(filename, "w")
+		#h5write(filename, "T", T)
+		#h5write(filename, "C", C)
+		
+		h_T = Array{Float64,1}(undef, nx*ny)	#array of double values from matlab script
+		h_C = Array{Float64,1}(undef, nx*ny)	#array of double values from matlab script
+		h_L = Array{Float64,1}(undef, nxl*nyl)	#array of double values from matlab script
+
+		copyto!(T, h_T)
+		copyto!(C, h_C)
+
+		write(fid, "T", h_T)
+		write(fid, "C", h_C)
+		#write(fid, "L", h_L)
+
 
 		if (is_eruption)
-			write_h5(fid, "L", L, staging, nxl * nyl)
+			copyto!(L, h_L)
+			write(fid, "L", h_L)
 		end
 
 		close(fid)
