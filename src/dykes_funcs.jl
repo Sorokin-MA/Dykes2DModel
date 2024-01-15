@@ -379,11 +379,11 @@ function blerp(x1, x2, y1, y2, f11, f12, f21, f22, x, y)
 	return invDxDy * (f11 * dx2 * dy2 + f12 * dx2 * dy1 + f21 * dx1 * dy2 + f22 * dx1 * dy1)
 end
 
-function g2p(ALL_PARAMS)
-	ip = blockIdx.x * blockDim.x + threadIdx.x
+function g2p!(T, T_old, C, wts, px, py, pT, pPh, lam_r_rhoCp, lam_m_rhoCp, L_Cp, T_top, T_bot, dx, dy, dt, pic_amount, nx, ny, npartcl, npartcl0)
+	ip = blockIdx().x * blockDim().x + threadIdx().x
 	
 	if ip > npartcl - 1
-		return
+		return nothing
 	end
 	
 	pxi = px[ip] / dx
@@ -402,6 +402,8 @@ function g2p(ALL_PARAMS)
 	T_pic = blerp(x1, x2, y1, y2, T[idc(ix1, iy1)], T[idc(ix1, iy2)], T[idc(ix2, iy1)], T[idc(ix2, iy2)], px[ip], py[ip])
 	T_flip = pT[ip] + T_pic - blerp(x1, x2, y1, y2, T_old[idc(ix1, iy1)], T_old[idc(ix1, iy2)], T_old[idc(ix2, iy1)], T_old[idc(ix2, iy2)], px[ip], py[ip])
 	pT[ip] = T_pic * pic_amount + T_flip * (1.0 - pic_amount)
+
+	return nothing
 end
 
 function assignUniqueLables(mf, L, tsh, nx, ny)
@@ -727,8 +729,8 @@ end
 
 
 #function to write data to hdf5 file for debug
-function mailbox_out(filename,T,C,staging,is_eruption,L,nx,ny,nxl,nyl)
-	@time begin
+function mailbox_out(filename,T,pT, C,staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl);
+@time begin
 		bar1 = "├──"
 		bar2 = "\t ├──"
 		#@printf("%s writing results to disk  | ", bar2)
@@ -742,14 +744,17 @@ function mailbox_out(filename,T,C,staging,is_eruption,L,nx,ny,nxl,nyl)
 		#h5write(filename, "T", T)
 		#h5write(filename, "C", C)
 		
-		h_T = Array{Float64,1}(undef, nx*ny)	#array of double values from matlab script
-		h_C = Array{Float64,1}(undef, nx*ny)	#array of double values from matlab script
-		h_L = Array{Float64,1}(undef, nxl*nyl)	#array of double values from matlab script
+		h_T = Array{Float64,1}(undef, nx*ny)			#array of double values from matlab script
+		h_C = Array{Float64,1}(undef, nx*ny)			#array of double values from matlab script
+		h_pT = Array{Float64,1}(undef, max_npartcl)		#array of double values from matlab script
+		h_L = Array{Float64,1}(undef, nxl*nyl)			#array of double values from matlab script
 
 		copyto!(T, h_T)
+		copyto!(pT, h_pT)
 		copyto!(C, h_C)
 
 		write(fid, "T", h_T)
+		write(fid, "pT", h_pT)
 		write(fid, "C", h_C)
 		#write(fid, "L", h_L)
 

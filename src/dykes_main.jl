@@ -250,8 +250,11 @@ function main()
 			#println("$kekw");
 
 			#changing only pT
-			#@cuda blocks = gridSize1D threads=blockSize1D g2p!(T, T_old, C, wts, px, py, pT, pPh, lam_r_rhoCp, lam_m_rhoCp, L_Cp, T_top, T_bot, dx, dy, dt, pic_amount, nx, ny, npartcl, npartcl0)
+			@cuda blocks = gridSize1D threads=blockSize1D g2p!(T, T_old, C, wts, px, py, pT, pPh, lam_r_rhoCp, lam_m_rhoCp, L_Cp, T_top, T_bot, dx, dy, dt, pic_amount, nx, ny, npartcl, npartcl0)
 
+			@printf("%s writing debug results to disk  | ", bar2)
+			mailbox_out("julia_out.h5",T,pT, C,staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl);
+			return 0;
 		#__________________________________________________________
 			gridSize1D = convert(
 				Int64,
@@ -572,7 +575,7 @@ function main()
 
 
 			@printf("%s writing debug results to disk  | ", bar2)
-			mailbox_out("julia_out.h5",T,C,staging,is_eruption,L,nx,ny,nxl,nyl);
+			mailbox_out("julia_out.h5",T,pT, C,staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl);
 			return 0;
 
 			if (it % nout == 0 || is_eruption)
