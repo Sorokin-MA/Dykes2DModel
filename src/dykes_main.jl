@@ -2,9 +2,7 @@ include("dykes_init.jl")
 include("dykes_funcs.jl")
 
 import Random
-
 function main()
-
 	#Initialization of inner random
 	Random.seed!(1234)
 
@@ -53,7 +51,7 @@ function main()
 
 	#char filename[1024];
 	filename = Array{Char,1}(undef, 1024)
-
+	is_eruption = false
 
 	io = open("pa.bin", "r")
 	read!(io, dpa)
@@ -121,6 +119,7 @@ function main()
 	npartcl0 = npartcl
 	max_npartcl = convert(Int64, npartcl * cap_frac) + particle_edges[ndikes_all+1]
 
+	println("max_npartcl")
 	println(max_npartcl)
 
 	nmarker0 = nmarker
@@ -131,7 +130,7 @@ function main()
 	#dim3 blockSize(16, 32);
 	# dim3 gridSize((nx + blockSize.x - 1) / blockSize.x, (ny + blockSize.y - 1) / blockSize.y);
 
-	T = CuArray{Float64,2}(undef, nx, ny)
+	T = CuArray{Float64,1}(undef, nx* ny)
 	T_old = CuArray{Float64,2}(undef, nx, ny)
 	C = CuArray{Float64,2}(undef, nx, ny)
 	wts = CuArray{Float64,2}(undef, nx, ny)
@@ -175,8 +174,8 @@ function main()
 	dike_x = Array{Float64,1}(undef, ndikes_all)
 	dike_y = Array{Float64,1}(undef, ndikes_all)
 	dike_t = Array{Float64,1}(undef, ndikes_all)
-	#NOTE:Dykes data upload takes time
 
+	#NOTE:Dykes data upload takes time
 	io = open("dikes.bin", "r");
 	read!(io, dike_a)
 	read!(io, dike_b)
@@ -222,24 +221,27 @@ function main()
 
 	fid = h5open(filename, "r")
 	T_h = read(fid, "T")
-	copyto!(T_h, T)
+	copyto!(T, T_h)
 	C_h = read(fid, "C")
-	copyto!(C_h, C)
+	copyto!(C, C_h)
 	close(fid)
 
 	#auto tm_all = tic();
+
+	global iSample = Int32(1)
 
 	bar1 = "├──"
 	bar2 = "\t ├──"
 	#bar2 = "\xb3  \xc3\xc4\xc4";
 
-	@time begin
+	#@time begin
 		#init
-		@time begin
+		#@time begin
 			@printf("%s initialization			  ", bar1)
 			pic_amount_tmp = pic_amount
 			pic_amount = 1.0
 
+			#global npartcl
 			blockSize1D = 768
 			gridSize1D = convert(Int64, floor((npartcl + blockSize1D - 1) / blockSize1D))
 
@@ -249,30 +251,47 @@ function main()
 			#kekw = idc(2, 4, nx)
 			#println("$kekw");
 
+			@printf("\nfirst g2p\n")
+	
+		#try
+			CUDA.@sync @cuda blocks = gridSize1D threads=blockSize1D g2p_test(T)
+			#@device_code_warntype
+			@printf("\nsecond g2p\n")
 			#changing only pT
 			@cuda blocks = gridSize1D threads=blockSize1D g2p!(T, T_old, C, wts, px, py, pT, pPh, lam_r_rhoCp, lam_m_rhoCp, L_Cp, T_top, T_bot, dx, dy, dt, pic_amount, nx, ny, npartcl, npartcl0)
 
-			@printf("%s writing debug results to disk  | ", bar2)
-			mailbox_out("julia_out.h5",T,pT, C,staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl);
-			return 0;
+#=
+		catch err
+			code_typed(err; interactive = false)
+			@error "ERROR: " exception=(err, catch_backtrace())
+			@printf("\nops\n");
+			return nothing
+		end
+=#
 		#__________________________________________________________
 			gridSize1D = convert(
 				Int64,
 				floor((max_npartcl - npartcl + blockSize1D - 1) / blockSize1D),
 			)
 
-			#@cuda blocks = gridSize1D threads=blockSize1D init_particles_T(pT, T_magma, max_npartcl, npartcl);
+			#TODO: fix this func
+			@cuda blocks = gridSize1D threads=blockSize1D init_particles_T(pT+npartcl, T_magma, max_npartcl-npartcl);
+
+			@printf("%s writing debug results to disk  | ", bar2);
+			mailbox_out("julia_out.h5",T,pT, C,staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl);
+			return 0;
+
 			#@cuda blocks = gridSize1D threads=blockSize1D init_particles_T(pPh, 1, max_npartcl, npartcl);
 			gridSize1D = (max_nmarker - nmarker + blockSize1D - 1) / blockSize1D
 			#@cuda blocks = gridSize1D threads=blockSize1D init_particles_T(mT, T_magma, max_nmarker, nmarker);
 			synchronize()
 
 			pic_amount = pic_amount_tmp
-		end
+		#end
 
 		
 		idike = 1
-		iSample = Int32(1)
+		global iSample = Int32(1)
 
 		eruptionSteps = Vector{Int32}()
 
@@ -280,7 +299,7 @@ function main()
 		for it ∈ 1:nt
 			#action
 			@printf("%s it = %d", bar1, it)
-			is_eruption = false
+			global is_eruption = false
 			is_intrusion = (ndikes[it] > 0)
 
 			if (it % nerupt == 0)
@@ -367,8 +386,8 @@ function main()
 
 						copyto!(cell_idx, cell_idx_host)
 
-						blockSize1D = 512
-						gridSize1D = (npartcl + blockSize1D - 1) ÷ blockSize1D
+						local blockSize1D = 512
+						local gridSize1D = (npartcl + blockSize1D - 1) ÷ blockSize1D
 						#advect_particles_eruption<<<gridSize1D, blockSize1D>>>(px, py, cell_idx, gamma, dxl, dyl, npartcl, maxVol, nxl, nyl);
 						#=
 						@cuda blocks = gridSize1D threads = blockSize1D advect_particles_eruption(
@@ -403,7 +422,7 @@ function main()
 						)
 						synchronize()
 							=#
-						iSample = iSample + 1
+						global iSample = iSample + 1
 
 						is_eruption = true
 						append!(eruptionSteps, it)
@@ -416,9 +435,9 @@ function main()
 				@printf("%s inserting %02d dikes	   | ", bar2, ndikes[it])
 				@time begin
 					for i = 1:ndikes[it]
-						idike = idike + 1
-						blockSize1D = 512
-						gridSize1D = (npartcl + blockSize1D - 1) ÷ blockSize1D
+						global idike = idike + 1
+						local blockSize1D = 512
+						local gridSize1D = (npartcl + blockSize1D - 1) ÷ blockSize1D
 						#advect_particles_intrusion<<<gridSize1D, blockSize1D>>>(px, py, dike_a[idike], dike_b[idike], dike_x[idike], dike_y[idike], dike_t[idike], nu, G,
 								 #									ndikes[it - 1], npartcl);
 						#
@@ -477,7 +496,7 @@ function main()
 						)
 						synchronize()
 						=#
-						nmarker += marker_edges[idike + 1] - marker_edges[idike]
+						global nmarker += marker_edges[idike + 1] - marker_edges[idike]
 					end
 				end
 			end
@@ -490,8 +509,8 @@ function main()
 
 					#fill!(T, nx*ny)
 					#T = fill(Float64, nx*ny)
-					T = CUDA.zeros(Float64, nx * ny)
-					C = CUDA.zeros(Float64, nx * ny)
+					global T = CUDA.zeros(Float64, nx * ny)
+					global C = CUDA.zeros(Float64, nx * ny)
 					wts = CUDA.zeros(Float64, nx * ny)
 
 					blockSize1D = 768
@@ -613,11 +632,10 @@ function main()
 			break
 		end
 		@printf("\nTotal time: ")
-	end #for_time
+#	end #for_time
 
 	fid = open("eruptions.bin", "w")
 	write(fid, iSample)
 	write(fid, eruptionSteps)
 	close(fid)
-
 end

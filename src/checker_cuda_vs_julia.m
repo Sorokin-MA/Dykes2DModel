@@ -4,22 +4,25 @@ filename_cuda = "cuda_out.h5"
 fd = H5F.open(filename_julia,'H5F_ACC_RDONLY','H5P_DEFAULT') ;
 fd_info = H5F.get_info(fd);
 
-T_julia = h5read(filename_julia,'/T');
+T_julia = h5read(filename_julia,'/pT');
 C_julia= h5read(filename_julia,'/C');
 
-T_julia = reshape(T_julia, 4000,[]);
+%T_julia = reshape(T_julia, 4000,[]);
 C_julia = reshape(C_julia, 4000,[]);
 
 fd = H5F.open(filename_cuda,'H5F_ACC_RDONLY','H5P_DEFAULT') ;
 fd_info = H5F.get_info(fd);
 
-T_cuda = h5read(filename_cuda,'/T');
+T_cuda = h5read(filename_cuda,'/pT');
 C_cuda= h5read(filename_cuda,'/C');
 
-T_cuda = reshape(T_cuda, 4000,[]);
+%T_cuda = reshape(T_cuda, 4000,[]);
 C_cuda = reshape(C_cuda, 4000,[]);
 
+max(T_julia-T_cuda(:))
 
+
+%{
 figure
 
 %T_julia
@@ -72,3 +75,4 @@ colorbar
 
 %T_julia = h5read(filename_1_pr,'/T');
 %C_julia= h5read(filename_1_pr,'/C');
+%}

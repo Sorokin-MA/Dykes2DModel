@@ -10,6 +10,7 @@
 	#Pkg.add("BenchmarkTools")
 	#Pkg.add("Random")
 	
+	using Cthulhu
 	using Debugger
 	using CUDA
 	using Printf

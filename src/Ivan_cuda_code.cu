@@ -789,6 +789,29 @@ int main() {
   dim3 blockSize1D(768);
   dim3 gridSize1D((npartcl + blockSize1D.x - 1) / blockSize1D.x);
   g2p<<<gridSize1D, blockSize1D>>>(ALL_ARGS);
+		if (1 ) {
+            auto tm = tic();
+            printf("%s writing results to disk  \xb3 ", bar2);
+            //sprintf(filename, "grid.%0*d.h5", NDIGITS, it);
+            sprintf(filename, "c:\\WORKSPACE\\dykes_julia\\Dykes2DModel\\src\cuda_out.h5");
+            hsize_t dims[] = { (hsize_t)ny, (hsize_t)nx };
+            hsize_t chunks[] = { (hsize_t)ny, (hsize_t)nx };
+            fid = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+            write_h5d(fid, T, SIZE_2D(nx, ny, double), dims, chunks, staging);
+            write_h5d(fid, pT, SIZE_1D(max_npartcl, double), dims, chunks, staging);
+            CUCHECK(cudaMemcpy(staging, T, nx*ny, cudaMemcpyDeviceToHost));                                                                                               \
+            printf("\nqwrr - %f, staging\n", (double)(((double*)staging)[1]));
+            write_h5d(fid, C, SIZE_2D(nx, ny, double), dims, chunks, staging);
+            printf("\nqwrr - %f, staging\n", (double)(((double*)staging)[1]));
+            if (is_eruption) {
+                hsize_t dims[] = { (hsize_t)nyl, (hsize_t)nxl };
+                hsize_t chunks[] = { (hsize_t)nyl, (hsize_t)nxl };
+                write_h5i(fid, L, SIZE_2D(nxl, nyl, int), dims, chunks, staging);
+            }
+            H5Fclose(fid);
+            toc(tm);
+			return 0;
+		}
   gridSize1D.x = (max_npartcl - npartcl + blockSize1D.x - 1) / blockSize1D.x;
   init_particles_T<<<gridSize1D, blockSize1D>>>(pT + npartcl, T_magma, max_npartcl - npartcl);
   init_particles_Ph<<<gridSize1D, blockSize1D>>>(pPh + npartcl, 1, max_npartcl - npartcl);
