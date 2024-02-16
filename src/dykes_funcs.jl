@@ -715,6 +715,18 @@ function toc(start)
 	println(elapsed_time, " s")
 end
 
+function init_particles_T(pT, T_magma, npartcl)
+	ip = (blockIdx().x-1) * blockDim().x + threadIdx().x
+
+	if (ip > (npartcl))
+		return
+	end
+
+	pT[ip] = T_magma
+	return
+end
+
+
 #=
 function g2p!(T, T_old, C, wts, px, py, pT, pPh, lam_r_rhoCp, lam_m_rhoCp, L_Cp, T_top, T_bot, dx, dy, dt, pic_amount, nx, ny, npartcl, npartcl0)
 	ip = blockIdx().x * blockDim().x + threadIdx().x;
@@ -746,16 +758,6 @@ end
 
 
 
-function init_particles_T(pT, T_magma, maxpartcl, npartcl)
-	ip = blockIdx().x * blockDim().x + threadIdx().x
-
-	if (ip > (maxpartcl - npartcl - 1))
-		return
-	end
-
-	pT[ip+npartcl] = T_magma
-	return
-end
 
 #avg += mf_magma(T[idc(ix, iy, nx)]) * vf + mf_rock(T[idc(ix, iy, nx)]) * (1 - vf);
 function mf_magma(T)
@@ -822,7 +824,7 @@ end
 
 
 #function to write data to hdf5 file for debug
-function mailbox_out(filename,T,pT, C,staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl);
+function mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl,max_nmarker);
 @time begin
 		bar1 = "├──"
 		bar2 = "\t ├──"
@@ -840,20 +842,23 @@ function mailbox_out(filename,T,pT, C,staging,is_eruption,L,nx,ny,nxl,nyl,max_np
 		h_T = Array{Float64,1}(undef, nx*ny)			#array of double values from matlab script
 		h_C = Array{Float64,1}(undef, nx*ny)			#array of double values from matlab script
 		h_pT = Array{Float64,1}(undef, max_npartcl)		#array of double values from matlab script
+		h_mT = Array{Float64,1}(undef, max_nmarker)		#array of double values from matlab script
 		h_L = Array{Float64,1}(undef, nxl*nyl)			#array of double values from matlab script
 
-		copyto!(T, h_T)
-		copyto!(pT, h_pT)
-		copyto!(C, h_C)
+		copyto!(h_T, T)
+		copyto!(h_pT, pT)
+		copyto!(h_mT, mT)
+		copyto!(h_C, C)
 
 		write(fid, "T", h_T)
 		write(fid, "pT", h_pT)
+		write(fid, "mT", h_mT)
 		write(fid, "C", h_C)
 		#write(fid, "L", h_L)
 
 
 		if (is_eruption)
-			copyto!(L, h_L)
+			copyto!(h_L, L)
 			write(fid, "L", h_L)
 		end
 
