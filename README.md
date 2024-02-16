@@ -9,11 +9,14 @@ A project aimed at numerical modeling of the formation of dikes and silos. The c
 ### Dependencies
 
 CUDA.jl
+HDF5.jl
+Random.jl
 
 ### Executing program
 ```
 julia
-include("dykes.jl")
+include("run.jl")
+main()
 ```
 
 ## References
