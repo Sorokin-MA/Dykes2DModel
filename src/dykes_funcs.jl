@@ -15,6 +15,26 @@ macro idc(ix, iy)
 	return :(iy * nx + ix)
 end
 
+"""
+Function to count 1D index based on 2D indexes.
+
+NOTE:
+2D indexes start with 0
+1D indexes start with 1
+It's all due to translation from CUDA code.
+Maybe will be fixed in the future.
+...
+# Arguments
+- `ix::Integer`: x coordinate in 2D, starts with 0.
+- `iy::Integer`: y coordinate in 2D, starts with 0.
+- `nx::Integer`: x dimension size.
+...
+"""
+function idc(ix, iy, nx)
+	return ((iy)*nx + ix+1)
+end
+
+
 #Functon to write number of CUDA device
 function kernel()
 	dev = Ref{Cint}()
@@ -70,6 +90,7 @@ function read_par(par, ipar)
 end
 
 
+#Averaging grid to particle
 function blerp(x1, x2, y1, y2, f11, f12, f21, f22, x, y)
 	invDxDy = 1.0 / ((x2 - x1) * (y2 - y1))
 
@@ -597,6 +618,18 @@ function inject_particles(px, py, pT, pPh, npartcl, pcnt, T, C, dx, dy, nx, ny, 
 	end
 end
 
+
+"""
+Function related with lables
+...
+# Arguments
+- `mf::CuArray`: Shortened array to decrease dimension of computation area.
+- `L::Integer=1`: ?.
+- `tsh::Integer`: ?.
+- `nx::CuArray`: ?.
+- `ny::CuArray`: ?.
+...
+"""
 function ccl(mf, L, tsh, nx, ny)
 	blockSize2D = (16, 32)
 	gridSize2D = ((nx + blockSize2D[1] - 1) ÷ blockSize2D[1], (ny + blockSize2D[2] - 1) ÷ blockSize2D[2])
