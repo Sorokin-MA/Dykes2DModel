@@ -18,3 +18,10 @@ nvim-lspconfig
 *.norg
 *.h5
 untitled*
+*.bat
+*.m
+*.m~
+*.swp
+*.un~
+*.bat~
+*.jpg
