@@ -89,7 +89,6 @@ function read_par(par, ipar)
 	return par_name_2, ipar_2
 end
 
-
 #Averaging grid to particle
 function blerp(x1, x2, y1, y2, f11, f12, f21, f22, x, y)
 	invDxDy = 1.0 / ((x2 - x1) * (y2 - y1))
@@ -103,12 +102,6 @@ function blerp(x1, x2, y1, y2, f11, f12, f21, f22, x, y)
 	return invDxDy * (f11 * dx2 * dy2 + f12 * dx2 * dy1 + f21 * dx1 * dy2 + f22 * dx1 * dy1)
 end
 
-function dmf_basalt(T)
-	t1 = T * T
-	t11 = exp(0.143636887899999948e3 - 0.2214446257e-6 * t1 * T + t1 * 0.572468110399999928e-3 + T * (-0.494427718499999891e0))
-	t14 = (0.1e1 + t11) ^ 0.2e1
-	return 0.6643338771e-6 * (t1 - 0.1723434948e4 * T + 0.7442458310e6) * t11 / t14
-end
 
 function dmf_rhyolite(T)
 	t1 = T * T
@@ -117,13 +110,14 @@ function dmf_rhyolite(T)
 	return 0.559856e-5 / t12 * t9 * (t1 - 0.160022e4 * T + 0.641326e6)
 end
 
-#mb not working the way it should
-function mf_basalt(T)
-	T = T / 1000
-	t2 = T * T
-	t7 = exp(143.636887935970 - 494.427718497039 * T + 572.468110446565 * t2 - 221.444625682461 * t2 * T)
-	return 0.1 / (0.1 + t7)
+
+function dmf_basalt(T)
+	t1 = T * T
+	t11 = exp(0.143636887899999948e3 - 0.2214446257e-6 * t1 * T + t1 * 0.572468110399999928e-3 + T * (-0.494427718499999891e0))
+	t14 = (0.1e1 + t11) ^ 0.2e1
+	return 0.6643338771e-6 * (t1 - 0.1723434948e4 * T + 0.7442458310e6) * t11 / t14
 end
+
 
 #TODO: fix
 function mf_rhyolite(T)
@@ -133,11 +127,51 @@ function mf_rhyolite(T)
 	return 0.1 / (0.1 + t7)
 end
 
-macro mf_magma(T)
+
+#mb not working the way it should
+function mf_basalt(T)
+#	T = T / 1000
+#	t2 = T * T
+#	t7 = exp(143.636887935970 - 494.427718497039 * T + 572.468110446565 * t2 - 221.444625682461 * t2 * T)
+#	return 0.1 / (0.1 + t7)
+
+#  T=T/1000;
+#  t2 = T * T;
+#  t7 = exp(143.636887935970 - 494.427718497039*T + 572.468110446565*t2 - 221.444625682461*t2*T);
+#  return 0.1e1/(0.1e1 + t7);
+	return 0
+end
+
+
+#if !defined(dmf_magma)
+#define dmf_magma dmf_rhyolite
+#endif
+
+#if !defined(dmf_rock)
+#define dmf_rock dmf_rhyolite
+#endif
+
+#if !defined(mf_magma)
+#define mf_magma mf_rhyolite
+#endif
+
+#if !defined(mf_rock)
+#define mf_rock mf_rhyolite
+#endif
+
+function dmf_magma(T)
 	return dmf_rhyolite(T)
 end
 
-macro mf_rock(T)
+function dmf_rock(T)
+	return dmf_rhyolite(T)
+end
+
+function mf_magma(T)
+	return mf_rhyolite(T)
+end
+
+function mf_rock(T)
 	return mf_rhyolite(T)
 end
 
