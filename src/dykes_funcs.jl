@@ -175,34 +175,46 @@ function mf_rock(T)
 	return mf_rhyolite(T)
 end
 
-function update_T(ALL_PARAMS)
-	#ix, iy = @indices()
-	#TODO:fix indexes
-	if ix > nx - 1 || iy > ny - 1
+
+
+#=
+macro mf_magma(T)
+	return dmf_rhyolite(T)
+end
+=#
+
+
+function update_T!(T,  T_old, T_top, T_bot, C, lam_r_rhoCp, lam_m_rhoCp, L_Cp, dx, dy, dt, nx, ny)
+	ix = (blockIdx().x-1) * blockDim().x + threadIdx().x
+	iy = (blockIdx().y-1) * blockDim().y + threadIdx().y - 1
+
+	if (ix > nx) || (iy > (ny-1))
 		return
 	end
 
 	qxw, qxe, qys, qyn = 0.0, 0.0, 0.0, 0.0
 
-	if ix == 0
+	if ix == 1
 		qxw = 0.0
 	else
-		qxw = -(T[iy * nx + ix] - T[idc(ix - 1, iy)]) / dx
+		qxw = -(T[iy * nx + ix] - T[ix - 1 + (nx * iy)]) / dx
 	end
 
-	if ix == nx - 1
+	if ix == nx
 		qxe = 0.0
 	else
-		qxe = -(T[iy * nx + ix +1] - T[iy * nx + ix]) / dx
+		qxe = -(T[iy * nx + ix + 1] - T[iy * nx + ix]) / dx
 	end
+
 
 	if iy == 0
 		qys = -2.0 * (T[iy * nx + ix] - T_bot) / dy
 	else
-		qys = -(T[iy * nx + ix] - T[idc(ix, iy - 1)]) / dy
+		qys = -(T[iy * nx + ix] - T[ix + nx * (iy-1)]) / dy
 	end
 
-	if iy == ny - 1
+
+	if iy == (ny-1)
 		qyn = -2.0 * (T_top - T[iy * nx + ix]) / dy
 	else
 		qyn = -(T[((iy + 1) * nx + ix)] - T[iy * nx + ix]) / dy
@@ -214,6 +226,7 @@ function update_T(ALL_PARAMS)
 	chi = lam_rhoCp / (1.0 + L_Cp * dmf)
 
 	T[iy * nx + ix] += -dt * chi * ((qxe - qxw) / dx + (qyn - qys) / dy)
+	return
 end
 
 function init_particles_Ph(pPh::Ptr{Int8}, ph::Int8, npartcl::Int)

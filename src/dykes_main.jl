@@ -572,15 +572,18 @@ function main()
 			end
 
 
+			#solving heat equation
+			#NOTE:difference like 2.e-1
 			@time begin
 				@printf("%s solving heat diffusion   | ", bar2)
 
-				copyto!(T, T_old)
-				for isub = 0:nsub
-					#update_T<<<gridSize, blockSize>>>(ALL_ARGS);
+				copyto!(T_old, T)
+				for isub = 0:nsub-1
+					@cuda blocks=gridSize[1],gridSize[2] threads=blockSize[1],blockSize[2] update_T!(T,  T_old, T_top, T_bot, C, lam_r_rhoCp, lam_m_rhoCp, L_Cp, dx, dy, dt, nx, ny);
 					synchronize()
 				end
 			end
+
 
 			@time begin
 				@printf("%s g2p interpolation		| ", bar2)
