@@ -585,33 +585,32 @@ function main()
 			end
 
 
+			#g2p interpolation
 			@time begin
 				@printf("%s g2p interpolation		| ", bar2)
 				#particles g2p
 				blockSize1D = 1024
 				gridSize1D = (npartcl + blockSize1D - 1) ÷ blockSize1D
-				#g2p<<<gridSize1D, blockSize1D>>>(ALL_ARGS);
-				#@cuda blocks = gridSize1D threads=blockSize1D g2p!(T, T_old, C, wts, px, py, pT, pPh, lam_r_rhoCp, lam_m_rhoCp, L_Cp, T_top, T_bot, dx, dy, dt, pic_amount, nx, ny, npartcl, npartcl0)
+				@cuda blocks = gridSize1D threads=blockSize1D g2p!(T, T_old, px, py, pT, dx, dy, pic_amount, nx, ny, npartcl)
 
 				#markers g2p
 				gridSize1D = (nmarker + blockSize1D - 1) ÷ blockSize1D
 				pic_amount_tmp = pic_amount
 				pic_amount = 1.0
-				#g2p<<<gridSize1D, blockSize1D>>>(T, T_old, C, wts, mx, my, mT, NULL, lam_r_rhoCp, lam_m_rhoCp, L_Cp, T_top, T_bot, dx, dy, dt, pic_amount, nx, ny, nmarker,
-				#			 nmarker0);
-				#@cuda blocks = gridSize1D threads=blockSize1D g2p!(T, T_old, C, wts, px, py, pT, pPh, lam_r_rhoCp, lam_m_rhoCp, L_Cp, T_top, T_bot, dx, dy, dt, pic_amount, nx, ny, npartcl, npartcl0)
+				@cuda blocks = gridSize1D threads=blockSize1D g2p!(T, T_old, mx, my, mT, dx, dy, pic_amount, nx, ny, nmarker);
 				synchronize()
 				pic_amount = pic_amount_tmp
-
 			end
 
-
-			@printf("%s writing debug results to disk  | ", bar2)
-			mailbox_out("julia_out.h5",T,pT, C,staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl);
+			@printf("\n%s writing debug results to disk  | ", bar2);
+			mailbox_out("julia_out.h5",T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl, max_nmarker);
 			return 0;
 
+			#FIXME:check translate to Julia from cuda
+			#writing results (T and C) if there is eruption or its time to
+			#NOTE:dont need that while debugging
+			if(0)
 			if (it % nout == 0 || is_eruption)
-				#auto tm = tic();
 				@time begin
 					@printf("%s writing results to disk  | ", bar2)
 					filename = "grid." * string(it) * ".h5"
@@ -627,8 +626,11 @@ function main()
 					close(fid)
 				end
 			end
+			end
 
-
+			#FIXME:check translate to Julia from cuda
+			#NOTE:writing markers to disk
+			if(0)
 			@time begin
 				@printf("%s writing markers to disk  | ", bar2)
 				filename = "markers.h5"
@@ -642,10 +644,11 @@ function main()
 				close(fid)
 			end
 
+			end
+
 			break
 		end
 		@printf("\nTotal time: ")
-#	end #for_time
 
 	fid = open("eruptions.bin", "w")
 	write(fid, iSample)

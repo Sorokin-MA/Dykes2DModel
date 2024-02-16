@@ -229,14 +229,15 @@ function update_T!(T,  T_old, T_top, T_bot, C, lam_r_rhoCp, lam_m_rhoCp, L_Cp, d
 	return
 end
 
-function init_particles_Ph(pPh::Ptr{Int8}, ph::Int8, npartcl::Int)
+function init_particles_Ph(pPh, ph, npartcl)
 	ip = (blockIdx().x - 1) * blockDim().x + threadIdx().x
 
-	if ip > npartcl - 1
+	if ip > npartcl
 		return
 	end
 
-	unsafe_store!(pPh, ip, ph)
+	pPh[ip] = ph;
+	return
 end
 
 function sign(val)
@@ -453,20 +454,12 @@ function kernel_2(a)
     return
 end
 
-function g2p_test(T)
-	jj = 1
-	return nothing
-end
 
-function idc(ix, iy, nx)
-           return (iy*nx + ix)
-end
 
-function g2p!(T, T_old, C, wts, px, py, pT, pPh, lam_r_rhoCp, lam_m_rhoCp, L_Cp, T_top, T_bot, dx, dy, dt, pic_amount, nx, ny, npartcl, npartcl0)
+function g2p!(T, T_old, px, py, pT, dx, dy, pic_amount, nx, ny, npartcl)
 	ip = (blockIdx().x-1) * blockDim().x + threadIdx().x
 	
-	#@cuprintln("%d\n", ip)
-	if ip > (npartcl - 1)
+	if ip > (npartcl)
 		return nothing
 	end
 	
@@ -476,9 +469,9 @@ function g2p!(T, T_old, C, wts, px, py, pT, pPh, lam_r_rhoCp, lam_m_rhoCp, L_Cp,
 	#@cuprintln(typeof(pxi))
 
 	#pxi = Int32(pxi)
-	ix1 = min(max(Int64(floor(pxi)), 1), nx - 2)
+	ix1 = min(max(Int64(floor(pxi)), 0), nx - 2)
 	#ix1_int::Int = ix1
-	iy1 = min(max(Int64(floor(pyi)), 1), ny - 2)
+	iy1 = min(max(Int64(floor(pyi)), 0), ny - 2)
 	ix2 = ix1 + 1
 	iy2 = iy1 + 1
 	
@@ -487,7 +480,6 @@ function g2p!(T, T_old, C, wts, px, py, pT, pPh, lam_r_rhoCp, lam_m_rhoCp, L_Cp,
 	y1 = Float64(iy1) * dy
 	y2 = Float64(iy2) * dy
 
-	#T_pic = blerp(x1, x2, y1, y2, 1, 1, 1, T[idc(ix2, iy2, nx)], px[ip], py[ip])
 	T_pic = blerp(x1, x2, y1, y2, T[idc(ix1, iy1, nx)], T[idc(ix1, iy2, nx)], T[idc(ix2, iy1, nx)], T[idc(ix2, iy2, nx)], px[ip], py[ip])
 	T_flip = pT[ip] + T_pic - blerp(x1, x2, y1, y2, T_old[idc(ix1, iy1, nx)], T_old[idc(ix1, iy2, nx)], T_old[idc(ix2, iy1, nx)], T_old[idc(ix2, iy2, nx)], px[ip], py[ip])
 	pT[ip] = T_pic * pic_amount + T_flip * (1.0 - pic_amount)
