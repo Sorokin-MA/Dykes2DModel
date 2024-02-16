@@ -297,12 +297,17 @@ function main()
 		eruptionSteps = Vector{Int32}()
 
 		#Main loop
-		for it ∈ 1:nt
+		#for it ∈ 1:nt
+		for it in 1:nt
 			#action
 			@printf("%s it = %d", bar1, it)
-			global is_eruption = false
-			is_intrusion = (ndikes[it] > 0)
+			is_eruption = false
+			#is_intrusion = (ndikes[it] > 0)
+			is_intrusion = false
+			nerupt = 1000;
 
+			#FIXME:translate to Julia from cuda
+			#processing eruptions, checking melt fraction
 			if (it % nerupt == 0)
 				@time begin
 					@printf("\n%s checking melt fraction   | ", bar2)
@@ -313,15 +318,15 @@ function main()
 						(nyl + blockSizel[2] - 1) ÷ blockSizel[2],
 					)
 
-					#TODO:Wrong functionns with reologyy inside
+					#NOTE:Wrong functionns with rheology inside
 					@cuda blocks = gridSizel threads=blockSizel average(mfl, T, C, nl, nx, ny);
 
 					#Усредняется по температуре относительно содержания магмы и вмещающей породы
-					#для уменьшенной сетки
+					#для уменьшенной сетки, меняется mfl
 					#average<<<gridSizel, blockSizel>>>(mfl, T, C, nl, nx, ny);
 					synchronize()
 
-					#checked
+					#checked?
 					ccl(mfl, L, tsh, nxl, nyl)
 
 					copyto!(L, L_host)
@@ -365,6 +370,7 @@ function main()
 				dxl = dx * nl
 				dyl = dy * nl
 
+				#checking eruption criteria
 				if (maxVol * dxl * dyl >= critVol[iSample])
 				#if (true)
 					@printf("%s erupting %07d cells   | ", bar2, maxVol)
@@ -432,6 +438,9 @@ function main()
 				end
 			end
 
+
+			#FIXME:translate to Julia from cuda
+			#processing intrusions
 			if (is_intrusion)
 				@printf("%s inserting %02d dikes	   | ", bar2, ndikes[it])
 				@time begin
@@ -503,7 +512,8 @@ function main()
 			end
 
 
-
+			#FIXME:translate to Julia from cuda
+			#if eruption or injection happend make new injection and some tricks with p2g
 			if (is_eruption || is_intrusion)
 				@printf("%s p2g interpolation		| ", bar2)
 				@time begin
@@ -525,6 +535,7 @@ function main()
 				end
 
 				@printf("%s particle injection	   | ", bar2)
+
 				@time begin
 
 
@@ -559,8 +570,6 @@ function main()
 
 				end
 			end
-
-
 
 
 			@time begin
