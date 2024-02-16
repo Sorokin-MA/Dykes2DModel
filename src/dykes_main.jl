@@ -2,6 +2,7 @@ include("dykes_init.jl")
 include("dykes_funcs.jl")
 
 import Random
+
 function main()
 	#Initialization of inner random
 	Random.seed!(1234)
@@ -31,8 +32,8 @@ function main()
 	nu = 0.0				#Poisson ratio of rock
 	G = 0.0					#E/(2*(1+nu));
 	dt = 0.0				#time step
-	dx = 0.0				#X dimension step
-	dy = 0.0				#Y dimension step
+	dx::Float64 = 0.0				#X dimension step
+	dy::Float64 = 0.0				#Y dimension step
 	eiter = 0.0				#epsilon?
 	pic_amount = 0.0		#?, 0.05
 
@@ -44,7 +45,7 @@ function main()
 	niter = 0				#?
 	nout = 0				#?
 	nsub = 0				#?
-	nerupt = 0				#number of eruptions
+	nerupt = 0				#how often check for eruptions
 	npartcl = 0				#number of particles
 	nmarker = 0				#number of markers
 	nSample = 0				#size of a Sample, 1000
@@ -95,6 +96,7 @@ function main()
 	critVol = Array{Float64,1}(undef, nSample)
 	read!(io, critVol)
 
+	#array 0 0 1 0 0 ... like, where 1 -instrusion
 	ndikes = Array{Int32,1}(undef, nt)
 	read!(io, ndikes)
 
@@ -127,14 +129,18 @@ function main()
 	max_nmarker = nmarker + marker_edges[ndikes_all+1]
 
 
-	#dim3 blockSize(16, 32);
-	# dim3 gridSize((nx + blockSize.x - 1) / blockSize.x, (ny + blockSize.y - 1) / blockSize.y);
+	#blockSize(16, 32);
+	#gridSize((nx + blockSize.x - 1) / blockSize.x, (ny + blockSize.y - 1) / blockSize.y);
 
-	T = CuArray{Float64,1}(undef, nx* ny)
-	T_old = CuArray{Float64,2}(undef, nx, ny)
-	C = CuArray{Float64,2}(undef, nx, ny)
-	wts = CuArray{Float64,2}(undef, nx, ny)
-	pcnt = CuArray{Int32,2}(undef, nx, ny)
+	blockSize = (16,32)
+	gridSize = (Int64(floor((nx + blockSize[1] - 1) / blockSize[1])), Int64(floor((ny + blockSize[2] - 1) / blockSize[2])))
+
+
+	global T = CuArray{Float64,1}(undef, nx* ny)
+	global T_old = CuArray{Float64,2}(undef, nx, ny)
+	global C = CuArray{Float64,2}(undef, nx, ny)
+	global wts = CuArray{Float64,2}(undef, nx, ny)
+	global pcnt = CuArray{Int32,2}(undef, nx, ny)
 
 	a = CuArray{Float64}(undef, (1, 2))
 
@@ -209,13 +215,22 @@ function main()
 	fid = h5open("markers.h5", "r")
 
 	obj = fid["0"]
-	read(obj, "mx")
-	read(obj, "my")
-	read(obj, "mT")
+
+	h_mx = Array{Float64,1}(undef, max_nmarker)
+	h_my = Array{Float64,1}(undef, max_nmarker)
+	h_mT = Array{Float64,1}(undef, max_nmarker)
+
+	h_mx = read(obj, "mx")
+	h_my = read(obj, "my")
+	h_mT = read(obj, "mT")
 
 	close(fid)
 
-	NDIGITS = 4
+	copyto!(mx, h_mx)
+	copyto!(my, h_my)
+	copyto!(mT, h_mT)
+
+	NDIGITS = 5
 
 	filename = "grid." * "0"^NDIGITS * "0" * ".h5"
 
@@ -228,10 +243,10 @@ function main()
 
 	#auto tm_all = tic();
 
-	global iSample = Int32(1)
+	iSample = Int32(1)
 
-	bar1 = "├──"
-	bar2 = "\t ├──"
+	bar1 = "\n├──"
+	bar2 = "\n\t ├──"
 	#bar2 = "\xb3  \xc3\xc4\xc4";
 
 	#@time begin
@@ -241,34 +256,15 @@ function main()
 			pic_amount_tmp = pic_amount
 			pic_amount = 1.0
 
-			#global npartcl
 			blockSize1D = 768
 			gridSize1D = convert(Int64, floor((npartcl + blockSize1D - 1) / blockSize1D))
 
-		#__________________________________________________________
-			#@cuda blocks = gridSize1D threads=blockSize1D g2p(@ALL_ARGS())
-
-			#kekw = idc(2, 4, nx)
-			#println("$kekw");
-
-			@printf("\nfirst g2p\n")
-	
-		#try
-			CUDA.@sync @cuda blocks = gridSize1D threads=blockSize1D g2p_test(T)
-			#@device_code_warntype
-			@printf("\nsecond g2p\n")
+			#NOTE:
 			#changing only pT
-			@cuda blocks = gridSize1D threads=blockSize1D g2p!(T, T_old, C, wts, px, py, pT, pPh, lam_r_rhoCp, lam_m_rhoCp, L_Cp, T_top, T_bot, dx, dy, dt, pic_amount, nx, ny, npartcl, npartcl0)
+			#grid ot particles interpolation
+			#differene with cuda like 6.e-8 for some reasons
+			@cuda blocks = gridSize1D threads=blockSize1D g2p!(T, T_old, px, py, pT, dx, dy, pic_amount, nx, ny, npartcl)
 
-#=
-		catch err
-			code_typed(err; interactive = false)
-			@error "ERROR: " exception=(err, catch_backtrace())
-			@printf("\nops\n");
-			return nothing
-		end
-=#
-		#__________________________________________________________
 			gridSize1D = convert(
 				Int64,
 				floor((max_npartcl - npartcl + blockSize1D - 1) / blockSize1D),
