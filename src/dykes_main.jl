@@ -270,16 +270,21 @@ function main()
 				floor((max_npartcl - npartcl + blockSize1D - 1) / blockSize1D),
 			)
 
-			#TODO: fix this func
-			@cuda blocks = gridSize1D threads=blockSize1D init_particles_T(pT+npartcl, T_magma, max_npartcl-npartcl);
+			pTs  = @view pT[npartcl+1:end];
+			@cuda blocks = gridSize1D threads=blockSize1D init_particles_T(pTs, T_magma, max_npartcl-npartcl);
 
-			@printf("%s writing debug results to disk  | ", bar2);
-			mailbox_out("julia_out.h5",T,pT, C,staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl);
-			return 0;
 
-			#@cuda blocks = gridSize1D threads=blockSize1D init_particles_T(pPh, 1, max_npartcl, npartcl);
-			gridSize1D = (max_nmarker - nmarker + blockSize1D - 1) / blockSize1D
-			#@cuda blocks = gridSize1D threads=blockSize1D init_particles_T(mT, T_magma, max_nmarker, nmarker);
+			#WARN:pPh not even used?
+			pPhs = @view pPh[npartcl+1:end];
+			@cuda blocks = gridSize1D threads=blockSize1D init_particles_Ph(pPhs, 1, max_npartcl - npartcl);
+	#
+
+			gridSize1D = Int64(floor((max_nmarker - nmarker + blockSize1D - 1) / blockSize1D))
+
+			#TODO:crosscheck with cuda
+			mTs = @view mT[nmarker+1:end];
+			@cuda blocks = gridSize1D threads=blockSize1D init_particles_T(mTs, T_magma, max_nmarker - nmarker);
+
 			synchronize()
 
 			pic_amount = pic_amount_tmp
@@ -287,7 +292,7 @@ function main()
 
 		
 		idike = 1
-		global iSample = Int32(1)
+		iSample = Int32(1)
 
 		eruptionSteps = Vector{Int32}()
 
