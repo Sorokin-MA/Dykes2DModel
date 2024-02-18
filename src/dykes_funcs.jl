@@ -245,14 +245,13 @@ function sign(val)
 end
 
 function cart2ellipt(f, x, y)
-	xi_eta = zeros(2)
-	xi_eta[1] = acosh(max(0.5 / f * (sqrt((x + f) * (x + f) + y * y) + sqrt((x - f) * (x - f) + y * y)), 1.0))
-	xi_eta[2] = acos(min(max(x / (f * cosh(xi_eta[1])), -1.0), 1.0)) * sign(y)
-	return xi_eta
+	xi_eta_1 = acosh(max(0.5 / f * (sqrt((x + f) * (x + f) + y * y) + sqrt((x - f) * (x - f) + y * y)), 1.0))
+	xi_eta_2 = acos(min(max(x / (f * cosh(xi_eta_1)), -1.0), 1.0)) * sign(y)
+	return xi_eta_1, xi_eta_2
 end
 
 function rot2d(x, y, sb, cb)
-	return  (x * cb - y * sb, x * sb + y * cb)
+	return  x * cb - y * sb, x * sb + y * cb
 end
 
 function crack_params(a, b, nu, G)
@@ -281,91 +280,55 @@ function disp_inf_stress(s, st, ct, c, nu, G, shxi, chxi, seta, ceta)
 		   2.0 * (c2eta * s2b - s2eta * c2b) * (ch2xi0 * ch2xi - sh2xi0 * sh2xi))
 	u_v = (s * c / (8.0 * n * G) * (hlda * shxi * ceta + hldb * chxi * seta),
 		   s * c / (8.0 * n * G) * (hlda * chxi * seta - hldb * shxi * ceta))
-	return u_v
+	return u_v[1],u_v[2]
 end
 
 function displacements(st, ct, p, s1, s3, f, x, y, nu, G)
-	x_y = rot2d(x, y, -st, ct)
-	if abs(x_y[1]) < 1e-10
-		x_y[1] = 1e-10
+	x_y_1, x_y_2 = rot2d(x, y, -st, ct)
+	if abs(x_y_1) < 1e-10
+		x_y_1 = 1e-10
 	end
-	if abs(x_y[2]) < 1e-10
-		x_y[2] = 1e-10
+	if abs(x_y_2) < 1e-10
+		x_y_2 = 1e-10
 	end
-	xi_eta = cart2ellipt(f, x_y[1], x_y[2])
-	seta = sin(xi_eta[2])
-	ceta = cos(xi_eta[2])
-	shxi = sinh(xi_eta[1])
-	chxi = cosh(xi_eta[1])
-	u_v1 = disp_inf_stress(s1 - p, st, ct, f, nu, G, shxi, chxi, seta, ceta)
-	u_v2 = disp_inf_stress(s3 - p, ct, -st, f, nu, G, shxi, chxi, seta, ceta)
+
+
+	xi_eta_1, xi_eta_2  = cart2ellipt(f, x_y_1, x_y_2)
+	seta = sin(xi_eta_2)
+	ceta = cos(xi_eta_2)
+	shxi = sinh(xi_eta_1)
+	chxi = cosh(xi_eta_1)
+	u_v1_1, u_v1_2  = disp_inf_stress(s1 - p, st, ct, f, nu, G, shxi, chxi, seta, ceta)
+	u_v2_1, u_v2_2 = disp_inf_stress(s3 - p, ct, -st, f, nu, G, shxi, chxi, seta, ceta)
 	I = shxi * seta
 	J = chxi * ceta
 	u3 = 0.25 * p * f / G * (J * (3.0 - 4.0 * nu) - J)
 	v3 = 0.25 * p * f / G * (I * (3.0 - 4.0 * nu) - I)
-	u_v = rot2d(u_v1[1] + u_v2[1] + u3, u_v1[2] + u_v2[2] + v3, st, ct)
-	u_v[1] = -u_v[1]
-	u_v[2] = -u_v[2]
-	return u_v
+
+	u_v_1, u_v_2 = rot2d(u_v1_1 + u_v2_1 + u3, u_v1_2 + u_v2_2 + v3, st, ct)
+	
+	return -u_v_1, -u_v_2
 end
 
 function advect_particles_intrusion(px, py, a, b, x, y, theta, nu, G, ndikes, npartcl)
 	ip = (blockIdx().x - 1) * blockDim().x + threadIdx().x
 
-	if ip > npartcl - 1
+	if ip > npartcl
 		return
 	end
 
-	p_a0 = crack_params(a, b, nu, G)
+	p_a0_1, p_a0_2 = crack_params(a, b, nu, G)
 	st = sin(theta)
 	ct = cos(theta)
-	u_v = displacements(st, ct, p_a0[1], 0, 0, p_a0[2], px[ip] - x, py[ip] - y, nu, G)
-	px[ip] += u_v[1]
-	py[ip] += u_v[2]
+	u_v_1, u_v_2  = displacements(st, ct, p_a0_1, 0, 0, p_a0_2, px[ip] - x, py[ip] - y, nu, G)
+
+	px[ip] = px[ip] + u_v_1
+	py[ip] = py[ip] + u_v_2
+
 	return nothing
 end
 
-function p2g_project(ALL_PARAMS)
-	ip = blockIdx().x * blockDim().x + threadIdx().x
-	
-	if ip > npartcl - 1
-		return
-	end
-	
-	pxi = px[ip] / dx
-	pyi = py[ip] / dy
-	
-	if pxi < -1 || pxi > nx || pyi < -1 || pyi > ny
-		return
-	end
-	
-	ix1 = min(max(Int(pxi), 0), nx - 2)
-	iy1 = min(max(Int(pyi), 0), ny - 2)
-	ix2 = ix1 + 1
-	iy2 = iy1 + 1
-	
-	k11 = max(1 - abs(pxi - ix1), 0.0) * max(1 - abs(pyi - iy1), 0.0)
-	k12 = max(1 - abs(pxi - ix1), 0.0) * max(1 - abs(pyi - iy2), 0.0)
-	k21 = max(1 - abs(pxi - ix2), 0.0) * max(1 - abs(pyi - iy1), 0.0)
-	k22 = max(1 - abs(pxi - ix2), 0.0) * max(1 - abs(pyi - iy2), 0.0)
-	
-	atomicAdd(T[idc(ix1, iy1)], k11 * pT[ip])
-	atomicAdd(T[idc(ix1, iy2)], k12 * pT[ip])
-	atomicAdd(T[idc(ix2, iy1)], k21 * pT[ip])
-	atomicAdd(T[idc(ix2, iy2)], k22 * pT[ip])
-	
-	pC = (pPh == nothing) ? (ip > npartcl0 ? 1.0 : 0.0) : Float64(pPh[ip])
-	
-	atomicAdd(C[idc(ix1, iy1)], k11 * pC)
-	atomicAdd(C[idc(ix1, iy2)], k12 * pC)
-	atomicAdd(C[idc(ix2, iy1)], k21 * pC)
-	atomicAdd(C[idc(ix2, iy2)], k22 * pC)
-	
-	atomicAdd(wts[idc(ix1, iy1)], k11)
-	atomicAdd(wts[idc(ix1, iy2)], k12)
-	atomicAdd(wts[idc(ix2, iy1)], k21)
-	atomicAdd(wts[idc(ix2, iy2)], k22)
-end
+#ALL_PARAMS T, T_old, C, wts, px, py, pT, pPh, lam_r_rhoCp, lam_m_rhoCp, L_Cp, T_top, T_bot, dx, dy, dt, pic_amount, nx, ny, npartcl, npartcl0
 
 function p2g_weight(ALL_PARAMS)
 	ix, iy = @indices()
@@ -379,10 +342,10 @@ function p2g_weight(ALL_PARAMS)
 	end
 end
 
-function p2g_project(ALL_PARAMS)
-	ip = blockIdx().x * blockDim().x + threadIdx().x
+function p2g_project!(T, C, wts, px, py, pT, pPh, dx, dy, nx, ny, npartcl, npartcl0)
+	ip = (blockIdx().x-1) * blockDim().x + threadIdx().x
 	
-	if ip > npartcl - 1
+	if ip > npartcl
 		return
 	end
 	
@@ -393,8 +356,8 @@ function p2g_project(ALL_PARAMS)
 		return
 	end
 	
-	ix1 = min(max(Int(pxi), 0), nx - 2)
-	iy1 = min(max(Int(pyi), 0), ny - 2)
+	ix1 = min(max(Int64(floor(pxi)), 0), nx - 2)
+	iy1 = min(max(Int64(floor(pyi)), 0), ny - 2)
 	ix2 = ix1 + 1
 	iy2 = iy1 + 1
 	
@@ -403,38 +366,59 @@ function p2g_project(ALL_PARAMS)
 	k21 = max(1 - abs(pxi - ix2), 0.0) * max(1 - abs(pyi - iy1), 0.0)
 	k22 = max(1 - abs(pxi - ix2), 0.0) * max(1 - abs(pyi - iy2), 0.0)
 	
-	atomicAdd(T[idc(ix1, iy1)], k11 * pT[ip])
+
+	CUDA.atomic_add!(pointer(T, idc(ix1, iy1, nx)),k11 * pT[ip])
+	CUDA.atomic_add!(pointer(T, idc(ix1, iy2, nx)),k12 * pT[ip])
+	CUDA.atomic_add!(pointer(T, idc(ix2, iy1, nx)),k21 * pT[ip])
+	CUDA.atomic_add!(pointer(T, idc(ix2, iy2, nx)),k22 * pT[ip])
+
+
+#=
+	atomicAdd(&T[idc(ix1, iy1)], k11 * pT[ip]);
 	atomicAdd(T[idc(ix1, iy2)], k12 * pT[ip])
 	atomicAdd(T[idc(ix2, iy1)], k21 * pT[ip])
 	atomicAdd(T[idc(ix2, iy2)], k22 * pT[ip])
+=#
 	
-	pC = (pPh == nothing) ? (ip > npartcl0 ? 1.0 : 0.0) : Float64(pPh[ip])
+	pC = (pPh == nothing) ? ((ip-1) > npartcl0 ? 1.0 : 0.0) : Float64(pPh[ip])
 	
+
+	CUDA.atomic_add!(pointer(C, idc(ix1, iy1, nx)),k11 * pC)
+	CUDA.atomic_add!(pointer(C, idc(ix1, iy2, nx)),k12 * pC)
+	CUDA.atomic_add!(pointer(C, idc(ix2, iy1, nx)),k21 * pC)
+	CUDA.atomic_add!(pointer(C, idc(ix2, iy2, nx)),k22 * pC)
+
+
+#=
 	atomicAdd(C[idc(ix1, iy1)], k11 * pC)
 	atomicAdd(C[idc(ix1, iy2)], k12 * pC)
 	atomicAdd(C[idc(ix2, iy1)], k21 * pC)
 	atomicAdd(C[idc(ix2, iy2)], k22 * pC)
+=#
 	
+
+	CUDA.atomic_add!(pointer(wts, idc(ix1, iy1, nx)), k11)
+	CUDA.atomic_add!(pointer(wts, idc(ix1, iy2, nx)), k12)
+	CUDA.atomic_add!(pointer(wts, idc(ix2, iy1, nx)), k21)
+	CUDA.atomic_add!(pointer(wts, idc(ix2, iy2, nx)), k22)
+
+#=
+	wts[idc(ix1, iy1, nx)] += k11
+	wts[idc(ix1, iy2, nx)] += k12
+	wts[idc(ix2, iy1, nx)] += k21
+	wts[idc(ix2, iy2, nx)] += k22
+=#
+
+#=
 	atomicAdd(wts[idc(ix1, iy1)], k11)
 	atomicAdd(wts[idc(ix1, iy2)], k12)
 	atomicAdd(wts[idc(ix2, iy1)], k21)
 	atomicAdd(wts[idc(ix2, iy2)], k22)
+=#
+	return nothing
 end
 
-function p2g_weight(ALL_PARAMS)
-	ix, iy = @indices()
-	
-	if ix > nx - 1 || iy > ny - 1
-		return
-	end
-	
-	if wts[iy * nx + ix] == 0.0
-		return
-	end
-	
-	T[iy * nx + ix] /= wts[iy * nx + ix]
-	C[iy * nx + ix] /= wts[iy * nx + ix]
-end
+
 #=
 function blerp(x1, x2, y1, y2, f11, f12, f21, f22, x, y)
 	invDxDy = 1.0 / ((x2 - x1) * (y2 - y1))
