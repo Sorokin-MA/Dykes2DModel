@@ -8,7 +8,7 @@ macro GPU_ID()
 end
 
 macro indices()
-	return :(blockIdx().x* blockDim().x + threadIdx().x, blockIdx().y* blockDim().y + threadIdx().y)
+	return :((blockIdx().x-1)* blockDim().x + threadIdx().x, (blockIdx().y-1)* blockDim().y + threadIdx().y)
 end
 
 macro idc(ix, iy)
@@ -185,47 +185,47 @@ end
 
 
 function update_T!(T,  T_old, T_top, T_bot, C, lam_r_rhoCp, lam_m_rhoCp, L_Cp, dx, dy, dt, nx, ny)
-	ix = (blockIdx().x-1) * blockDim().x + threadIdx().x
+	ix = (blockIdx().x-1) * blockDim().x + threadIdx().x - 1
 	iy = (blockIdx().y-1) * blockDim().y + threadIdx().y - 1
 
-	if (ix > nx) || (iy > (ny-1))
+	if (ix > nx-1) || (iy > (ny-1))
 		return
 	end
 
-	qxw, qxe, qys, qyn = 0.0, 0.0, 0.0, 0.0
+	qxw::Float64, qxe::Float64, qys::Float64, qyn::Float64 = 0.0, 0.0, 0.0, 0.0
 
-	if ix == 1
+	if ix == 0
 		qxw = 0.0
 	else
-		qxw = -(T[iy * nx + ix] - T[ix - 1 + (nx * iy)]) / dx
+		qxw = -(T[idc(ix,iy,nx)] - T[idc(ix-1,iy,nx)]) / dx
 	end
 
-	if ix == nx
+	if ix == nx-1
 		qxe = 0.0
 	else
-		qxe = -(T[iy * nx + ix + 1] - T[iy * nx + ix]) / dx
+		qxe = -(T[idc(ix+1,iy,nx)] - T[idc(ix,iy,nx)]) / dx
 	end
 
 
 	if iy == 0
-		qys = -2.0 * (T[iy * nx + ix] - T_bot) / dy
+		qys = -2.0 * (T[idc(ix,iy,nx)] - T_bot) / dy
 	else
-		qys = -(T[iy * nx + ix] - T[ix + nx * (iy-1)]) / dy
+		qys = -(T[idc(ix,iy,nx)] - T[idc(ix,iy-1,nx)]) / dy
 	end
 
 
 	if iy == (ny-1)
-		qyn = -2.0 * (T_top - T[iy * nx + ix]) / dy
+		qyn = -2.0 * (T_top - T[idc(ix,iy,nx)]) / dy
 	else
-		qyn = -(T[((iy + 1) * nx + ix)] - T[iy * nx + ix]) / dy
+		qyn = -(T[idc(ix,iy+1,nx)] - T[idc(ix,iy,nx)]) / dy
 	end
 
-	dmf = dmf_magma(T[iy * nx + ix]) * C[iy * nx + ix] + dmf_rock(T[iy * nx + ix]) * (1.0 - C[iy * nx + ix])
-	lam_rhoCp = (lam_m_rhoCp * C[iy * nx + ix]) + lam_r_rhoCp * (1.0 - C[iy * nx + ix])
+	dmf::Float64 = dmf_magma(T[idc(ix,iy,nx)]) * C[idc(ix,iy,nx)] + dmf_rock(T[idc(ix,iy,nx)]) * (1.0 - C[idc(ix,iy,nx)])
+	lam_rhoCp::Float64 = (lam_m_rhoCp * C[idc(ix,iy,nx)]) + lam_r_rhoCp * (1.0 - C[idc(ix,iy,nx)])
 
-	chi = lam_rhoCp / (1.0 + L_Cp * dmf)
+	chi::Float64 = lam_rhoCp / (1.0 + L_Cp * dmf)
 
-	T[iy * nx + ix] += -dt * chi * ((qxe - qxw) / dx + (qyn - qys) / dy)
+	T[idc(ix,iy,nx)] += -dt * chi * ((qxe - qxw) / dx + (qyn - qys) / dy)
 	return
 end
 
@@ -256,7 +256,7 @@ end
 
 function crack_params(a, b, nu, G)
 
-	f = 2 * nu * (a + b) - 2 * a - b
+	f::Float64 = 2 * nu * (a + b) - 2 * a - b
 
 	return (-2 * b * G / f, 0.5 * f / (nu - 1))
 end
@@ -294,12 +294,15 @@ function displacements(st, ct, p, s1, s3, f, x, y, nu, G)
 
 
 	xi_eta_1, xi_eta_2  = cart2ellipt(f, x_y_1, x_y_2)
+	#xi_eta_1, xi_eta_2  = 1,1
 	seta = sin(xi_eta_2)
 	ceta = cos(xi_eta_2)
 	shxi = sinh(xi_eta_1)
 	chxi = cosh(xi_eta_1)
 	u_v1_1, u_v1_2  = disp_inf_stress(s1 - p, st, ct, f, nu, G, shxi, chxi, seta, ceta)
 	u_v2_1, u_v2_2 = disp_inf_stress(s3 - p, ct, -st, f, nu, G, shxi, chxi, seta, ceta)
+	#u_v1_1, u_v1_2  = 1,1
+	#u_v2_1, u_v2_2  = 1,1
 	I = shxi * seta
 	J = chxi * ceta
 	u3 = 0.25 * p * f / G * (J * (3.0 - 4.0 * nu) - J)
@@ -318,28 +321,36 @@ function advect_particles_intrusion(px, py, a, b, x, y, theta, nu, G, ndikes, np
 	end
 
 	p_a0_1, p_a0_2 = crack_params(a, b, nu, G)
+	#p_a0_1, p_a0_2 = 1, 1
 	st = sin(theta)
 	ct = cos(theta)
 	u_v_1, u_v_2  = displacements(st, ct, p_a0_1, 0, 0, p_a0_2, px[ip] - x, py[ip] - y, nu, G)
-
-	px[ip] = px[ip] + u_v_1
-	py[ip] = py[ip] + u_v_2
+	#u_v_1, u_v_2 = 1,1
+	px[ip] += u_v_1
+	py[ip] += u_v_2
 
 	return nothing
 end
 
 #ALL_PARAMS T, T_old, C, wts, px, py, pT, pPh, lam_r_rhoCp, lam_m_rhoCp, L_Cp, T_top, T_bot, dx, dy, dt, pic_amount, nx, ny, npartcl, npartcl0
 
-function p2g_weight(ALL_PARAMS)
-	ix, iy = @indices()
+
+function p2g_weight!(T, C, wts, nx, ny)
+	ix = (blockIdx().x-1) * blockDim().x + threadIdx().x
+	iy = (blockIdx().y-1) * blockDim().y + threadIdx().y-1
 	
-	if ix > nx - 1 || iy > ny - 1
+	if (ix > nx) || (iy > ny-1)
 		return
 	end
 	
 	if wts[iy * nx + ix] == 0.0
 		return
 	end
+	
+	T[iy * nx + ix] = T[iy * nx + ix] / wts[iy * nx + ix]
+	C[iy * nx + ix] = C[iy * nx + ix] / wts[iy * nx + ix]
+
+	return nothing
 end
 
 function p2g_project!(T, C, wts, px, py, pT, pPh, dx, dy, nx, ny, npartcl, npartcl0)
@@ -474,14 +485,14 @@ end
 function assignUniqueLables(mf, L, tsh, nx, ny)
 	ix, iy = @indices()
 	
-	if ix > nx - 1 || iy > ny - 1
+	if ix > nx  || iy > ny
 		return
 	end
 	
-	if mf[ix, iy] >= tsh
-		L[iy * nx + ix] = iy * nx + ix
+	if mf[(iy - 1) * nx + ix] >= tsh
+		L[(iy - 1) * nx + ix] = (iy - 1) * nx + ix
 	else
-		L[iy * nx + ix] = -1
+		L[(iy - 1)  * nx + ix] = -1
 	end
 	return nothing
 end
@@ -489,51 +500,54 @@ end
 function cwLabel(L, nx, ny)
 	iy = (blockIdx().x - 1) * blockDim().x + threadIdx().x
 	
-	if iy > ny - 1
+	if iy > ny
 		return
 	end
 	
-	for ix = nx - 2:-1:0
-		if L[iy * nx + ix] >= 0 && L[iy * nx + ix + 1] >= 0
-			L[iy * nx + ix] = L[iy * nx + ix + 1]
+	for ix = nx - 1:-1:1
+		if L[(iy-1) * nx + ix] >= 1 && L[(iy-1) * nx + ix + 1] >= 1
+			L[(iy-1) * nx + ix] = L[(iy-1)* nx + ix + 1]
 		end
 	end
 end
 
 function find_root(L, idx)
-	label = idx
+	label::Int64 = idx		#WARN:tuple by default, if not set Int64???
 	while L[label] != label
 		label = L[label]
 	end
 	return label
 end
 
-function merge_labels(L, div, nx, ny)
-	iy = (blockIdx().x) * blockDim().x + threadIdx().x
+function merge_labels(L, div, nx::Int64, ny)
+	iy = (blockIdx().x-1) * blockDim().x + threadIdx().x - 1
 	iy = div ÷ 2 + iy * div - 1
 	if iy > ny - 2
 		return
 	end
 
-	for ix in 1:nx
-		# if L[iy * nx + ix] >= 0 && L[((iy + 1) * nx + ix)] >= 0
-		#	 lroot = find_root(L, iy * nx + ix)
-		#	 rroot = find_root(L, ((iy + 1) * nx + ix))
-		#	 L[min(lroot, rroot)] = L[max(lroot, rroot)]
-		# end
+	for ix = 1:nx
+		if L[(iy) * nx + ix] >= 1 && L[(iy+1) * nx + ix] >= 1
+			lroot = find_root(L, (iy) * nx + ix)
+			rroot = find_root(L, ((iy+1) * nx + ix))
+			min_r = min(lroot, rroot)
+			max_r = max(lroot, rroot)
+			L[min_r] = L[max_r]
+		end
 	end
+
 	return nothing
 end
 
 function relabel(L, nx, ny)
 	ix, iy = @indices()
 
-	if ix > nx - 1 || iy > ny - 1
+	if ix > nx  || iy > ny
 		return
 	end
 
-	if L[iy * nx + ix] >= 0
-		L[iy * nx + ix] = find_root(L, iy * nx + ix)
+	if L[(iy-1) * nx + ix] >= 1
+	L[(iy-1) * nx + ix] = find_root(L, (iy-1) * nx + ix)
 	end
 	return nothing
 end
@@ -542,7 +556,7 @@ end
 function advect_particles_eruption(px, py, idx, gamma, dxl, dyl, npartcl, ncells, nxl, nyl)
 	ip = (blockIdx().x - 1 ) * blockDim().x + threadIdx().x
 
-	if ip > npartcl - 1
+	if ip > npartcl
 		return
 	end
 
@@ -574,71 +588,82 @@ function advect_particles_eruption(px, py, idx, gamma, dxl, dyl, npartcl, ncells
 	return nothing
 end
 
-function average(mfl, T, C, nl, nx, ny)
-	ixl = (blockIdx().x) * blockDim().x + threadIdx().x
-	iyl = (blockIdx().y) * blockDim().y + threadIdx().y
+function average!(mfl, T, C, nl, nx, ny)
+	ixl = (blockIdx().x-1) * blockDim().x + threadIdx().x-1
+	iyl = (blockIdx().y-1) * blockDim().y + threadIdx().y-1
 
 	if ixl > (nx ÷ nl - 1) || iyl > (ny ÷ nl - 1)
 		return
 	end
 
 	avg = 0.0
-	for ix = (ixl * nl + 1):(ixl + 1) * nl
+	for ix = (ixl * nl):((ixl + 1) * nl - 1)
 		if ix > nx - 1
 			break
 		end
-		for iy = (iyl * nl + 1):(iyl + 1) * nl
+		for iy = (iyl * nl):((iyl + 1) * nl - 1)
 			if iy > ny - 1
 				break
 			end
-			vf = C[iy * nx + ix]
-			avg = avg + (mf_rhyolite(T[(iy * nx + ix)])) * vf + mf_rhyolite(T[(iy * nx + ix)]) * (1 - vf)
+			vf = C[iy * nx + ix + 1]
+			avg = avg + (mf_magma(T[(iy * nx + ix + 1)])) * vf + mf_rock(T[(iy * nx + ix + 1)]) * (1 - vf)
 		end
 	end
-	avg = div(avg, (nl * nl))
-	mfl[iyl * (nx ÷ nl) + ixl] = avg
+	avg /= (nl * nl)
+	mfl[iyl * (nx ÷ nl) + ixl + 1] = avg
 	return nothing;
 end
 
 function count_particles(pcnt, px, py, dx, dy, nx, ny, npartcl)
 	ip = (blockIdx().x - 1) * blockDim().x + threadIdx().x
 
-	if ip > npartcl - 1
+	if ip > npartcl
 		return
 	end
 
 	pxi = px[ip] / dx
 	pyi = py[ip] / dy
 
-	ix = min(max(Int(pxi), 0), nx - 2)
-	iy = min(max(Int(pyi), 0), ny - 2)
+	#ix = min(max(Int64(pxi), 0), nx - 2)
+	#iy = min(max(Int64(pyi), 0), ny - 2)
 
-	atomicAdd(pcnt[iy * nx + ix], 1)
+	ix = min(max(Int64(floor(pxi)), 0), nx - 2)
+	iy = min(max(Int64(floor(pyi)), 0), ny - 2)
+
+	#ix1_int::Int = ix1
+
+	CUDA.atomic_add!(pointer(pcnt, iy * nx + ix + 1), Int64(1))
+
+	return nothing
 end
 
 function inject_particles(px, py, pT, pPh, npartcl, pcnt, T, C, dx, dy, nx, ny, min_pcount, max_npartcl)
+	ix = (blockIdx().x - 1) * blockDim().x + threadIdx().x - 1
+	iy = (blockIdx().y - 1) * blockDim().y + threadIdx().y - 1
+
 	if ix > nx - 2 || iy > ny - 2
 		return
 	end
 
-	if pcnt[iy * nx + ix] < min_pcount
-		for ioy = 1:2
-			for iox = 1:2
+	if pcnt[iy * nx + ix + 1] < min_pcount
+		for ioy = 0:1
+			for iox = 0:1
 				inx = ix + iox
 				iny = iy + ioy
-				new_npartcl = atomicAdd(npartcl, 1)
+				new_npartcl = CUDA.atomic_add!(pointer(npartcl, 1), Int32(1))
 				if new_npartcl > max_npartcl - 1
 					break
 				end
-				ip = new_npartcl
+				ip = new_npartcl+1
 				px[ip] = dx * inx
 				py[ip] = dy * iny
 
-				pT[ip] = T[idc(inx, iny)]
-				pPh[ip] = C[idc(inx, iny)] < 0.5 ? 0 : 1
+				pT[ip] = T[idc(inx, iny, nx)]
+				pPh[ip] = C[idc(inx, iny, nx)] < 0.5 ? 0 : 1
 			end
 		end
 	end
+	return nothing
 end
 
 
@@ -669,13 +694,15 @@ function ccl(mf, L, tsh, nx, ny)
 	end
 
 	div = 2
-	npw = convert(Int64,ceil(log2(ny)))
+	npw = Int64(ceil(log2(ny)))
 	nyw = 1 << npw
 	for i = 1:npw
-		gridSize1D = max((nyw + blockSize1D - 1) ÷ blockSize1D ÷ div, 1)
-		#CUDA.@sync begin
+		gridSize1D = Int64(floor(max((nyw + blockSize1D - 1) / blockSize1D / div, 1)))
+
+		CUDA.@sync begin
 			@cuda blocks = gridSize1D threads = blockSize1D merge_labels(L, div, nx, ny)
-		#end
+		end
+
 		div *= 2
 	end
 	
@@ -683,6 +710,7 @@ function ccl(mf, L, tsh, nx, ny)
 		@cuda blocks = gridSize2D threads = blockSize2D relabel(L, nx, ny)
 	end
 
+	return nothing
 end
 
 function printDeviceProperties(deviceId)
@@ -808,7 +836,7 @@ end
 
 
 #function to write data to hdf5 file for debug
-function mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl,max_nmarker);
+function mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl,max_nmarker, px,py,mx,my,h_px_dikes,pcnt);
 @time begin
 		bar1 = "├──"
 		bar2 = "\t ├──"
@@ -823,21 +851,39 @@ function mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,m
 		#h5write(filename, "T", T)
 		#h5write(filename, "C", C)
 		
+		h_pcnt = Array{Float64,1}(undef, nx*ny)			#array of double values from matlab script
 		h_T = Array{Float64,1}(undef, nx*ny)			#array of double values from matlab script
 		h_C = Array{Float64,1}(undef, nx*ny)			#array of double values from matlab script
 		h_pT = Array{Float64,1}(undef, max_npartcl)		#array of double values from matlab script
 		h_mT = Array{Float64,1}(undef, max_nmarker)		#array of double values from matlab script
 		h_L = Array{Float64,1}(undef, nxl*nyl)			#array of double values from matlab script
+		h_px = Array{Float64,1}(undef, max_npartcl)			#array of double values from matlab script
+		h_py = Array{Float64,1}(undef, max_npartcl)			#array of double values from matlab script
+		h_mx = Array{Float64,1}(undef, max_nmarker)			#array of double values from matlab script
+		h_my = Array{Float64,1}(undef, max_nmarker)			#array of double values from matlab script
 
+		copyto!(h_pcnt, pcnt)
 		copyto!(h_T, T)
 		copyto!(h_pT, pT)
 		copyto!(h_mT, mT)
 		copyto!(h_C, C)
 
+		copyto!(h_px, px)
+		copyto!(h_py, py)
+		copyto!(h_mx, mx)
+		copyto!(h_my, my)
+
+		write(fid, "pcnt", h_pcnt)
 		write(fid, "T", h_T)
 		write(fid, "pT", h_pT)
 		write(fid, "mT", h_mT)
 		write(fid, "C", h_C)
+
+		write(fid, "px", h_px)
+		write(fid, "py", h_py)
+		write(fid, "mx", h_mx)
+		write(fid, "my", h_my)
+		write(fid, "px_dikes", h_px_dikes)
 		#write(fid, "L", h_L)
 
 

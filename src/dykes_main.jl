@@ -137,10 +137,10 @@ function main()
 
 
 	T = CuArray{Float64,1}(undef, nx* ny)
-	T_old = CuArray{Float64,2}(undef, nx, ny)
-	C = CuArray{Float64,2}(undef, nx, ny)
-	wts = CuArray{Float64,2}(undef, nx, ny)
-	pcnt = CuArray{Int32,2}(undef, nx, ny)
+	T_old = CuArray{Float64,1}(undef, nx* ny)
+	C = CuArray{Float64,1}(undef, nx* ny)
+	wts = CuArray{Float64,1}(undef, nx* ny)
+	pcnt = CuArray{Int64,1}(undef, nx* ny)
 
 	a = CuArray{Float64}(undef, (1, 2))
 
@@ -159,7 +159,8 @@ function main()
 	mT = CuArray{Float64,1}(undef, max_nmarker)
 
 	staging = Array{Float64,1}(undef, max_npartcl)
-	npartcl_d = Array{Int32,1}(undef, 1)
+	npartcl_d = CuArray{Int32,1}(undef, 1)
+	npartcl_h = Array{Int32,1}(undef, 1)
 
 
 	nxl = convert(Int64, nx / nl)
@@ -173,7 +174,7 @@ function main()
 
 	L_host = Array{Int32,1}(undef, nxl * nyl)
 
-	mfl = CuArray{Float64,2}(undef, nxl, nyl)
+	mfl = CuArray{Float64,1}(undef, nxl* nyl)
 
 	dike_a = Array{Float64,1}(undef, ndikes_all)
 	dike_b = Array{Float64,1}(undef, ndikes_all)
@@ -243,7 +244,7 @@ function main()
 
 	#auto tm_all = tic();
 
-	iSample = Int32(1)
+	global iSample = Int32(1)
 
 	bar1 = "\n├──"
 	bar2 = "\n\t ├──"
@@ -261,7 +262,7 @@ function main()
 
 			#NOTE:
 			#changing only pT
-			#grid ot particles interpolation
+			#grid to particles interpolation
 			#differene with cuda like 6.e-8 for some reasons
 			@cuda blocks = gridSize1D threads=blockSize1D g2p!(T, T_old, px, py, pT, dx, dy, pic_amount, nx, ny, npartcl)
 
@@ -274,10 +275,8 @@ function main()
 			@cuda blocks = gridSize1D threads=blockSize1D init_particles_T(pTs, T_magma, max_npartcl-npartcl);
 
 
-			#WARN:pPh not even used?
 			pPhs = @view pPh[npartcl+1:end];
 			@cuda blocks = gridSize1D threads=blockSize1D init_particles_Ph(pPhs, 1, max_npartcl - npartcl);
-	#
 
 			gridSize1D = Int64(floor((max_nmarker - nmarker + blockSize1D - 1) / blockSize1D))
 
@@ -291,7 +290,7 @@ function main()
 
 		
 		idike = 0
-		iSample = Int32(1)
+		global iSample = Int32(1)
 
 		eruptionSteps = Vector{Int32}()
 
@@ -303,12 +302,13 @@ function main()
 			is_eruption = false
 			is_intrusion = (ndikes[it] > 0)
 			#is_intrusion = false
-			nerupt = 10000;
+			nerupt = 16;
 
 			#FIXME:translate to Julia from cuda
 			#processing eruptions, checking melt fraction
 			#if (it % nerupt == 0)
 			if (false)
+			
 				@time begin
 					@printf("\n%s checking melt fraction   | ", bar2)
 
@@ -318,24 +318,19 @@ function main()
 						(nyl + blockSizel[2] - 1) ÷ blockSizel[2],
 					)
 
-					#NOTE:Wrong functionns with rheology inside
-					@cuda blocks = gridSizel threads=blockSizel average(mfl, T, C, nl, nx, ny);
-
 					#Усредняется по температуре относительно содержания магмы и вмещающей породы
 					#для уменьшенной сетки, меняется mfl
 					#average<<<gridSizel, blockSizel>>>(mfl, T, C, nl, nx, ny);
+					@cuda blocks = gridSizel threads=blockSizel average!(mfl, T, C, nl, nx, ny);
+
 					synchronize()
 
 					#checked?
 					ccl(mfl, L, tsh, nxl, nyl)
 
-					copyto!(L, L_host)
-					#cudaMemcpy(L_host, L, SIZE_2D(nxl, nyl, int), cudaMemcpyDeviceToHost)
+					copyto!(L_host, L)
 
 					volumes = Dict{Int32,Int32}(-1 => 0)
-
-					#println("\n");
-					#println(volumes);
 
 					for iy = 0:(nyl - 1)
 						if (iy * dy * nl < Ly_eruption)
@@ -343,6 +338,7 @@ function main()
 						end
 						for ix = 1:nxl
 							if L_host[iy * nxl + ix] >= 0
+								#FIXME:for what?
 								if haskey(volumes, L_host[iy * nxl + ix])
 									volumes[L_host[iy * nxl + ix]] =
 										volumes[L_host[iy * nxl + ix]] + 1
@@ -371,8 +367,8 @@ function main()
 				dyl = dy * nl
 
 				#checking eruption criteria
-				if (maxVol * dxl * dyl >= critVol[iSample])
-				#if (true)
+				#if (maxVol * dxl * dyl >= critVol[iSample])
+				if (true)
 					@printf("%s erupting %07d cells   | ", bar2, maxVol)
 					@time begin
 
@@ -396,39 +392,17 @@ function main()
 						local blockSize1D = 512
 						local gridSize1D = (npartcl + blockSize1D - 1) ÷ blockSize1D
 						#advect_particles_eruption<<<gridSize1D, blockSize1D>>>(px, py, cell_idx, gamma, dxl, dyl, npartcl, maxVol, nxl, nyl);
-						#=
-						@cuda blocks = gridSize1D threads = blockSize1D advect_particles_eruption(
-							px,
-							py,
-							cell_idx,
-							gamma,
-							dxl,
-							dyl,
-							npartcl,
-							5,
-							nxl,
-							nyl,
-						)
+						
+						@cuda blocks = gridSize1D threads = blockSize1D advect_particles_eruption(px, py, cell_idx, gamma, dxl, dyl, npartcl, maxVol, nxl, nyl)
 						synchronize()
-						=#
+						
 						gridSize1D = (nmarker + blockSize1D - 1) ÷ blockSize1D
 
 						#advect_particles_eruption<<<gridSize1D, blockSize1D>>>(mx, my, cell_idx, gamma, dxl, dyl, nmarker, maxVol, nxl, nyl);
-						#=
-						@cuda blocks = gridSize1D threads = blockSize1D advect_particles_eruption(
-							mx,
-							my,
-							cell_idx,
-							gamma,
-							dxl,
-							dyl,
-							nmarker,
-							5,
-							nxl,
-							nyl,
-						)
+					
+						@cuda blocks = gridSize1D threads = blockSize1D advect_particles_eruption(mx, my, cell_idx, gamma, dxl, dyl, nmarker, maxVol, nxl, nyl)
 						synchronize()
-							=#
+
 						global iSample = iSample + 1
 
 						is_eruption = true
@@ -440,13 +414,13 @@ function main()
 
 
 			#processing intrusions
-		#FIXME: bad in one point
 			if (is_intrusion)
 			#if (false)
 				@printf("%s inserting %02d dikes	   | ", bar2, ndikes[it])
 				@time begin
 					for i = 1:ndikes[it]
 						idike = idike + 1
+					println(idike);
 						blockSize1D = 512
 						gridSize1D = (npartcl + blockSize1D - 1) ÷ blockSize1D
 
@@ -465,22 +439,6 @@ function main()
 							npartcl
 						)
 
-					#=
-						@printf("\nDebug\n")
-
-						px_1 = @view px[1:3];
-
-					px_1_h = Array{Float64, 1}(undef, 3)
-					copyto!(px_1_h, px_1)
-
-					@printf("\nDebug - %f\n", px_1_h[1]);
-					if(isnan(px_1_h[1]) )
-						return 0
-					end
-					=#
-
-						@printf("\nDebug\n")
-
 						dike_start = particle_edges[idike]
 						dike_end = particle_edges[idike + 1]
 						np_dike = dike_end - dike_start
@@ -491,18 +449,15 @@ function main()
 						end
 
 						
-						pxs = @view px[npartcl+1:npartcl+1+np_dike];
-						px_dikess = @view px_dikes[dike_start+1:dike_start+1+np_dike];
-						pys = @view py[npartcl+1:npartcl+1+np_dike];
-						py_dikess = @view py_dikes[dike_start+1:dike_start+1+np_dike];
+					pxs = @view px[(npartcl+1):(npartcl+np_dike)];
+					px_dikess = @view px_dikes[(dike_start+1):(dike_start+np_dike)];
+					pys = @view py[(npartcl+1):(npartcl+np_dike)];
+					py_dikess = @view py_dikes[(dike_start+1):(dike_start+np_dike)];
 						
 
-						#first_inds = CartesianIndices(npartcl+1, npartcl+1+np_dike)
-						#second_inds = CartesianIndices(dike_start+1, dike_start+1+np_dike)
 						copyto!(pxs, px_dikess)
 						copyto!(pys, py_dikess)
 					
-						@printf("\nDebug\n")
 
 						npartcl += np_dike
 
@@ -527,35 +482,26 @@ function main()
 
 						nmarker += marker_edges[idike + 1] - marker_edges[idike]
 
-						@printf("\nDebug\n")
 					end
 				end
 			end
 
 
-			#FIXME:translate to Julia from cuda
 			#if eruption or injection happend make new injection and some tricks with p2g
 			if (is_eruption || is_intrusion)
 			#if (false)
 				@printf("%s p2g interpolation		| ", bar2)
 				@time begin
 
-					#fill!(T, nx*ny)
-					#T = fill(Float64, nx*ny)
 				buf_arr = zeros(nx*ny)
 
 				copyto!(T, buf_arr)
 				copyto!(C, buf_arr)
 				copyto!(wts, buf_arr)
-					 #T = CUDA.zeros(Float64, nx * ny)
-					 #C = CUDA.zeros(Float64, nx * ny)
-					 #wts = CUDA.zeros(Float64, nx * ny)
 
 					blockSize1D = 512
 					gridSize1D = (npartcl + blockSize1D - 1) ÷ blockSize1D
 
-
-				println("\ntype of t is ", typeof(T))
 
 					#p2g_project<<<gridSize1D, blockSize1D>>>(ALL_ARGS);
 					@cuda blocks = gridSize1D threads = blockSize1D p2g_project!(T, C, wts, px, py, pT, pPh, dx, dy, nx, ny, npartcl, npartcl0)
@@ -563,12 +509,9 @@ function main()
 
 
 					#p2g_weight<<<gridSize, blockSize>>>(ALL_ARGS);
-					@cuda blocks = gridSize1D threads = blockSize1D p2g_weight!(T, C, wts, nx, ny)
+					@cuda blocks = gridSize threads = blockSize p2g_weight!(T, C, wts, nx, ny)
 					synchronize()
 
-					@printf("\n%s writing debug results to disk  | ", bar2);
-					mailbox_out("julia_out.h5",T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl, max_nmarker);
-					return 0;
 
 				end
 
@@ -579,18 +522,33 @@ function main()
 
 					blockSize1D = 512
 					gridSize1D = (npartcl + blockSize1D - 1) ÷ blockSize1D
-					pcnt = CUDA.zeros(Float64, nx * ny)
+
+					buf_arr_int = zeros(Int64,nx*ny)
+					copyto!(pcnt, buf_arr_int)
+
 					#count_particles<<<gridSize1D, blockSize1D>>>(pcnt, px, py, dx, dy, nx, ny, npartcl);
-					#@cuda blocks = gridSize1D threads=blockSize1D count_particles(pcnt, px, py, dx, dy, nx, ny, npartcl);
+					@cuda blocks = gridSize1D threads=blockSize1D count_particles(pcnt, px, py, dx, dy, nx, ny, npartcl);
 					synchronize()
 
-					npartcl_d[1] = npartcl
+					#CUDA.allowscalar(true)
+				
+					npartcl_h[1] = npartcl
+					copyto!(npartcl_d, npartcl_h);
+
 					min_pcount = 2
-					#inject_particles<<<gridSize, blockSize>>>(px, py, pT, pPh, npartcl_d, pcnt, T, C, dx, dy, nx, ny, min_pcount, max_npartcl);
-					synchronize()
-					new_npartcl = npartcl
 
-					npartcl = npartcl_d[1]
+					println(typeof(npartcl_d))
+					#inject_particles<<<gridSize, blockSize>>>(px, py, pT, pPh, npartcl_d, pcnt, T, C, dx, dy, nx, ny, min_pcount, max_npartcl);
+					@cuda blocks = gridSize threads=blockSize inject_particles(px, py, pT, pPh, npartcl_d, pcnt, T, C, dx, dy, nx, ny, min_pcount, max_npartcl);
+					synchronize()
+
+					new_npartcl = npartcl
+					#new_npartcl = npartcl_d[1]
+					copyto!(npartcl_h, npartcl_d)
+
+					new_npartcl = npartcl_h[1]
+
+					#CUDA.allowscalar(false)
 
 					if new_npartcl > max_npartcl
 						fprintf(
@@ -599,6 +557,7 @@ function main()
 						)
 						exit(EXIT_FAILURE)
 					end
+
 					if (new_npartcl > npartcl)
 						@printf("(%03d) | ", new_npartcl - npartcl)
 						npartcl = new_npartcl
@@ -607,11 +566,12 @@ function main()
 					end
 
 				end
+	
 			end
 
 
 			#solving heat equation
-			#NOTE:difference like 2.e-1
+			#NOTE:difference like 2.e-1, mb make sense to fix it
 			@time begin
 				@printf("%s solving heat diffusion   | ", bar2)
 
@@ -640,9 +600,10 @@ function main()
 				pic_amount = pic_amount_tmp
 			end
 
-		if(it == 12)
+		if(it == 16)
+		#if(is_eruption)
 			@printf("\n%s writing debug results to disk  | ", bar2);
-			mailbox_out("julia_out.h5",T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl, max_nmarker);
+			mailbox_out("julia_out.h5",T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl, max_nmarker, px, py, mx ,my, h_px_dikes,pcnt);
 			return 0;
 		end
 
