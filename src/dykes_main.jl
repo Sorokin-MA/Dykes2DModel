@@ -19,7 +19,7 @@ function main()
 	ipa = Array{Int32,1}(undef, 12)		#array of int values from matlab script
 
 	#Initialization of main variables
-	Lx = 0.0				 #X size of researched area (m)
+	Lx = 0.0				#X size of researched area (m)
 	Ly = 0.0				#Y size of researched area (m)
 	lam_r_rhoCp = 0.0		#Thermal conductivity of rock/(density*specific heat capacity)
 	lam_m_rhoCp = 0.0		#Thermal conductivity of magma/(density*specific heat capacity)
