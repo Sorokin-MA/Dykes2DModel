@@ -645,7 +645,7 @@ function main()
 					#@printf("\n%s writing debug results to disk  | ", bar2);
 					#return 0;
 					@printf("%s writing results to disk  | ", bar2)
-					filename = "julia_grid." * string(it) * ".h5"
+					filename = "data/julia_grid." * string(it) * ".h5"
 
 					mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl, max_nmarker, px, py, mx ,my, h_px_dikes,pcnt, mfl);
 					#=
@@ -685,7 +685,7 @@ function main()
 		end
 		@printf("\nTotal time: ")
 
-	fid = open("eruptions.bin", "w")
+	fid = open("data/eruptions.bin", "w")
 	write(fid, iSample)
 	write(fid, eruptionSteps)
 	close(fid)
