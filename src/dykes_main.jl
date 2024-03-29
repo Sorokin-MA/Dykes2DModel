@@ -1,7 +1,6 @@
 include("dykes_init.jl")
 include("dykes_funcs.jl")
 
-import Random
 #@device_code_warntype
 
 #Pkg.generate("Dykes_2D")
@@ -49,8 +48,8 @@ function main()
 	nu = 0.0				#Poisson ratio of rock
 	G = 0.0					#E/(2*(1+nu));
 	dt = 0.0				#time step
-	dx::Float64 = 0.0				#X dimension step
-	dy::Float64 = 0.0				#Y dimension step
+	dx::Float64 = 0.0		#X dimension step
+	dy::Float64 = 0.0		#Y dimension step
 	eiter = 0.0				#epsilon?
 	pic_amount = 0.0		#?, 0.05
 

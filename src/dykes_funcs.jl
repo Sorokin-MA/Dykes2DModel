@@ -123,58 +123,23 @@ function mf_rhyolite(T)
 	t2 = T * T;
 	t7 = exp(0.961026371384066e3 - 0.3590508961e1 * T + 0.4479483398e-2 * t2 - 0.1866187556e-5 * t2 * T);
 	return 0.1e1 / (0.1e1 + t7);
-	#=
-	T = T / 1000
-	t2 = T * T
-	t7 = exp(143.636887935970 - 494.427718497039 * T + 572.468110446565 * t2 - 221.444625682461 * t2 * T)
-	=#
-	#return 0.1 / (0.1 + t7)
 end
 
 
 #mb not working the way it should
 function mf_basalt(T)
-#	T = T / 1000
-#	t2 = T * T
-#	t7 = exp(143.636887935970 - 494.427718497039 * T + 572.468110446565 * t2 - 221.444625682461 * t2 * T)
-#	return 0.1 / (0.1 + t7)
-
-#  T=T/1000;
-#  t2 = T * T;
-#  t7 = exp(143.636887935970 - 494.427718497039*T + 572.468110446565*t2 - 221.444625682461*t2*T);
-#  return 0.1e1/(0.1e1 + t7);
-	#
-	#a1*exp(-((x-b1)/c1)^2)
-	a1 = 0.9417
-	b1 = 774
-	c1 = 72.94 
-	ans = a1*exp(-((x-b1)/c1)^2)
-	return ans
+	t2 = T * T;
+	t7 = exp(960 - 3.554 * T + 0.4468e-2 * t2 - 1.907e-06 * t2 * T);
+	return 0.1e1 / (0.1e1 + t7);
 end
 
 
-#if !defined(dmf_magma)
-#define dmf_magma dmf_rhyolite
-#endif
-
-#if !defined(dmf_rock)
-#define dmf_rock dmf_rhyolite
-#endif
-
-#if !defined(mf_magma)
-#define mf_magma mf_rhyolite
-#endif
-
-#if !defined(mf_rock)
-#define mf_rock mf_rhyolite
-#endif
-
 function dmf_magma(T)
-	return dmf_basalt(T)
+	return dmf_rhyolite(T)
 end
 
 function dmf_rock(T)
-	return dmf_rhyolite(T)
+	return dmf_basalt(T)
 end
 
 function mf_magma(T)
@@ -182,16 +147,8 @@ function mf_magma(T)
 end
 
 function mf_rock(T)
-	return mf_rhyolite(T)
+	return mf_basalt(T)
 end
-
-
-
-#=
-macro mf_magma(T)
-	return dmf_rhyolite(T)
-end
-=#
 
 
 function update_T!(T,  T_old, T_top, T_bot, C, lam_r_rhoCp, lam_m_rhoCp, L_Cp, dx, dy, dt, nx, ny)
