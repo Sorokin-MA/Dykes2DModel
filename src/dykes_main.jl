@@ -133,7 +133,7 @@ function main()
 
 	close(io)
 
-	cap_frac = 1.5
+	cap_frac = 5.5
 	npartcl0 = npartcl
 	max_npartcl = convert(Int64, npartcl * cap_frac) + particle_edges[ndikes_all+1]
 
