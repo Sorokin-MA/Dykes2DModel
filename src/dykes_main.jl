@@ -2,15 +2,32 @@ include("dykes_init.jl")
 include("dykes_funcs.jl")
 
 import Random
+#@device_code_warntype
+
+#Pkg.generate("Dykes_2D")
+
+function button_clicked_callback(widget)
+    println(widget, " was clicked!")
+end
+
+b = Gtk.Button("oi")
+ll = Gtk.Label("output")
+hb = Gtk.Box(:v)
+w = Gtk.Window("x")
+
+push!(hb,b)
+push!(hb,ll)
+push!(w, hb)
+state = :startcomp
+
 
 function main()
 	#Initialization of inner random
 	Random.seed!(1234)
 
-	#TODO:Настроить фильтр
 
+	#TODO:Настроить фильтр
 	#TODO:Настроить девайс если не выбран
-	#
 	#Print properties
 	print_gpu_properties()
 
@@ -139,8 +156,8 @@ function main()
 	T = CuArray{Float64,1}(undef, nx* ny)
 	T_old = CuArray{Float64,1}(undef, nx* ny)
 	C = CuArray{Float64,1}(undef, nx* ny)
-	wts = CuArray{Float64,1}(undef, nx* ny)
-	pcnt = CuArray{Int64,1}(undef, nx* ny)
+	wts = CuArray{Float64,1}(undef, nx * ny)
+	pcnt = CuArray{Int32,1}(undef, nx * ny)
 
 	a = CuArray{Float64}(undef, (1, 2))
 
@@ -174,7 +191,7 @@ function main()
 
 	L_host = Array{Int32,1}(undef, nxl * nyl)
 
-	mfl = CuArray{Float64,1}(undef, nxl* nyl)
+	mfl = CuArray{Float64,1}(undef, nxl * nyl)
 
 	dike_a = Array{Float64,1}(undef, ndikes_all)
 	dike_b = Array{Float64,1}(undef, ndikes_all)
@@ -213,6 +230,7 @@ function main()
 	copyto!(py_dikes, h_py_dikes)
 	close(fid)
 
+#=	
 	fid = h5open("markers.h5", "r")
 
 	obj = fid["0"]
@@ -226,10 +244,15 @@ function main()
 	h_mT = read(obj, "mT")
 
 	close(fid)
+=#
 
-	copyto!(mx, h_mx)
-	copyto!(my, h_my)
-	copyto!(mT, h_mT)
+	h_mx = Array{Float64,1}(undef, max_nmarker)
+	h_my = Array{Float64,1}(undef, max_nmarker)
+	h_mT = Array{Float64,1}(undef, max_nmarker)
+
+	#copyto!(mx, h_mx)
+	#copyto!(my, h_my)
+	#copyto!(mT, h_mT)
 
 	NDIGITS = 5
 
@@ -302,13 +325,12 @@ function main()
 			is_eruption = false
 			is_intrusion = (ndikes[it] > 0)
 			#is_intrusion = false
-			nerupt = 16;
+			nerupt = 1;
 
 			#FIXME:translate to Julia from cuda
 			#processing eruptions, checking melt fraction
-			#if (it % nerupt == 0)
-			if (false)
-			
+			#if(false)
+			if (it % nerupt == 0)
 				@time begin
 					@printf("\n%s checking melt fraction   | ", bar2)
 
@@ -325,8 +347,10 @@ function main()
 
 					synchronize()
 
+					#println(tsh);
 					#checked?
 					ccl(mfl, L, tsh, nxl, nyl)
+
 
 					copyto!(L_host, L)
 
@@ -338,7 +362,7 @@ function main()
 						end
 						for ix = 1:nxl
 							if L_host[iy * nxl + ix] >= 0
-								#FIXME:for what?
+								#WARN:for what?
 								if haskey(volumes, L_host[iy * nxl + ix])
 									volumes[L_host[iy * nxl + ix]] =
 										volumes[L_host[iy * nxl + ix]] + 1
@@ -366,24 +390,25 @@ function main()
 				dxl = dx * nl
 				dyl = dy * nl
 
+				#println(maxVol);
+				#println(maxIdx);
 				#checking eruption criteria
-				#if (maxVol * dxl * dyl >= critVol[iSample])
-				if (true)
+				if (maxVol * dxl * dyl >= critVol[iSample])
+				#if (true)
 					@printf("%s erupting %07d cells   | ", bar2, maxVol)
 					@time begin
 
 						cell_idx = CuArray{Int32,1}(undef, maxVol)
 						cell_idx_host = Array{Int32,1}(undef, maxVol)
+
+
 						next_idx = 0
-
-
-
-						for idx = 1:(nxl * nyl)
-							if L_host[idx] == maxIdx
-								if next_idx < maxVol
-									next_idx = next_idx + 1
-									cell_idx_host[next_idx] = idx
-								end
+						for idx = 0:(nxl * nyl)-1
+							if L_host[idx+1] == maxIdx
+								#if next_idx < maxVol
+								next_idx = next_idx + 1
+								cell_idx_host[next_idx] = idx
+								#end
 							end
 						end
 
@@ -391,17 +416,18 @@ function main()
 
 						local blockSize1D = 512
 						local gridSize1D = (npartcl + blockSize1D - 1) ÷ blockSize1D
+
 						#advect_particles_eruption<<<gridSize1D, blockSize1D>>>(px, py, cell_idx, gamma, dxl, dyl, npartcl, maxVol, nxl, nyl);
-						
 						@cuda blocks = gridSize1D threads = blockSize1D advect_particles_eruption(px, py, cell_idx, gamma, dxl, dyl, npartcl, maxVol, nxl, nyl)
 						synchronize()
+			
 						
-						gridSize1D = (nmarker + blockSize1D - 1) ÷ blockSize1D
 
+						gridSize1D = (nmarker + blockSize1D - 1) ÷ blockSize1D
 						#advect_particles_eruption<<<gridSize1D, blockSize1D>>>(mx, my, cell_idx, gamma, dxl, dyl, nmarker, maxVol, nxl, nyl);
-					
 						@cuda blocks = gridSize1D threads = blockSize1D advect_particles_eruption(mx, my, cell_idx, gamma, dxl, dyl, nmarker, maxVol, nxl, nyl)
 						synchronize()
+
 
 						global iSample = iSample + 1
 
@@ -415,16 +441,15 @@ function main()
 
 			#processing intrusions
 			if (is_intrusion)
-			#if (false)
 				@printf("%s inserting %02d dikes	   | ", bar2, ndikes[it])
 				@time begin
 					for i = 1:ndikes[it]
 						idike = idike + 1
-					println(idike);
+					#println(idike);
 						blockSize1D = 512
 						gridSize1D = (npartcl + blockSize1D - 1) ÷ blockSize1D
 
-						@printf("\nDebug\n")
+						#@printf("\nDebug\n")
 						@cuda blocks = gridSize1D threads = blockSize1D advect_particles_intrusion(
 							px,
 							py,
@@ -488,16 +513,14 @@ function main()
 
 
 			#if eruption or injection happend make new injection and some tricks with p2g
-			if (is_eruption || is_intrusion)
 			#if (false)
+			if (is_eruption || is_intrusion)
 				@printf("%s p2g interpolation		| ", bar2)
 				@time begin
 
-				buf_arr = zeros(nx*ny)
-
-				copyto!(T, buf_arr)
-				copyto!(C, buf_arr)
-				copyto!(wts, buf_arr)
+					fill!(T, 0)
+					fill!(C, 0)
+					fill!(wts, 0)
 
 					blockSize1D = 512
 					gridSize1D = (npartcl + blockSize1D - 1) ÷ blockSize1D
@@ -515,6 +538,7 @@ function main()
 
 				end
 
+
 				@printf("%s particle injection	   | ", bar2)
 
 				@time begin
@@ -523,21 +547,30 @@ function main()
 					blockSize1D = 512
 					gridSize1D = (npartcl + blockSize1D - 1) ÷ blockSize1D
 
-					buf_arr_int = zeros(Int64,nx*ny)
-					copyto!(pcnt, buf_arr_int)
+					#buf_arr_int = zeros(Int32, nx*ny)
+					#copyto!(pcnt, buf_arr_int)
+				
+					#@printf("%s particle injection	   | ", bar2)
+					#@device_code_warntype interactive=true @cuda blocks = gridSize threads=blockSize gpu_set_to_zero_2d!(pcnt, nx)
+
+					#@printf("%s particle injection	   | ", bar2)
+					fill!(pcnt, 0);
+					#pcnt = zeros(Int32, nx*ny)
+					#println(npartcl)
 
 					#count_particles<<<gridSize1D, blockSize1D>>>(pcnt, px, py, dx, dy, nx, ny, npartcl);
-					@cuda blocks = gridSize1D threads=blockSize1D count_particles(pcnt, px, py, dx, dy, nx, ny, npartcl);
+					@cuda blocks = gridSize1D threads=blockSize1D count_particles!(pcnt, px, py, dx, dy, nx, ny, npartcl);
 					synchronize()
 
+					#@printf("%s particle injection	   | ", bar2)
 					#CUDA.allowscalar(true)
-				
+					
 					npartcl_h[1] = npartcl
 					copyto!(npartcl_d, npartcl_h);
 
 					min_pcount = 2
 
-					println(typeof(npartcl_d))
+					#println(typeof(npartcl_d))
 					#inject_particles<<<gridSize, blockSize>>>(px, py, pT, pPh, npartcl_d, pcnt, T, C, dx, dy, nx, ny, min_pcount, max_npartcl);
 					@cuda blocks = gridSize threads=blockSize inject_particles(px, py, pT, pPh, npartcl_d, pcnt, T, C, dx, dy, nx, ny, min_pcount, max_npartcl);
 					synchronize()
@@ -547,6 +580,10 @@ function main()
 					copyto!(npartcl_h, npartcl_d)
 
 					new_npartcl = npartcl_h[1]
+
+					#println(new_npartcl)
+
+					#println(max_npartcl)
 
 					#CUDA.allowscalar(false)
 
@@ -569,7 +606,6 @@ function main()
 	
 			end
 
-
 			#solving heat equation
 			#NOTE:difference like 2.e-1, mb make sense to fix it
 			@time begin
@@ -587,7 +623,8 @@ function main()
 			@time begin
 				@printf("%s g2p interpolation		| ", bar2)
 				#particles g2p
-				blockSize1D = 1024
+				#println(npartcl)
+				blockSize1D = 512
 				gridSize1D = (npartcl + blockSize1D - 1) ÷ blockSize1D
 				@cuda blocks = gridSize1D threads=blockSize1D g2p!(T, T_old, px, py, pT, dx, dy, pic_amount, nx, ny, npartcl)
 
@@ -600,21 +637,19 @@ function main()
 				pic_amount = pic_amount_tmp
 			end
 
-		if(it == 16)
-		#if(is_eruption)
-			@printf("\n%s writing debug results to disk  | ", bar2);
-			mailbox_out("julia_out.h5",T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl, max_nmarker, px, py, mx ,my, h_px_dikes,pcnt);
-			return 0;
-		end
-
+			
 			#FIXME:check translate to Julia from cuda
 			#writing results (T and C) if there is eruption or its time to
 			#NOTE:dont need that while debugging
-			if(false)
 			if (it % nout == 0 || is_eruption)
 				@time begin
+					#@printf("\n%s writing debug results to disk  | ", bar2);
+					#return 0;
 					@printf("%s writing results to disk  | ", bar2)
-					filename = "grid." * string(it) * ".h5"
+					filename = "julia_grid." * string(it) * ".h5"
+
+					mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl, max_nmarker, px, py, mx ,my, h_px_dikes,pcnt, mfl);
+					#=
 					fid = h5open(filename, "w")
 
 					write_h5(fid, "T", T, staging, nx * ny)
@@ -625,14 +660,15 @@ function main()
 					end
 
 					close(fid)
+					=#
 				end
 			end
-			end
+			#end
 
 			#FIXME:check translate to Julia from cuda
 			#NOTE:writing markers to disk
 			if(false)
-			@time begin
+				@time begin
 				@printf("%s writing markers to disk  | ", bar2)
 				filename = "markers.h5"
 				fid = h5open(filename, "w")
@@ -643,7 +679,7 @@ function main()
 				write_h5(g, "my", my, staging, nmarker)
 				write_h5(g, "mT", mT, staging, nmarker)
 				close(fid)
-			end
+				end
 
 			end
 
@@ -654,4 +690,5 @@ function main()
 	write(fid, iSample)
 	write(fid, eruptionSteps)
 	close(fid)
+	return 0
 end

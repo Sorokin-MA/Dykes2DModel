@@ -9,7 +9,9 @@
 	#Pkg.add("JupyterFormatter")
 	#Pkg.add("BenchmarkTools")
 	#Pkg.add("Random")
-	
+	#Pkg.add("Gtk")
+
+	using Gtk
 	using Cthulhu
 	using Debugger
 	using CUDA

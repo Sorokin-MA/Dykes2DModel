@@ -119,12 +119,16 @@ function dmf_basalt(T)
 end
 
 
-#TODO: fix
 function mf_rhyolite(T)
+	t2 = T * T;
+	t7 = exp(0.961026371384066e3 - 0.3590508961e1 * T + 0.4479483398e-2 * t2 - 0.1866187556e-5 * t2 * T);
+	return 0.1e1 / (0.1e1 + t7);
+	#=
 	T = T / 1000
 	t2 = T * T
 	t7 = exp(143.636887935970 - 494.427718497039 * T + 572.468110446565 * t2 - 221.444625682461 * t2 * T)
-	return 0.1 / (0.1 + t7)
+	=#
+	#return 0.1 / (0.1 + t7)
 end
 
 
@@ -139,7 +143,13 @@ function mf_basalt(T)
 #  t2 = T * T;
 #  t7 = exp(143.636887935970 - 494.427718497039*T + 572.468110446565*t2 - 221.444625682461*t2*T);
 #  return 0.1e1/(0.1e1 + t7);
-	return 0
+	#
+	#a1*exp(-((x-b1)/c1)^2)
+	a1 = 0.9417
+	b1 = 774
+	c1 = 72.94 
+	ans = a1*exp(-((x-b1)/c1)^2)
+	return ans
 end
 
 
@@ -160,7 +170,7 @@ end
 #endif
 
 function dmf_magma(T)
-	return dmf_rhyolite(T)
+	return dmf_basalt(T)
 end
 
 function dmf_rock(T)
@@ -483,16 +493,17 @@ function g2p!(T, T_old, px, py, pT, dx, dy, pic_amount, nx, ny, npartcl)
 end
 
 function assignUniqueLables(mf, L, tsh, nx, ny)
-	ix, iy = @indices()
+	ix = (blockIdx().x-1)* blockDim().x + threadIdx().x-1
+	iy = (blockIdx().y-1)* blockDim().y + threadIdx().y-1
 	
-	if ix > nx  || iy > ny
+	if (ix > nx-1  || iy > ny-1)
 		return
 	end
 	
-	if mf[(iy - 1) * nx + ix] >= tsh
-		L[(iy - 1) * nx + ix] = (iy - 1) * nx + ix
+	if mf[(iy) * nx + ix + 1] >= tsh
+		L[(iy) * nx + ix + 1] = (iy) * nx + ix
 	else
-		L[(iy - 1)  * nx + ix] = -1
+		L[(iy)  * nx + ix + 1] = -1
 	end
 	return nothing
 end
@@ -512,27 +523,25 @@ function cwLabel(L, nx, ny)
 end
 
 function find_root(L, idx)
-	label::Int64 = idx		#WARN:tuple by default, if not set Int64???
-	while L[label] != label
-		label = L[label]
+	label::Int32 = idx				#WARN:tuple by default, if not set Int32???
+	while L[label] != (label-1)
+		label = L[label]+1
 	end
-	return label
+	return label-1
 end
 
-function merge_labels(L, div, nx::Int64, ny)
-	iy = (blockIdx().x-1) * blockDim().x + threadIdx().x - 1
-	iy = div ÷ 2 + iy * div - 1
-	if iy > ny - 2
+function merge_labels!(L, div, nx::Int64, ny)
+	iy = (blockIdx().x - 1) * blockDim().x + threadIdx().x - 1
+	iy = Int64(floor(div / 2)) + iy * div - 1
+	if iy > (ny - 2)
 		return
 	end
 
-	for ix = 1:nx
-		if L[(iy) * nx + ix] >= 1 && L[(iy+1) * nx + ix] >= 1
-			lroot = find_root(L, (iy) * nx + ix)
-			rroot = find_root(L, ((iy+1) * nx + ix))
-			min_r = min(lroot, rroot)
-			max_r = max(lroot, rroot)
-			L[min_r] = L[max_r]
+	for ix = 0:(nx-1)
+		if (L[iy * nx + ix + 1] >= 0) && (L[(iy + 1) * nx + ix + 1] >= 0)
+			lroot::Int32 = find_root(L, iy * nx + ix + 1)
+			rroot::Int32 = find_root(L, (iy + 1) * nx + ix + 1)
+			L[min(lroot, rroot)+1] = L[max(lroot, rroot)+1]
 		end
 	end
 
@@ -540,31 +549,34 @@ function merge_labels(L, div, nx::Int64, ny)
 end
 
 function relabel(L, nx, ny)
-	ix, iy = @indices()
+	ix = (blockIdx().x-1)* blockDim().x + threadIdx().x-1
+	iy = (blockIdx().y-1)* blockDim().y + threadIdx().y-1
+	#ix, iy = @indices()
 
-	if ix > nx  || iy > ny
+	if (ix > nx-1)  || (iy > ny-1)
 		return
 	end
 
-	if L[(iy-1) * nx + ix] >= 1
-	L[(iy-1) * nx + ix] = find_root(L, (iy-1) * nx + ix)
+	if L[iy * nx + ix + 1] >= 0
+		L[iy * nx + ix + 1] = find_root(L, iy * nx + ix + 1)
 	end
+
 	return nothing
 end
 
 
 function advect_particles_eruption(px, py, idx, gamma, dxl, dyl, npartcl, ncells, nxl, nyl)
-	ip = (blockIdx().x - 1 ) * blockDim().x + threadIdx().x
+	ip = (blockIdx().x - 1 ) * blockDim().x + threadIdx().x-1
 
-	if ip > npartcl
+	if ip > npartcl-1
 		return
 	end
 
 	u = 0.0
 	v = 0.0
 
-	for i = 1:ncells
-		ic = idx[i]
+	for i = 0:ncells-1
+		ic = idx[i+1]
 		icx = ic % nxl
 		icy = ic ÷ nxl
 
@@ -574,8 +586,8 @@ function advect_particles_eruption(px, py, idx, gamma, dxl, dyl, npartcl, ncells
 		dxl2 = dxl * dxl
 		dyl2 = dyl * dyl
 
-		delx = px[ip] - xl
-		dely = py[ip] - yl
+		delx = px[ip+1] - xl
+		dely = py[ip+1] - yl
 		r = max(sqrt(delx * delx + dely * dely), sqrt(dxl2 + dyl2))
 		r2_2pi = r * r * 2 * π
 
@@ -583,8 +595,8 @@ function advect_particles_eruption(px, py, idx, gamma, dxl, dyl, npartcl, ncells
 		v -= dyl2 * (1.0 - gamma) * dely / r2_2pi
 	end
 
-	px[ip] += u
-	py[ip] += v
+	px[ip+1] += u
+	py[ip+1] += v
 	return nothing
 end
 
@@ -614,7 +626,15 @@ function average!(mfl, T, C, nl, nx, ny)
 	return nothing;
 end
 
-function count_particles(pcnt, px, py, dx, dy, nx, ny, npartcl)
+function gpu_set_to_zero_2d!(arr, nx)
+	ixl = (blockIdx().x-1) * blockDim().x + threadIdx().x
+	iyl = (blockIdx().y-1) * blockDim().y + threadIdx().y-1
+
+	#CUDA.@atomic arr[iyl * nx + ixl] = 0
+end
+
+
+function count_particles!(pcnt, px, py, dx, dy, nx, ny, npartcl)
 	ip = (blockIdx().x - 1) * blockDim().x + threadIdx().x
 
 	if ip > npartcl
@@ -629,10 +649,14 @@ function count_particles(pcnt, px, py, dx, dy, nx, ny, npartcl)
 
 	ix = min(max(Int64(floor(pxi)), 0), nx - 2)
 	iy = min(max(Int64(floor(pyi)), 0), ny - 2)
+	#@cuprint("\nindexes ix- ", ix)
+	#@cuprint("\nindexes iy- ", iy)
 
 	#ix1_int::Int = ix1
 
-	CUDA.atomic_add!(pointer(pcnt, iy * nx + ix + 1), Int64(1))
+	#CUDA.atomic_add!(pointer(pcnt, iy * nx + ix + 1), Int32(1))
+	#@cuprint("\nindexes - ", iy*nx + ix + 1)
+	CUDA.atomic_add!(pointer(pcnt, (iy * nx + ix + 1)), Int32(1))
 
 	return nothing
 end
@@ -686,26 +710,26 @@ function ccl(mf, L, tsh, nx, ny)
 	CUDA.@sync begin
 		@cuda blocks = gridSize2D threads = blockSize2D assignUniqueLables(mf, L, tsh, nx, ny)
 	end
-
 	blockSize1D = 32
 	gridSize1D = (ny + blockSize1D - 1) ÷ blockSize1D
 	CUDA.@sync begin
 		@cuda  blocks = gridSize1D threads = blockSize1D cwLabel(L, nx, ny)
 	end
 
+
 	div = 2
 	npw = Int64(ceil(log2(ny)))
 	nyw = 1 << npw
-	for i = 1:npw
+	for i = 0:(npw-1)
 		gridSize1D = Int64(floor(max((nyw + blockSize1D - 1) / blockSize1D / div, 1)))
 
 		CUDA.@sync begin
-			@cuda blocks = gridSize1D threads = blockSize1D merge_labels(L, div, nx, ny)
+			@cuda blocks = gridSize1D threads = blockSize1D merge_labels!(L, div, nx, ny)
 		end
 
-		div *= 2
+		div = div * 2
 	end
-	
+
 	CUDA.@sync begin
 		@cuda blocks = gridSize2D threads = blockSize2D relabel(L, nx, ny)
 	end
@@ -836,7 +860,7 @@ end
 
 
 #function to write data to hdf5 file for debug
-function mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl,max_nmarker, px,py,mx,my,h_px_dikes,pcnt);
+function mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl,max_nmarker, px,py,mx,my,h_px_dikes,pcnt, mfl);
 @time begin
 		bar1 = "├──"
 		bar2 = "\t ├──"
@@ -851,16 +875,17 @@ function mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,m
 		#h5write(filename, "T", T)
 		#h5write(filename, "C", C)
 		
-		h_pcnt = Array{Float64,1}(undef, nx*ny)			#array of double values from matlab script
+		h_pcnt = Array{Int32,1}(undef, nx*ny)			#array of double values from matlab script
 		h_T = Array{Float64,1}(undef, nx*ny)			#array of double values from matlab script
 		h_C = Array{Float64,1}(undef, nx*ny)			#array of double values from matlab script
 		h_pT = Array{Float64,1}(undef, max_npartcl)		#array of double values from matlab script
 		h_mT = Array{Float64,1}(undef, max_nmarker)		#array of double values from matlab script
-		h_L = Array{Float64,1}(undef, nxl*nyl)			#array of double values from matlab script
+		h_L = Array{Int32,1}(undef, nxl*nyl)			#array of double values from matlab script
 		h_px = Array{Float64,1}(undef, max_npartcl)			#array of double values from matlab script
 		h_py = Array{Float64,1}(undef, max_npartcl)			#array of double values from matlab script
 		h_mx = Array{Float64,1}(undef, max_nmarker)			#array of double values from matlab script
 		h_my = Array{Float64,1}(undef, max_nmarker)			#array of double values from matlab script
+		h_mfl = Array{Float64,1}(undef, nxl*nyl)			#array of double values from matlab script
 
 		copyto!(h_pcnt, pcnt)
 		copyto!(h_T, T)
@@ -872,6 +897,7 @@ function mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,m
 		copyto!(h_py, py)
 		copyto!(h_mx, mx)
 		copyto!(h_my, my)
+		copyto!(h_mfl, mfl)
 
 		write(fid, "pcnt", h_pcnt)
 		write(fid, "T", h_T)
@@ -884,13 +910,11 @@ function mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,m
 		write(fid, "mx", h_mx)
 		write(fid, "my", h_my)
 		write(fid, "px_dikes", h_px_dikes)
+		write(fid, "mfl", h_mfl)
 		#write(fid, "L", h_L)
 
-
-		if (is_eruption)
-			copyto!(h_L, L)
-			write(fid, "L", h_L)
-		end
+		copyto!(h_L, L)
+		write(fid, "L", h_L)
 
 		close(fid)
 	end

@@ -1,2 +1,2 @@
 include("dykes_main.jl")
-main()
+#julia_main()
