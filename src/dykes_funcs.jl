@@ -816,6 +816,34 @@ function read_h5()
 end
 
 
+function small_mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl,max_nmarker, px,py,mx,my,h_px_dikes,pcnt, mfl);
+@time begin
+		bar1 = "├──"
+		bar2 = "\t ├──"
+		#@printf("%s writing results to disk  | ", bar2)
+		#filename = "grid." * string(it) * ".h5"
+		
+		if isfile(filename)	
+			rm(filename)
+		end
+
+		fid = h5open(filename, "w")
+		#h5write(filename, "T", T)
+		#h5write(filename, "C", C)
+		
+		h_T = Array{Float64,1}(undef, nx*ny)			#array of double values from matlab script
+		h_C = Array{Float64,1}(undef, nx*ny)			#array of double values from matlab script
+		
+		copyto!(h_T, T)
+		copyto!(h_C, C)
+
+		write(fid, "T", h_T)
+		write(fid, "C", h_C)
+
+		close(fid)
+	end
+end
+
 #function to write data to hdf5 file for debug
 function mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl,max_nmarker, px,py,mx,my,h_px_dikes,pcnt, mfl);
 @time begin

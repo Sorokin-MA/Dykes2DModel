@@ -5,21 +5,6 @@ include("dykes_funcs.jl")
 
 #Pkg.generate("Dykes_2D")
 
-function button_clicked_callback(widget)
-    println(widget, " was clicked!")
-end
-
-b = Gtk.Button("oi")
-ll = Gtk.Label("output")
-hb = Gtk.Box(:v)
-w = Gtk.Window("x")
-
-push!(hb,b)
-push!(hb,ll)
-push!(w, hb)
-state = :startcomp
-
-
 function main()
 	#Initialization of inner random
 	Random.seed!(1234)
@@ -647,7 +632,8 @@ function main()
 					@printf("%s writing results to disk  | ", bar2)
 					filename = "data/julia_grid." * string(it) * ".h5"
 
-					mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl, max_nmarker, px, py, mx ,my, h_px_dikes,pcnt, mfl);
+					small_mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl, max_nmarker, px, py, mx ,my, h_px_dikes,pcnt, mfl);
+					#mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl, max_nmarker, px, py, mx ,my, h_px_dikes,pcnt, mfl);
 					#=
 					fid = h5open(filename, "w")
 
