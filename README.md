@@ -15,6 +15,7 @@ Random.jl
 ### Executing program
 ```
 julia
+using Pkg; Pkg.activate("")
 include("run.jl")
 main()
 ```

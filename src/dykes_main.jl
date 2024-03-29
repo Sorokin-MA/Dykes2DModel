@@ -71,7 +71,7 @@ function main()
 	filename = Array{Char,1}(undef, 1024)
 	is_eruption = false
 
-	io = open("pa.bin", "r")
+	io = open("data/pa.bin", "r")
 	read!(io, dpa)
 	read!(io, ipa)
 
@@ -200,7 +200,7 @@ function main()
 	dike_t = Array{Float64,1}(undef, ndikes_all)
 
 	#NOTE:Dykes data upload takes time
-	io = open("dikes.bin", "r");
+	io = open("data/dikes.bin", "r");
 	read!(io, dike_a)
 	read!(io, dike_b)
 	read!(io, dike_x)
@@ -209,7 +209,7 @@ function main()
 
 	close(io)
 
-	fid = h5open("particles.h5", "r")
+	fid = h5open("data/particles.h5", "r")
 
 	h_px = Array{Float64,1}(undef, max_npartcl)
 	h_py = Array{Float64,1}(undef, max_npartcl)
@@ -256,7 +256,7 @@ function main()
 
 	NDIGITS = 5
 
-	filename = "grid." * "0"^NDIGITS * "0" * ".h5"
+	filename = "data/grid." * "0"^NDIGITS * "0" * ".h5"
 
 	fid = h5open(filename, "r")
 	T_h = read(fid, "T")
