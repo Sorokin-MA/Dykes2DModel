@@ -124,8 +124,8 @@ function main()
 
 	#end of first part of reading
 
-	cap_frac = 5.5  #???
-	npartcl0 = npartcl #???
+	cap_frac = 1.5  #value to spcify how much particles we allow to inject in runtime
+	npartcl0 = npartcl #initial amount of particles
 	max_npartcl = convert(Int64, npartcl * cap_frac) + particle_edges[ndikes_all+1] #???#count max particles
 
 	println("max_npartcl")
@@ -274,7 +274,6 @@ function main()
 	copyto!(C, C_h)
 	close(fid)
 
-	#auto tm_all = tic();
 
 	global iSample = Int32(1)
 
@@ -569,7 +568,7 @@ function main()
 					min_pcount = 2
 
 					#inject particles where theit not enough
-					@cuda blocks = gridSize threads=blockSize inject_particles(px, py, pT, pPh, npartcl_d, pcnt, T, C, dx, dy, nx, ny, min_pcount, max_npartcl);
+					@cuda blocks = gridSize threads=blockSize inject_particles!(px, py, pT, pPh, npartcl_d, pcnt, T, C, dx, dy, nx, ny, min_pcount, max_npartcl);
 					synchronize()
 
 					new_npartcl = npartcl

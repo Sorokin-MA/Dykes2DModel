@@ -1,20 +1,3 @@
-#Function that write which device we use
-macro H5Z_FILTER_BLOSC()
-	return 5
-end
-
-macro GPU_ID()
-	return 0
-end
-
-macro indices()
-	return :((blockIdx().x-1)* blockDim().x + threadIdx().x, (blockIdx().y-1)* blockDim().y + threadIdx().y)
-end
-
-macro idc(ix, iy)
-	return :(iy * nx + ix)
-end
-
 """
 Function to count 1D index based on 2D indexes.
 
@@ -43,25 +26,8 @@ function kernel()
 	return
 end
 
-#Function that upload packages mostly
-function dykes_init()
-	#using Pkg
-	#Pkg.status()
-	#Pkg.add("HDF5")
-	#Pkg.add("CUDA")
-	#Pkg.add("JupyterFormatter")
-	#using CUDA
-	#using Printf
-	#using BenchmarkTools
-	CUDA.versioninfo()
-	collect(devices())
 
-	kernel()
-
-	#using HDF5
-
-end
-
+#Basic info aobut GPU
 function print_gpu_properties()
 
 	for (i, device) in enumerate(CUDA.devices())
@@ -83,6 +49,7 @@ function print_gpu_properties()
 	end
 end
 
+#helper function which helps to read from IO stream
 function read_par(par, ipar)
 	par_name_2 = par[ipar]
 	ipar_2 = ipar + 1
@@ -126,7 +93,6 @@ function mf_rhyolite(T)
 end
 
 
-#mb not working the way it should
 function mf_basalt(T)
 	t2 = T * T;
 	t7 = exp(960 - 3.554 * T + 0.4468e-2 * t2 - 1.907e-06 * t2 * T);
@@ -134,23 +100,31 @@ function mf_basalt(T)
 end
 
 
+#coefficient which involved in heat equasion
 function dmf_magma(T)
 	return dmf_rhyolite(T)
 end
 
+#coefficient which involved in heat equasion
 function dmf_rock(T)
 	return dmf_basalt(T)
 end
 
+#melt fraction of magma
 function mf_magma(T)
 	return mf_rhyolite(T)
 end
 
+#melt fraction of host rocks
 function mf_rock(T)
 	return mf_basalt(T)
 end
 
+"""
+	update_T!(T,  T_old, T_top, T_bot, C, lam_r_rhoCp, lam_m_rhoCp, L_Cp, dx, dy, dt, nx, ny)
 
+Solve heat equasion
+"""
 function update_T!(T,  T_old, T_top, T_bot, C, lam_r_rhoCp, lam_m_rhoCp, L_Cp, dx, dy, dt, nx, ny)
 	ix = (blockIdx().x-1) * blockDim().x + threadIdx().x - 1
 	iy = (blockIdx().y-1) * blockDim().y + threadIdx().y - 1
@@ -196,7 +170,17 @@ function update_T!(T,  T_old, T_top, T_bot, C, lam_r_rhoCp, lam_m_rhoCp, L_Cp, d
 	return
 end
 
-#initing not existing particles as ph
+
+"""
+	init_particles_Ph(pPh, ph, npartcl)
+
+initing particles out of defined particles as magma particles
+
+# Arguments
+- `pPh`: ? 
+- `ph`: ?
+- `npartcl`: ?
+"""
 function init_particles_Ph(pPh, ph, npartcl)
 	ip = (blockIdx().x - 1) * blockDim().x + threadIdx().x
 
@@ -208,20 +192,48 @@ function init_particles_Ph(pPh, ph, npartcl)
 	return
 end
 
+
+#WARN:unneccesary function?
 function sign(val)
 	return (val > zero(val)) - (val < zero(val))
 end
 
+
+#TODO:specify description, wht if 'f'?
+"""
+
+	cart2ellipt(f, x, y)
+
+Convert cartesian coordinates to elliptical
+
+"""
 function cart2ellipt(f, x, y)
 	xi_eta_1 = acosh(max(0.5 / f * (sqrt((x + f) * (x + f) + y * y) + sqrt((x - f) * (x - f) + y * y)), 1.0))
 	xi_eta_2 = acos(min(max(x / (f * cosh(xi_eta_1)), -1.0), 1.0)) * sign(y)
 	return xi_eta_1, xi_eta_2
 end
 
+
+#TODO:specify description
+"""
+
+	rot2d(x, y, sb, cb)	
+
+HZ
+
+"""
 function rot2d(x, y, sb, cb)
 	return  x * cb - y * sb, x * sb + y * cb
 end
 
+#TODO:specify description
+"""
+
+	crack_params(a, b, nu, G)
+
+HZ
+
+"""
 function crack_params(a, b, nu, G)
 
 	f::Float64 = 2 * nu * (a + b) - 2 * a - b
@@ -229,6 +241,13 @@ function crack_params(a, b, nu, G)
 	return (-2 * b * G / f, 0.5 * f / (nu - 1))
 end
 
+#TODO:specify description
+"""
+	disp_inf_stress(s, st, ct, c, nu, G, shxi, chxi, seta, ceta)	
+
+HZ
+
+"""
 function disp_inf_stress(s, st, ct, c, nu, G, shxi, chxi, seta, ceta)
 	e2xi0 = 1.0
 	s2b = 2.0 * st * ct
@@ -251,6 +270,14 @@ function disp_inf_stress(s, st, ct, c, nu, G, shxi, chxi, seta, ceta)
 	return u_v[1],u_v[2]
 end
 
+
+#TODO:specify description
+"""
+	displacements(st, ct, p, s1, s3, f, x, y, nu, G	)
+
+Functions which displacements
+
+"""
 function displacements(st, ct, p, s1, s3, f, x, y, nu, G)
 	x_y_1, x_y_2 = rot2d(x, y, -st, ct)
 	if abs(x_y_1) < 1e-10
@@ -262,15 +289,12 @@ function displacements(st, ct, p, s1, s3, f, x, y, nu, G)
 
 
 	xi_eta_1, xi_eta_2  = cart2ellipt(f, x_y_1, x_y_2)
-	#xi_eta_1, xi_eta_2  = 1,1
 	seta = sin(xi_eta_2)
 	ceta = cos(xi_eta_2)
 	shxi = sinh(xi_eta_1)
 	chxi = cosh(xi_eta_1)
 	u_v1_1, u_v1_2  = disp_inf_stress(s1 - p, st, ct, f, nu, G, shxi, chxi, seta, ceta)
 	u_v2_1, u_v2_2 = disp_inf_stress(s3 - p, ct, -st, f, nu, G, shxi, chxi, seta, ceta)
-	#u_v1_1, u_v1_2  = 1,1
-	#u_v2_1, u_v2_2  = 1,1
 	I = shxi * seta
 	J = chxi * ceta
 	u3 = 0.25 * p * f / G * (J * (3.0 - 4.0 * nu) - J)
@@ -281,6 +305,11 @@ function displacements(st, ct, p, s1, s3, f, x, y, nu, G)
 	return -u_v_1, -u_v_2
 end
 
+"""
+	advect_particles_intrusion(px, py, a, b, x, y, theta, nu, G, ndikes, npartcl)
+
+Functions which calculate advection when particles intruded
+"""
 function advect_particles_intrusion(px, py, a, b, x, y, theta, nu, G, ndikes, npartcl)
 	ip = (blockIdx().x - 1) * blockDim().x + threadIdx().x
 
@@ -289,20 +318,21 @@ function advect_particles_intrusion(px, py, a, b, x, y, theta, nu, G, ndikes, np
 	end
 
 	p_a0_1, p_a0_2 = crack_params(a, b, nu, G)
-	#p_a0_1, p_a0_2 = 1, 1
 	st = sin(theta)
 	ct = cos(theta)
 	u_v_1, u_v_2  = displacements(st, ct, p_a0_1, 0, 0, p_a0_2, px[ip] - x, py[ip] - y, nu, G)
-	#u_v_1, u_v_2 = 1,1
 	px[ip] += u_v_1
 	py[ip] += u_v_2
 
 	return nothing
 end
 
-#ALL_PARAMS T, T_old, C, wts, px, py, pT, pPh, lam_r_rhoCp, lam_m_rhoCp, L_Cp, T_top, T_bot, dx, dy, dt, pic_amount, nx, ny, npartcl, npartcl0
 
-
+#TODO:specify description
+"""
+	p2g_weight!(T, C, wts, nx, ny)
+HZ
+"""
 function p2g_weight!(T, C, wts, nx, ny)
 	ix = (blockIdx().x-1) * blockDim().x + threadIdx().x
 	iy = (blockIdx().y-1) * blockDim().y + threadIdx().y-1
@@ -321,6 +351,12 @@ function p2g_weight!(T, C, wts, nx, ny)
 	return nothing
 end
 
+
+#TODO:specify description
+"""
+	p2g_project!(T, C, wts, px, py, pT, pPh, dx, dy, nx, ny, npartcl, npartcl0)
+HZ
+"""
 function p2g_project!(T, C, wts, px, py, pT, pPh, dx, dy, nx, ny, npartcl, npartcl0)
 	ip = (blockIdx().x-1) * blockDim().x + threadIdx().x
 	
@@ -352,12 +388,6 @@ function p2g_project!(T, C, wts, px, py, pT, pPh, dx, dy, nx, ny, npartcl, npart
 	CUDA.atomic_add!(pointer(T, idc(ix2, iy2, nx)),k22 * pT[ip])
 
 
-#=
-	atomicAdd(&T[idc(ix1, iy1)], k11 * pT[ip]);
-	atomicAdd(T[idc(ix1, iy2)], k12 * pT[ip])
-	atomicAdd(T[idc(ix2, iy1)], k21 * pT[ip])
-	atomicAdd(T[idc(ix2, iy2)], k22 * pT[ip])
-=#
 	
 	pC = (pPh == nothing) ? ((ip-1) > npartcl0 ? 1.0 : 0.0) : Float64(pPh[ip])
 	
@@ -368,57 +398,20 @@ function p2g_project!(T, C, wts, px, py, pT, pPh, dx, dy, nx, ny, npartcl, npart
 	CUDA.atomic_add!(pointer(C, idc(ix2, iy2, nx)),k22 * pC)
 
 
-#=
-	atomicAdd(C[idc(ix1, iy1)], k11 * pC)
-	atomicAdd(C[idc(ix1, iy2)], k12 * pC)
-	atomicAdd(C[idc(ix2, iy1)], k21 * pC)
-	atomicAdd(C[idc(ix2, iy2)], k22 * pC)
-=#
-	
-
 	CUDA.atomic_add!(pointer(wts, idc(ix1, iy1, nx)), k11)
 	CUDA.atomic_add!(pointer(wts, idc(ix1, iy2, nx)), k12)
 	CUDA.atomic_add!(pointer(wts, idc(ix2, iy1, nx)), k21)
 	CUDA.atomic_add!(pointer(wts, idc(ix2, iy2, nx)), k22)
 
-#=
-	wts[idc(ix1, iy1, nx)] += k11
-	wts[idc(ix1, iy2, nx)] += k12
-	wts[idc(ix2, iy1, nx)] += k21
-	wts[idc(ix2, iy2, nx)] += k22
-=#
-
-#=
-	atomicAdd(wts[idc(ix1, iy1)], k11)
-	atomicAdd(wts[idc(ix1, iy2)], k12)
-	atomicAdd(wts[idc(ix2, iy1)], k21)
-	atomicAdd(wts[idc(ix2, iy2)], k22)
-=#
 	return nothing
 end
 
 
-#=
-function blerp(x1, x2, y1, y2, f11, f12, f21, f22, x, y)
-	invDxDy = 1.0 / ((x2 - x1) * (y2 - y1))
-	
-	dx1 = x - x1
-	dx2 = x2 - x
-	
-	dy1 = y - y1
-	dy2 = y2 - y
-	
-	return invDxDy * (f11 * dx2 * dy2 + f12 * dx2 * dy1 + f21 * dx1 * dy2 + f22 * dx1 * dy1)
-end
-=#
-function kernel_2(a)
-    i = threadIdx().x
-    a[i] += 1
-    return
-end
+"""
+	g2p!(T, T_old, px, py, pT, dx, dy, pic_amount, nx, ny, npartcl)
 
-
-
+Grid to particles interpolation
+"""
 function g2p!(T, T_old, px, py, pT, dx, dy, pic_amount, nx, ny, npartcl)
 	ip = (blockIdx().x-1) * blockDim().x + threadIdx().x
 	
@@ -451,6 +444,11 @@ function g2p!(T, T_old, px, py, pT, dx, dy, pic_amount, nx, ny, npartcl)
 end
 
 
+"""
+	assignUniqueLables(mf, L, tsh, nx, ny)
+
+This function assigning unque lables to each cell if mf value more then trashhold
+"""
 function assignUniqueLables(mf, L, tsh, nx, ny)
 	ix = (blockIdx().x-1)* blockDim().x + threadIdx().x-1
 	iy = (blockIdx().y-1)* blockDim().y + threadIdx().y-1
@@ -467,6 +465,13 @@ function assignUniqueLables(mf, L, tsh, nx, ny)
 	return nothing
 end
 
+
+#TODO: describe function
+"""
+	cwLabel(L, nx, ny)	
+
+I have no idea what this function do.
+"""
 function cwLabel(L, nx, ny)
 	iy = (blockIdx().x - 1) * blockDim().x + threadIdx().x
 	
@@ -481,6 +486,12 @@ function cwLabel(L, nx, ny)
 	end
 end
 
+#TODO: describe function
+"""
+	find_root(L, idx)
+
+I have no idea what this function do.
+"""
 function find_root(L, idx)
 	label::Int32 = idx
 	while L[label] != (label-1)
@@ -489,7 +500,12 @@ function find_root(L, idx)
 	return label-1
 end
 
-#magic
+#TODO: describe function
+"""
+	merge_labels!(L, div, nx::Int64, ny)
+
+I have no idea what this function do.
+"""
 function merge_labels!(L, div, nx::Int64, ny)
 	iy = (blockIdx().x - 1) * blockDim().x + threadIdx().x - 1
 	iy = Int64(floor(div / 2)) + iy * div - 1
@@ -508,10 +524,16 @@ function merge_labels!(L, div, nx::Int64, ny)
 	return nothing
 end
 
+
+#TODO: describe function
+"""
+	relabel(L, nx, ny)
+
+I have no idea what this function do.
+"""
 function relabel(L, nx, ny)
 	ix = (blockIdx().x-1)* blockDim().x + threadIdx().x-1
 	iy = (blockIdx().y-1)* blockDim().y + threadIdx().y-1
-	#ix, iy = @indices()
 
 	if (ix > nx-1)  || (iy > ny-1)
 		return
@@ -525,6 +547,12 @@ function relabel(L, nx, ny)
 end
 
 
+"""
+
+	advect_particles_eruption(px, py, idx, gamma, dxl, dyl, npartcl, ncells, nxl, nyl)
+
+Advect particles
+"""
 function advect_particles_eruption(px, py, idx, gamma, dxl, dyl, npartcl, ncells, nxl, nyl)
 	ip = (blockIdx().x - 1 ) * blockDim().x + threadIdx().x-1
 
@@ -560,6 +588,19 @@ function advect_particles_eruption(px, py, idx, gamma, dxl, dyl, npartcl, ncells
 	return nothing
 end
 
+"""
+	average!(mfl, T, C, nl, nx, ny)
+
+averaging melt fraction based on T and ration of magma to the host rock
+
+# Arguments
+- `mfl`: melt fraction grid, [1]
+- `T`: Temperature grid, [°C]
+- `C`: Grid with the ratio of magma to the (host rock + magma) in cell, [1]
+- `nl`: grid reduction factor, [1]
+- `nx`: x-axis grid resolution, [1]
+- `ny`: y-axis grid resolution, [1]
+"""
 function average!(mfl, T, C, nl, nx, ny)
 	ixl = (blockIdx().x-1) * blockDim().x + threadIdx().x-1
 	iyl = (blockIdx().y-1) * blockDim().y + threadIdx().y-1
@@ -586,14 +627,12 @@ function average!(mfl, T, C, nl, nx, ny)
 	return nothing;
 end
 
-function gpu_set_to_zero_2d!(arr, nx)
-	ixl = (blockIdx().x-1) * blockDim().x + threadIdx().x
-	iyl = (blockIdx().y-1) * blockDim().y + threadIdx().y-1
 
-	#CUDA.@atomic arr[iyl * nx + ixl] = 0
-end
+"""
+	count_particles!(pcnt, px, py, dx, dy, nx, ny, npartcl)
 
-
+Count particles in each cell
+"""
 function count_particles!(pcnt, px, py, dx, dy, nx, ny, npartcl)
 	ip = (blockIdx().x - 1) * blockDim().x + threadIdx().x
 
@@ -604,24 +643,20 @@ function count_particles!(pcnt, px, py, dx, dy, nx, ny, npartcl)
 	pxi = px[ip] / dx
 	pyi = py[ip] / dy
 
-	#ix = min(max(Int64(pxi), 0), nx - 2)
-	#iy = min(max(Int64(pyi), 0), ny - 2)
-
 	ix = min(max(Int64(floor(pxi)), 0), nx - 2)
 	iy = min(max(Int64(floor(pyi)), 0), ny - 2)
-	#@cuprint("\nindexes ix- ", ix)
-	#@cuprint("\nindexes iy- ", iy)
 
-	#ix1_int::Int = ix1
-
-	#CUDA.atomic_add!(pointer(pcnt, iy * nx + ix + 1), Int32(1))
-	#@cuprint("\nindexes - ", iy*nx + ix + 1)
 	CUDA.atomic_add!(pointer(pcnt, (iy * nx + ix + 1)), Int32(1))
 
 	return nothing
 end
 
-function inject_particles(px, py, pT, pPh, npartcl, pcnt, T, C, dx, dy, nx, ny, min_pcount, max_npartcl)
+"""
+	inject_particles!(px, py, pT, pPh, npartcl, pcnt, T, C, dx, dy, nx, ny, min_pcount, max_npartcl)
+
+Function which inject particles
+"""
+function inject_particles!(px, py, pT, pPh, npartcl, pcnt, T, C, dx, dy, nx, ny, min_pcount, max_npartcl)
 	ix = (blockIdx().x - 1) * blockDim().x + threadIdx().x - 1
 	iy = (blockIdx().y - 1) * blockDim().y + threadIdx().y - 1
 
@@ -652,15 +687,15 @@ end
 
 
 """
-Function related with lables
-...
+	ccl(mf, L, tsh, nx, ny)
+
+Function related with lables to
 # Arguments
-- `mf::CuArray`: Shortened array to decrease dimension of computation area.
-- `L::Integer=1`: ?.
-- `tsh::Integer`: ?.
-- `nx::CuArray`: ?.
-- `ny::CuArray`: ?.
-...
+- `mf::CuArray`: Melt fraction grid.
+- `L`: Helper grid.
+- `tsh`: threashhold which describes which cells with which melt fraction to take into account.
+- `nx`: x-axis grid resolution, [1]
+- `ny`: y-axis grid resolution, [1]
 """
 function ccl(mf, L, tsh, nx, ny)
 	blockSize2D = (16, 32)
@@ -699,22 +734,17 @@ function ccl(mf, L, tsh, nx, ny)
 	return nothing
 end
 
-function printDeviceProperties(deviceId)
-	# code to print device properties
-end
 
-function tic()
-	return time()
-end
+"""
+	init_particles_T(pT, T_magma, npartcl)
 
-function toc(start)
-	end_time = time()
-	elapsed_time = end_time - start
-	println(elapsed_time, " s")
-end
+initing particles out of defined particles as magma particles
 
-
-#initing particles out of defined particles as magma particles
+# Arguments
+- `pT`: Temperature of particles, [°C]
+- `T_magma`: Temperature of intruding magma, [°C]
+- `npartcl`: maximal number of particles
+"""
 function init_particles_T(pT, T_magma, npartcl)
 	ip = (blockIdx().x-1) * blockDim().x + threadIdx().x
 
@@ -727,8 +757,12 @@ function init_particles_T(pT, T_magma, npartcl)
 end
 
 
-
-#avg += mf_magma(T[idc(ix, iy, nx)]) * vf + mf_rock(T[idc(ix, iy, nx)]) * (1 - vf);
+"""
+	mf_magma(T)
+	
+# Arguments
+- `T`: Temperature variable, [°C]
+"""
 function mf_magma(T)
 	t2 = T * T
 	t7 = exp(
@@ -738,6 +772,7 @@ function mf_magma(T)
 	return 0.1e1 / (0.1e1 + t7)
 end
 
+#=
 function average(mfl, T, C, nl, nx, ny)
 	ixl = blockIdx().x * blockDim().x + threadIdx().x
 	iyl = blockIdx().y * blockDim().y + threadIdx().y
@@ -775,6 +810,15 @@ function average(mfl, T, C, nl, nx, ny)
 end
 =#
 
+"""
+    write_h5(filename, data)
+
+write data to HDF5 file
+
+# Arguments
+   - `filename`: the number of elements to compute.
+   - `data`: the dimensions along which to perform the computation.
+"""
 function write_h5(filename,data)
     file = joinpath(dir, "$(filename)")    
     open(file, "w") do fid
@@ -782,16 +826,12 @@ function write_h5(filename,data)
     end
 end
 
-function read_h5()
-    file = readdir(dir,join=true)[1]
-    fid  = HDF5.h5open(file, "r")["Data"]
-    data = fid["data"] |> read
-    d = Dict("data" => data)
-    close(fid)
-    return d
-end
+"""
 
+	small_mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl,max_nmarker, px,py,mx,my,h_px_dikes,pcnt, mfl)
 
+write some variables in 'filename' in h5 format
+"""
 function small_mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl,max_nmarker, px,py,mx,my,h_px_dikes,pcnt, mfl);
 @time begin
 		bar1 = "├──"
@@ -820,7 +860,12 @@ function small_mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl
 	end
 end
 
-#function to write data to hdf5 file for debug
+"""
+
+	mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl,max_nmarker, px,py,mx,my,h_px_dikes,pcnt, mfl)
+
+write all variables in 'filename' in h5 format
+"""
 function mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl,max_nmarker, px,py,mx,my,h_px_dikes,pcnt, mfl);
 @time begin
 		bar1 = "├──"
