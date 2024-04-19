@@ -196,6 +196,7 @@ function update_T!(T,  T_old, T_top, T_bot, C, lam_r_rhoCp, lam_m_rhoCp, L_Cp, d
 	return
 end
 
+#initing not existing particles as ph
 function init_particles_Ph(pPh, ph, npartcl)
 	ip = (blockIdx().x - 1) * blockDim().x + threadIdx().x
 
@@ -425,14 +426,12 @@ function g2p!(T, T_old, px, py, pT, dx, dy, pic_amount, nx, ny, npartcl)
 		return nothing
 	end
 	
+	#xi and xy coordinate of particle
 	pxi = px[ip] / dx
 	pyi = py[ip] / dy
 
-	#@cuprintln(typeof(pxi))
-
-	#pxi = Int32(pxi)
+	#check if we out of bounds and getting boundaries of cell around particle
 	ix1 = min(max(Int64(floor(pxi)), 0), nx - 2)
-	#ix1_int::Int = ix1
 	iy1 = min(max(Int64(floor(pyi)), 0), ny - 2)
 	ix2 = ix1 + 1
 	iy2 = iy1 + 1
@@ -442,12 +441,15 @@ function g2p!(T, T_old, px, py, pT, dx, dy, pic_amount, nx, ny, npartcl)
 	y1 = Float64(iy1) * dy
 	y2 = Float64(iy2) * dy
 
+#T_pic - current temperature of particle?
 	T_pic = blerp(x1, x2, y1, y2, T[idc(ix1, iy1, nx)], T[idc(ix1, iy2, nx)], T[idc(ix2, iy1, nx)], T[idc(ix2, iy2, nx)], px[ip], py[ip])
 	T_flip = pT[ip] + T_pic - blerp(x1, x2, y1, y2, T_old[idc(ix1, iy1, nx)], T_old[idc(ix1, iy2, nx)], T_old[idc(ix2, iy1, nx)], T_old[idc(ix2, iy2, nx)], px[ip], py[ip])
+#if pic_amount == 1, pT defined by T of grid, if pic_amount == 0, T defined by dT of interpolated pT
 	pT[ip] = T_pic * pic_amount + T_flip * (1.0 - pic_amount)
 
 	return nothing
 end
+
 
 function assignUniqueLables(mf, L, tsh, nx, ny)
 	ix = (blockIdx().x-1)* blockDim().x + threadIdx().x-1
@@ -480,13 +482,14 @@ function cwLabel(L, nx, ny)
 end
 
 function find_root(L, idx)
-	label::Int32 = idx				#WARN:tuple by default, if not set Int32???
+	label::Int32 = idx
 	while L[label] != (label-1)
 		label = L[label]+1
 	end
 	return label-1
 end
 
+#magic
 function merge_labels!(L, div, nx::Int64, ny)
 	iy = (blockIdx().x - 1) * blockDim().x + threadIdx().x - 1
 	iy = Int64(floor(div / 2)) + iy * div - 1
@@ -663,12 +666,14 @@ function ccl(mf, L, tsh, nx, ny)
 	blockSize2D = (16, 32)
 	gridSize2D = ((nx + blockSize2D[1] - 1) ÷ blockSize2D[1], (ny + blockSize2D[2] - 1) ÷ blockSize2D[2])
 	
-	#to synch device
+	#add lables to the points where ms > tsh
 	CUDA.@sync begin
 		@cuda blocks = gridSize2D threads = blockSize2D assignUniqueLables(mf, L, tsh, nx, ny)
 	end
 	blockSize1D = 32
 	gridSize1D = (ny + blockSize1D - 1) ÷ blockSize1D
+
+	#decreasingupcoming variables???
 	CUDA.@sync begin
 		@cuda  blocks = gridSize1D threads = blockSize1D cwLabel(L, nx, ny)
 	end
@@ -708,6 +713,8 @@ function toc(start)
 	println(elapsed_time, " s")
 end
 
+
+#initing particles out of defined particles as magma particles
 function init_particles_T(pT, T_magma, npartcl)
 	ip = (blockIdx().x-1) * blockDim().x + threadIdx().x
 
@@ -718,37 +725,6 @@ function init_particles_T(pT, T_magma, npartcl)
 	pT[ip] = T_magma
 	return
 end
-
-
-#=
-function g2p!(T, T_old, C, wts, px, py, pT, pPh, lam_r_rhoCp, lam_m_rhoCp, L_Cp, T_top, T_bot, dx, dy, dt, pic_amount, nx, ny, npartcl, npartcl0)
-	ip = blockIdx().x * blockDim().x + threadIdx().x;
-
-	if ip > (npartcl - 1)
-		return nothing
-	end
-
-	pxi = px[ip]/ dx;
-	pyi = px[ip]/ dy;
-
-	ix1 = min(max(convert(Int64, pxi), 0), nx - 2);
-	iy1 = min(max(convert(Int64, pyi), 0), ny - 2);
-	
-	ix2 = ix1 + 1;
-	iy2 = iy1 + 1;
-	
-	x1 = ix1 * dx
-	x2 = ix2 * dx;
-	y1 = iy1 * dy;
-	y2 = iy2 * dy;
-	
-	T_pic = blerp(x1, x2, y1, y2, T[idc(ix1, iy1, nx)], T[idc(ix1, iy2, nx)], T[idc(ix2, iy1, nx)], T[idc(ix2, iy2, nx)], px[ip], py[ip]);
-	T_flip = pT[ip] + T_pic - blerp(x1, x2, y1, y2, T_old[idc(ix1, iy1, nx)], T_old[idc(ix1, iy2, nx)], T_old[idc(ix2, iy1, nx)], T_old[idc(ix2, iy2,nx)], px[ip], py[ip]);
-	pT[ip] = T_pic * pic_amount + T_flip * (1.0 - pic_amount);
-	
-	return nothing
-end
-
 
 
 
