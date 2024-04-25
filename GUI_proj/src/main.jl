@@ -43,14 +43,16 @@ log_widget = b["log_id"]
 progress_widget_id = b["progress_id"]
 #log_buffer = GtkTextBuffer()
 #log_widget = GtkTextView(log_buffer)
+	
 log_buffer  = log_widget[:buffer, GtkTextBuffer]
+	
 #G_.text(tb, "test", -1)
 #println(set_gtk_property(log_buffer, :text, String, "Lol?"))
-log_buffer.text[String] = "my text \n kek"
+#log_buffer.text[String] = "my text \n kek"
 println(get_gtk_property(log_buffer, :text, String))
 #progress_widget_id = GtkProgressBar()
 #setproperty!(progress_widget_id, :fraction, 1/20)
-progress_widget_id.fraction[Float64] = 2.0/20;
+progress_widget_id.fraction[Float64] = 6.0/20;
 #progress_widget_id[:fraction, 9/20]
 #println(GtkTree(log_widget))
 #log_buffer = GtkTextBufferLeaf();
@@ -61,6 +63,7 @@ image_widget_id = b["box_widget_id"]
 Lx_widget_id = b["Lx"]
 io = PipeBuffer()
 histio(n) = show(io, MIME("image/png"),  histogram(randn(n)))
+#histio(n) = show(io, MIME("image/png"),  FileIO.load("T_julia.png"))
 can = GtkCanvas()
     push!(image_widget_id, can)
     set_gtk_property!(image_widget_id, :expand, can, true)
