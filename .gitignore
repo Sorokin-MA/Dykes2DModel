@@ -26,3 +26,5 @@ untitled*
 *.png
 *.fig
 *init_data
+*.csv
+*.glade~
