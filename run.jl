@@ -1,1 +1,1 @@
-include("src/dykes_main.jl")
+include("src/dykes_main_s.jl")
