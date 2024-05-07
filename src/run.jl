@@ -1,2 +1,1 @@
-include("dykes_main.jl")
-#julia_main()
+include("dykes_main_s.jl")
