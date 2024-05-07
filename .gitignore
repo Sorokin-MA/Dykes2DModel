@@ -18,14 +18,11 @@ nvim-lspconfig
 untitled*
 *.bat
 *.m
-*.m~
 *.swp
-*.un~
-*.bat~
 *.jpg
 *.png
 *.fig
 *init_data
 *.csv
-*.glade~
+*~
 *.exe

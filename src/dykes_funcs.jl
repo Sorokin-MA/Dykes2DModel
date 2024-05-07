@@ -1,3 +1,5 @@
+#main file with funncs
+
 bar1 = "\n├──"
 bar2 = "\n\t ├──"
 
