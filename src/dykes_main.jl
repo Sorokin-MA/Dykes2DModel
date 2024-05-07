@@ -60,12 +60,12 @@ function main()
 	read!(io, dpa)
 	read!(io, ipa)
 
-	ipar = 1								#index to read parameters
-	Lx, ipar = read_par(dpa, ipar)			#x length of area
-	Ly, ipar = read_par(dpa, ipar)			#y length of area
-	lam_r_rhoCp, ipar = read_par(dpa, ipar)	#a few coefficients multiplied
-	lam_m_rhoCp, ipar = read_par(dpa, ipar)	#a few coefficients multipled
-	L_Cp, ipar = read_par(dpa, ipar)		#
+	ipar = 1								
+	Lx, ipar = read_par(dpa, ipar)			
+	Ly, ipar = read_par(dpa, ipar)			
+	lam_r_rhoCp, ipar = read_par(dpa, ipar)	
+	lam_m_rhoCp, ipar = read_par(dpa, ipar)	
+	L_Cp, ipar = read_par(dpa, ipar)		
 	T_top, ipar = read_par(dpa, ipar)
 	T_bot, ipar = read_par(dpa, ipar)
 	T_magma, ipar = read_par(dpa, ipar)
@@ -112,11 +112,10 @@ function main()
 	println("ndikes_all")
 	println(ndikes_all)
 
-	#???
+	#array which describes amount of particles in new dyke
 	particle_edges = Array{Int32,1}(undef, ndikes_all + 1)
 	read!(io, particle_edges)
 
-	#???
 	marker_edges = Array{Int32,1}(undef, ndikes_all + 1)
 	read!(io, marker_edges)
 
@@ -252,14 +251,9 @@ function main()
 	close(fid)
 =#
 
-	h_mx = Array{Float64,1}(undef, max_nmarker)
-	h_my = Array{Float64,1}(undef, max_nmarker)
-	h_mT = Array{Float64,1}(undef, max_nmarker)
-
 	#copyto!(mx, h_mx)
 	#copyto!(my, h_my)
 	#copyto!(mT, h_mT)
-
 
 	#reading initial grid
 
