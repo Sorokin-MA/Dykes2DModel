@@ -935,7 +935,7 @@ function read_params(gp::GridParams, vp::VarParams)
     dpa = Array{Float64,1}(undef, 18)#array of double values from matlab script
     ipa = Array{Int32,1}(undef, 12)#array of int values from matlab script
 
-    io = open("data/pa.bin", "r")
+    io = open(data_folder*"pa.bin", "r")
     read!(io, dpa)
     read!(io, ipa)
 
@@ -1000,7 +1000,9 @@ function read_params(gp::GridParams, vp::VarParams)
     cap_frac = 1.5  #value to spcify how much particles we allow to inject in runtime
     vp.npartcl0 = vp.npartcl #initial amount of particles
     vp.max_npartcl = convert(Int64, vp.npartcl * cap_frac) + gp.particle_edges[ndikes_all+1] #???#count max particles
-
+	println(vp.npartcl)
+	println(gp.particle_edges[ndikes_all+1])
+	println(vp.max_npartcl)
     nmarker0 = vp.nmarker
 
     vp.max_nmarker = vp.nmarker + gp.marker_edges[ndikes_all+1]
@@ -1069,7 +1071,7 @@ function read_params(gp::GridParams, vp::VarParams)
     gp.dike_t = Array{Float64,1}(undef, ndikes_all)
 
     #NOTE:Dykes data upload takes time
-    io = open("data/dikes.bin", "r")
+    io = open(data_folder*"dikes.bin", "r")
     read!(io, gp.dike_a)
     read!(io, gp.dike_b)
     read!(io, gp.dike_x)
@@ -1078,7 +1080,7 @@ function read_params(gp::GridParams, vp::VarParams)
 
     close(io)
 
-    fid = h5open("data/particles.h5", "r")
+    fid = h5open(data_folder*"particles.h5", "r")
 
     gp.h_px = Array{Float64,1}(undef, vp.max_npartcl)
     gp.h_py = Array{Float64,1}(undef, vp.max_npartcl)
@@ -1124,10 +1126,11 @@ function read_params(gp::GridParams, vp::VarParams)
     =#
 
 
-    NDIGITS = 5
+	NDIGITS = Int32(floor(log10(vp.nt)))+1
 
-    filename = "data/grid." * "0"^NDIGITS * "0" * ".h5"
-
+    filename = data_folder*"grid." * "0"^NDIGITS * ".h5"
+	println(vp.nx)
+	println(vp.ny)
     fid = h5open(filename, "r")
     T_h = read(fid, "T")
     copyto!(gp.T, T_h)
@@ -1163,6 +1166,10 @@ function init(gp::GridParams, vp::VarParams)
 
     pPhs = @view gp.pPh[vp.npartcl+1:end]
     @cuda blocks = gridSize1D threads = blockSize1D init_particles_Ph(pPhs, 1, vp.max_npartcl - vp.npartcl)
+	println(vp.max_npartcl)
+	println(vp.npartcl)
+	println(vp.max_nmarker)
+	println(vp.nmarker)
 
     #processing all markers 
     gridSize1D = Int64(floor((vp.max_nmarker - vp.nmarker + blockSize1D - 1) / blockSize1D))

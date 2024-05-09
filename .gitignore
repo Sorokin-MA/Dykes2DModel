@@ -1,17 +1,12 @@
-.ipynb_checkpoints
+build
 dikes.bin
 grid.*
 markers.h5
 pa.bin
 particles.h5
 eruptions.bin
-eruptions2.bin
-script_read.asv
-script_read.m
-build
 init_data
 *.asv
-nvim-lspconfig
 *.vim
 *.norg
 *.h5
@@ -26,3 +21,4 @@ untitled*
 *.csv
 *~
 *.exe
+*.cu

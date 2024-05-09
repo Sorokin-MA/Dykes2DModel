@@ -2,7 +2,7 @@
 
 julia_version = "1.9.0"
 manifest_format = "2.0"
-project_hash = "b1d39e6d0a929b3f39ed37847d9cba710f234cc8"
+project_hash = "d184988dc2ef705a0fc7c7bfc0e0f1cdd18b5fa1"
 
 [[deps.ATK_jll]]
 deps = ["Artifacts", "Glib_jll", "JLLWrappers", "Libdl"]
@@ -636,6 +636,12 @@ version = "0.16.3"
 [[deps.LazyArtifacts]]
 deps = ["Artifacts", "Pkg"]
 uuid = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
+
+[[deps.LazyGrids]]
+deps = ["Statistics"]
+git-tree-sha1 = "f43d10fea7e448a60e92976bbd8bfbca7a6e5d09"
+uuid = "7031d0ef-c40d-4431-b2f8-61a8d2f650db"
+version = "0.5.0"
 
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
