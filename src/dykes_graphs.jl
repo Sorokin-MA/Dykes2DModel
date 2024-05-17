@@ -65,5 +65,5 @@ function dykes_graph()
 
     #x, y = meshgrid(xs, ys)
 	T = reshape(T,(length(xs), length(ys)))
-	heatmap(ys, xs, T)
+	heatmap(ys, xs, transpose(T))
 end

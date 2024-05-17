@@ -60,8 +60,8 @@ function dikes_rand()
     Lx::Float64 = 20000 # x size of area, m
     Ly::Float64 = 20000 # y size of area, m %20000
     Lx_Ly = Lx / Ly
-    narrow_fact = 0.6
-    dike_x_W = 5000 #m 
+    narrow_fact =1 
+    dike_x_W = 10000 #m 
     dike_x_Wn = dike_x_W * narrow_fact #m 
     dike_a_rng = Vector{Int32}
     dike_a_rng = [100, 1500] #m
@@ -70,10 +70,10 @@ function dikes_rand()
     dike_x_rng = [(Lx - dike_x_W) / 2, (Lx + dike_x_W) / 2]
     dike_x_rng_n = [(Lx - dike_x_Wn) / 2, (Lx + dike_x_Wn) / 2]
 
-    dike_y_rng = [1000, 22000]#dikes y distribution
+    dike_y_rng = [5000, 13000]#dikes y distribution
     dike_t_rng = [0.95 * pi / 2, 1.05 * pi / 2]#dykes time distribution
     dike_to_sill = 21000#boundary where dykes turn yourself to sill, m
-    dz = 5000#z dimension? i guess, m
+    dz = 10000#z dimension? i guess, m
 
     Lam_r = 1.5#thermal conductivity of rock, W/m/K
     Lam_m = 1.2#thermal conductivity of magma, W/m/K
@@ -84,10 +84,10 @@ function dikes_rand()
     dTdy = 20#how fast temperature decreasing with depth, K/km
     T_magma::Float64 = 950#magma intrusion temperature, C
     T_ch = 700#?
-    Qv = 0.038#m^3/s
-    dt = 50 * tyear#time
-    tfin::Int64 = 600e3 * tyear
-    terupt::Int64 = 600e3 * tyear
+    Qv = 0.00411 * 1.e9 / tyear#m^3/s
+    dt = 5 * tyear#time
+    tfin::Int64 = 200e3 * tyear
+    terupt::Int64 = 200e3 * tyear
 
 
     Ly_eruption::Float64 = 2000 # m
@@ -141,7 +141,7 @@ function dikes_rand()
     CFL = 0.23
     pic_amount::Float64 = 0.05
     nt::Int32 = tfin / dt
-    nout::Int32 = nt / 12
+	nout::Int32 = round(nt / 12)
     nt_erupt = terupt / dt
     nerupt::Int32 = 1
 
@@ -154,20 +154,20 @@ function dikes_rand()
     dmr = min(dmx, dmy)
     xs = 0:dx:Lx
     ys = 0:dy:Ly
-    y, x = meshgrid(xs, ys)
+    x, y = meshgrid(xs, ys)
     nbd = floor(0.1 * (ny - 1))
     pxs = -nbd*dx-dx/pmlt/2:dx/pmlt:Lx+nbd*dx+dx/pmlt-dx/pmlt/2
     pys = -nbd*dy-dy/pmlt/2:dy/pmlt:Ly+nbd*dy+dy/pmlt-dy/pmlt/2
     #println("type of  pxs = ")
     #println(typeof(pxs))
-    py, px = meshgrid(pxs, pys)
+    px, py = meshgrid(pxs, pys)
     px = reshape(px, length(px), 1)
     py = reshape(py, length(py), 1)
     #px          = px(:);
     #py          = py(:);
     mxs = Omx:dmx:Omx+Lmx
     mys = Omy:dmy:Omy+Lmy
-    my, mx = meshgrid(mxs, mys)
+    mx, my = meshgrid(mxs, mys)
     #mx          = mx(:);
     #my          = my(:);
     mx = reshape(mx, length(mx), 1)
@@ -189,7 +189,7 @@ function dikes_rand()
     #print T
     C = zeros(nx, ny)
 
-    heatmap(ys, xs, T)
+	#heatmap(xs, ys, transpose(T))
 
     Q = 0
     dike_a = Vector{Float64}(undef, 0)
@@ -266,7 +266,7 @@ function dikes_rand()
         if isempty(dikeys)
             dikeys = 0
         end
-        dikey, dikex = meshgrid(dikexs, dikeys)
+        dikex, dikey = meshgrid(dikexs, dikeys)
         dikex = reshape(dikex, length(dikex), 1)
         dikey = reshape(dikey, length(dikey), 1)
         #    dikex          = dikex(:);
@@ -306,7 +306,7 @@ function dikes_rand()
             #dikemys = [0]
         end
 
-        dikemy, dikemx = meshgrid(dikemxs, dikemys)
+        dikemx, dikemy = meshgrid_2(dikemxs, dikemys)
         dikemx = reshape(dikemx, length(dikemx), 1)
         dikemy = reshape(dikemy, length(dikemy), 1)
         #    dikemx          = dikemx(:);
@@ -454,7 +454,6 @@ function dikes_rand()
     fid_0["my"] = my
     fid_0["mT"] = mT
     close(fid)
-
     println("nx = $nx")
     println("ny = $ny")
     println("success!!!")
