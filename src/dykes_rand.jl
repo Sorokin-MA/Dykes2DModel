@@ -86,8 +86,8 @@ function dikes_rand()
     T_ch = 700#?
     Qv = 0.0411 * 1.e9 / tyear#m^3/s
     dt = 5 * tyear#time
-    tfin::Int64 = 200e3 * tyear
-    terupt::Int64 = 200e3 * tyear
+    tfin::Int64 = 500e3 * tyear
+    terupt::Int64 = 500e3 * tyear
 
     #Qv = 0.0411 * 1.e9 / tyear#m^3/s
 	Qv = (0.00411 * 1.e9 / tyear)*(78000.0/(tfin/tyear))#m^3/s
