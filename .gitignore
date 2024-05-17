@@ -12,7 +12,6 @@ init_data
 *.h5
 untitled*
 *.bat
-*.m
 *.swp
 *.jpg
 *.png
