@@ -154,20 +154,20 @@ function dikes_rand()
     dmr = min(dmx, dmy)
     xs = 0:dx:Lx
     ys = 0:dy:Ly
-    x, y = meshgrid(xs, ys)
+    y, x = meshgrid(xs, ys)
     nbd = floor(0.1 * (ny - 1))
     pxs = -nbd*dx-dx/pmlt/2:dx/pmlt:Lx+nbd*dx+dx/pmlt-dx/pmlt/2
     pys = -nbd*dy-dy/pmlt/2:dy/pmlt:Ly+nbd*dy+dy/pmlt-dy/pmlt/2
     #println("type of  pxs = ")
     #println(typeof(pxs))
-    px, py = meshgrid(pxs, pys)
+    py, px = meshgrid(pxs, pys)
     px = reshape(px, length(px), 1)
     py = reshape(py, length(py), 1)
     #px          = px(:);
     #py          = py(:);
     mxs = Omx:dmx:Omx+Lmx
     mys = Omy:dmy:Omy+Lmy
-    mx, my = meshgrid(mxs, mys)
+    my, mx = meshgrid(mxs, mys)
     #mx          = mx(:);
     #my          = my(:);
     mx = reshape(mx, length(mx), 1)
@@ -266,7 +266,7 @@ function dikes_rand()
         if isempty(dikeys)
             dikeys = 0
         end
-        dikex, dikey = meshgrid(dikexs, dikeys)
+        dikey, dikex = meshgrid(dikexs, dikeys)
         dikex = reshape(dikex, length(dikex), 1)
         dikey = reshape(dikey, length(dikey), 1)
         #    dikex          = dikex(:);
@@ -306,7 +306,7 @@ function dikes_rand()
             #dikemys = [0]
         end
 
-        dikemx, dikemy = meshgrid_2(dikemxs, dikemys)
+        dikemy, dikemx = meshgrid(dikemxs, dikemys)
         dikemx = reshape(dikemx, length(dikemx), 1)
         dikemy = reshape(dikemy, length(dikemy), 1)
         #    dikemx          = dikemx(:);

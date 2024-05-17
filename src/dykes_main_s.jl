@@ -9,7 +9,7 @@ include("dykes_funcs.jl")
 function main_test()
     #Initialization of inner random
     Random.seed!(1234)
-
+	checker = Array{Float64}(undef,1);
     #TODO:Настроить фильтр
     #TODO:Настроить девайс если не выбран
 
@@ -90,10 +90,10 @@ function main_test()
             end
 
 			#check for calculation explosion
-			checker::Float64 = 0;
-			copyto!(checker, gp.T[1])
-			if isnan(checker)
-				printfln("EXPLOSION!!!")
+			T_for_chek = @view gp.T[1] 
+			copyto!(checker, T_for_chek)
+			if isnan(checker[1])
+				println("EXPLOSION!!!")
 				return -1
 			end
         end
