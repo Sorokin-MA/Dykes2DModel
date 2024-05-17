@@ -84,10 +84,13 @@ function dikes_rand()
     dTdy = 20#how fast temperature decreasing with depth, K/km
     T_magma::Float64 = 950#magma intrusion temperature, C
     T_ch = 700#?
-    Qv = 0.00411 * 1.e9 / tyear#m^3/s
+    Qv = 0.0411 * 1.e9 / tyear#m^3/s
     dt = 5 * tyear#time
     tfin::Int64 = 200e3 * tyear
     terupt::Int64 = 200e3 * tyear
+
+    #Qv = 0.0411 * 1.e9 / tyear#m^3/s
+	Qv = 0.0411 * 1.e9 / tyear*(78000.0/(tfin/tyear))#m^3/s
 
 
     Ly_eruption::Float64 = 2000 # m
