@@ -65,6 +65,5 @@ function dykes_graph()
 
     #x, y = meshgrid(xs, ys)
 	T = reshape(T,(length(xs), length(ys)))
-	@infiltrate
 	heatmap(ys, xs, T)
 end

@@ -22,7 +22,6 @@ function main_test()
     @printf("%s reading params			  ", bar1)
     read_params(gp, vp)
 
-@infiltrate
 
     #initialisation of T and Ph variables
     @printf("%s initialization			  ", bar1)
