@@ -90,7 +90,7 @@ function dikes_rand()
     terupt::Int64 = 200e3 * tyear
 
     #Qv = 0.0411 * 1.e9 / tyear#m^3/s
-	Qv = 0.0411 * 1.e9 / tyear*(78000.0/(tfin/tyear))#m^3/s
+	Qv = (0.00411 * 1.e9 / tyear)*(78000.0/(tfin/tyear))#m^3/s
 
 
     Ly_eruption::Float64 = 2000 # m
