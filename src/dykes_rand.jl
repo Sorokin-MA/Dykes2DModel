@@ -140,8 +140,8 @@ function dikes_rand()
     eiter::Float64 = 1e-12
     CFL = 0.23
     pic_amount::Float64 = 0.05
-    nout::Int32 = 10000
     nt::Int32 = tfin / dt
+    nout::Int32 = nt / 12
     nt_erupt = terupt / dt
     nerupt::Int32 = 1
 

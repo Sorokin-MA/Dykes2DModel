@@ -22,10 +22,11 @@ function main_test()
     @printf("%s reading params			  ", bar1)
     read_params(gp, vp)
 
+@infiltrate
+
     #initialisation of T and Ph variables
     @printf("%s initialization			  ", bar1)
     init(gp, vp)
-
 
     filename = Array{Char,1}(undef, 1024)
     global iSample = Int32(1)
@@ -88,6 +89,14 @@ function main_test()
                 @cuda blocks = gridSize[1], gridSize[2] threads = blockSize[1], blockSize[2] update_T!(gp.T, gp.T_old, vp.T_top, vp.T_bot, gp.C, vp.lam_r_rhoCp, vp.lam_m_rhoCp, vp.L_Cp, vp.dx, vp.dy, vp.dt, vp.nx, vp.ny)
                 synchronize()
             end
+
+			#check for calculation explosion
+			checker::Float64 = 0;
+			copyto!(checker, gp.T[1])
+			if isnan(checker)
+				printfln("EXPLOSION!!!")
+				return -1
+			end
         end
 
 
