@@ -1,3 +1,5 @@
+include("dykes_init.jl")
+include("dykes_funcs.jl")
 
 
 function dykes_graph()
@@ -58,7 +60,7 @@ function dykes_graph()
     ys = 0:dy:Ly
 
 #    fid = h5open(data_folder * "julia_grid.12001.h5", "r")
-    fid = h5open(data_folder * "grid.00000.h5", "r")
+    fid = h5open(data_folder * "julia_grid.3333.h5", "r")
     T = read(fid, "T")
 	
     close(fid)
