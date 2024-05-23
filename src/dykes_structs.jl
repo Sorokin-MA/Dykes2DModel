@@ -1,7 +1,3 @@
-using CUDA
-using Parameters
-
-
 @with_kw mutable struct GridParams
 	critVol::Array{Float64,1} = Array{Float64,1}(undef,0);
 	ndikes::Array{Int32,1} = Array{Int32,1}(undef,0);

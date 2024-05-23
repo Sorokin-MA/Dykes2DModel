@@ -1,19 +1,15 @@
 #maing jl file made for gui
-
 include("dykes_init.jl")
 include("dykes_funcs.jl")
 include("dykes_structs.jl")
 
 
-
 function main_test()
-    #Initialization of inner random
+    #initialization of inner random
     Random.seed!(1234)
 
     #TODO:Настроить фильтр
     #TODO:Настроить девайс если не выбран
-
-    #print_gpu_properties()
 
     gp = GridParams()
     vp = VarParams()

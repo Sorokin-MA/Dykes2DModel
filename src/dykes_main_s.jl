@@ -1,5 +1,4 @@
 #main jl file made with structs
-
 include("dykes_init.jl")
 include("dykes_structs.jl")
 include("dykes_funcs.jl")
