@@ -51,8 +51,8 @@ end
 function dikes_rand()
     Random.seed!(1234)
 
-    gpuid = 0#gpu id
-    tyear = 365 * 24 * 3600#seconds in year
+    gpuid = 0 #gpu id
+    tyear = 365 * 24 * 3600 #seconds in year
 
     Lx::Float64 = 20000 # x size of area, m
     Ly::Float64 = 20000 # y size of area, m %20000
@@ -82,12 +82,12 @@ function dikes_rand()
     T_magma::Float64 = 950#magma intrusion temperature, C
     T_ch = 700#?
     Qv = 0.0411 * 1.e9 / tyear#m^3/s
-    dt = 5 * tyear#time
-    tfin::Int64 = 500e3 * tyear
-    terupt::Int64 = 500e3 * tyear
+    dt::Float64 = 5 * tyear#time
+	ka_years = 500e3
+    tfin::Float64= ka_years * tyear
+    terupt::Float64= ka_years * tyear
 
-    #Qv = 0.0411 * 1.e9 / tyear#m^3/s
-	Qv = (0.00411 * 1.e9 / tyear)*(78000.0/(tfin/tyear))#m^3/s
+	#Qv = (0.00411 * 1.e9 / tyear)*(78000.0/(tfin/tyear))#m^3/s
 
 
     Ly_eruption::Float64 = 2000 # m
@@ -144,7 +144,10 @@ function dikes_rand()
 	nout::Int32 = round(nt / 12)
     nt_erupt = terupt / dt
     nerupt::Int32 = 1
-
+	println(nt)
+	println(dt)
+	println(typeof(dt))
+	println(dt * nt / tyear)
     #preprocessing
     dx::Float64 = Lx / (nx - 1)
     dy::Float64 = Ly / (ny - 1)
@@ -407,7 +410,9 @@ function dikes_rand()
     particles_file_name = sim_dir * "pa.bin"
 
     fid = open(particles_file_name, "w")
-    write(fid, Lx, Ly, lam_r_rhoCp, lam_m_rhoCp, L_Cp, T_top, T_bot, T_magma, tsh, gamma, Ly_eruption, nu, G, dt_diff, dx, dy, eiter, pic_amount)
+	println(typeof(Lx), typeof(Ly), typeof(lam_r_rhoCp), typeof(lam_m_rhoCp), typeof(L_Cp), typeof(T_top), typeof(T_bot), typeof(T_magma), typeof(tsh), typeof(gamma), typeof(Ly_eruption), typeof(nu), typeof(G), typeof(dt_diff), typeof(dx), typeof(dy), typeof(eiter), typeof(pic_amount))
+    write(fid, Lx, Ly, lam_r_rhoCp, lam_m_rhoCp, L_Cp, T_top, T_bot, T_magma, tsh, gamma, Ly_eruption, nu, G, dt_diff, dx, dy, eiter, pic_amount, tfin)
+	println(typeof(pmlt), typeof(nx), typeof(ny), typeof(nl), typeof(nt), typeof(niter), typeof(nout), typeof(nsub), typeof(nerupt), typeof(npartcl), typeof(nmarker), typeof(Nsample))
     write(fid, pmlt, nx, ny, nl, nt, niter, nout, nsub, nerupt, npartcl, nmarker, Nsample)
     write(fid, critVol)
     write(fid, ndikes)
