@@ -930,7 +930,7 @@ end
 
 function read_params(gp::GridParams, vp::VarParams)
 
-    dpa = Array{Float64,1}(undef, 18)#array of double values from matlab script
+    dpa = Array{Float64,1}(undef, 19)#array of double values from matlab script
     ipa = Array{Int32,1}(undef, 12)#array of int values from matlab script
 
     io = open(data_folder*"pa.bin", "r")
