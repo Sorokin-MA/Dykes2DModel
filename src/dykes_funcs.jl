@@ -956,6 +956,7 @@ function read_params(gp::GridParams, vp::VarParams)
     vp.dy, ipar = read_par(dpa, ipar)
     vp.eiter, ipar = read_par(dpa, ipar)
     vp.pic_amount, ipar = read_par(dpa, ipar)
+    tfin, ipar = read_par(dpa, ipar)
 
     ipar = 1
 
