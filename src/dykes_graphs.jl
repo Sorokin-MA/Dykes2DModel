@@ -70,14 +70,13 @@ function dykes_graph()
 	l = @layout [ [grid(1,2)] 
 					a]
 
-	#campri_calc = Array{Int32,1}(undef, 4)#array of int values from matlab script
+#=
 	campri_calc = Int32[10000, 20000, 25000, 26000]
-    #write(data_folder*"eruptions.bin", campri_calc)
-
 	println(typeof(campri_calc))
 	file = open(data_folder*"eruptions.bin", "w")
 	write(file, campri_calc)
 	close(file)
+=#
 
 	fz = filesize(data_folder*"eruptions.bin")
 	fz_int = Int32(floor(fz/sizeof(Int32)))
