@@ -836,7 +836,7 @@ end
 
 write some variables in 'filename' in h5 format
 """
-function small_mailbox_out(filename, T, pT, C, mT, staging, is_eruption, L, nx, ny, nxl, nyl, max_npartcl, max_nmarker, px, py, mx, my, h_px_dikes, pcnt, mfl)
+function small_mailbox_out(filename, T, pT, C, mT, staging, L, nx, ny, nxl, nyl, max_npartcl, max_nmarker, px, py, mx, my, h_px_dikes, pcnt, mfl)
     @time begin
         bar1 = "├──"
         bar2 = "\t ├──"
@@ -870,7 +870,7 @@ end
 
 write all variables in 'filename' in h5 format
 """
-function mailbox_out(filename, T, pT, C, mT, staging, is_eruption, L, nx, ny, nxl, nyl, max_npartcl, max_nmarker, px, py, mx, my, h_px_dikes, pcnt, mfl)
+function mailbox_out(filename, T, pT, C, mT, staging, L, nx, ny, nxl, nyl, max_npartcl, max_nmarker, px, py, mx, my, h_px_dikes, pcnt, mfl)
     @time begin
         bar1 = "├──"
         bar2 = "\t ├──"
@@ -1263,7 +1263,7 @@ function check_melt_fracton(gp::GridParams, vp::VarParams)
 end
 
 
-function eruption_advection(gp::GridParams, vp::VarParams, maxVol, maxIdx, iSample, is_eruption, it)
+function eruption_advection(gp::GridParams, vp::VarParams, maxVol, maxIdx, it)
     @time begin
 
         cell_idx = CuArray{Int32,1}(undef, maxVol)
@@ -1300,9 +1300,9 @@ function eruption_advection(gp::GridParams, vp::VarParams, maxVol, maxIdx, iSamp
         @cuda blocks = gridSize1D threads = blockSize1D advect_particles_eruption(gp.mx, gp.my, cell_idx, vp.gamma, dxl, dyl, vp.nmarker, maxVol, vp.nxl, vp.nyl)
         synchronize()
 
-        iSample = iSample + 1
+        vp.iSample = vp.iSample + 1
 
-        is_eruption = true
+        vp.is_eruption = true
         append!(gp.eruptionSteps, it)
     end
 

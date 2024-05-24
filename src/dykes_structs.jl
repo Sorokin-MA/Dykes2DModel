@@ -105,4 +105,6 @@ end
 
 	max_npartcl::Int32 = 0				#size of a Sample, 1000
 	max_nmarker::Int32 = 0
+
+	is_eruption::Bool = false
 end

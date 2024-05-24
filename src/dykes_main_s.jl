@@ -27,15 +27,12 @@ function main_test()
     init(gp, vp)
 
     filename = Array{Char,1}(undef, 1024)
-    global iSample = Int32(1)
     eruptionSteps = Vector{Int32}()
-    is_eruption = false
 
 
     #main loop
     for it in 1:vp.nt
         @printf("%s it = %d", bar1, it)
-        is_eruption = false
         is_intrusion = (gp.ndikes[it] > 0)
         nerupt = 1
 
@@ -48,11 +45,11 @@ function main_test()
             @printf("%s accomulated %06f km^3| ", bar2, (maxVol * (dxl * dyl) / 1.e9) * 1.e4 * 0.9)
 
 
-            if (maxVol * dxl * dyl >= gp.critVol[iSample])
+            if (maxVol * dxl * dyl >= gp.critVol[vp.iSample])
                 @printf("%s erupting %07d cells   | ", bar2, maxVol)
-                eruption_advection(gp, vp, maxVol, maxIdx, iSample, is_eruption, it)
-                println("is_eruption")
-                println(is_eruption)
+                eruption_advection(gp, vp, maxVol, maxIdx, it)
+                println("vp.is_eruption")
+                println(vp.is_eruption)
             end
 
         end
@@ -66,7 +63,7 @@ function main_test()
 
 
         #if eruption or injection happend, taking into account their effcto on grid with p2g
-        if (is_eruption || is_intrusion)
+        if (vp.is_eruption || is_intrusion)
             @printf("%s p2g interpolation		| ", bar2)
             p2g_interpolation(gp, vp)
 
@@ -117,12 +114,12 @@ function main_test()
 
 
         #mailbox output
-        if (it % vp.nout == 0 || is_eruption)
+        if (it % vp.nout == 0 || vp.is_eruption)
             @time begin
                 @printf("%s writing results to disk  | ", bar2)
                 filename = data_folder * "julia_grid." * string(it) * ".h5"
 
-                small_mailbox_out(filename, gp.T, gp.pT, gp.C, gp.mT, gp.staging, is_eruption, gp.L, vp.nx, vp.ny, vp.nxl, vp.nyl, vp.max_npartcl, vp.max_nmarker, gp.px, gp.py, gp.mx, gp.my, gp.h_px_dikes, gp.pcnt, gp.mfl)
+                small_mailbox_out(filename, gp.T, gp.pT, gp.C, gp.mT, gp.staging, gp.L, vp.nx, vp.ny, vp.nxl, vp.nyl, vp.max_npartcl, vp.max_nmarker, gp.px, gp.py, gp.mx, gp.my, gp.h_px_dikes, gp.pcnt, gp.mfl)
                 #mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl, max_nmarker, px, py, mx ,my, h_px_dikes,pcnt, mfl);
             end
         end
@@ -131,12 +128,12 @@ function main_test()
 
     @printf("%s writing results to disk  | ", bar2)
     filename = data_folder * "julia_grid." * string(vp.nt + 1) * ".h5"
-    small_mailbox_out(filename, gp.T, gp.pT, gp.C, gp.mT, gp.staging, is_eruption, gp.L, vp.nx, vp.ny, vp.nxl, vp.nyl, vp.max_npartcl, vp.max_nmarker, gp.px, gp.py, gp.mx, gp.my, gp.h_px_dikes, gp.pcnt, gp.mfl)
+    small_mailbox_out(filename, gp.T, gp.pT, gp.C, gp.mT, gp.staging, gp.L, vp.nx, vp.ny, vp.nxl, vp.nyl, vp.max_npartcl, vp.max_nmarker, gp.px, gp.py, gp.mx, gp.my, gp.h_px_dikes, gp.pcnt, gp.mfl)
 
     @printf("\nTotal time: ")
 
     fid = open(data_folder * "eruptions.bin", "w")
-    write(fid, iSample)
+    write(fid, vp.iSample)
     write(fid, gp.eruptionSteps)
     close(fid)
     return 0
