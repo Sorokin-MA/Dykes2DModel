@@ -33,6 +33,7 @@ function main_test()
     #main loop
     for it in 1:vp.nt
         @printf("%s it = %d", bar1, it)
+		vp.is_eruption = false
         is_intrusion = (gp.ndikes[it] > 0)
         nerupt = 1
 
