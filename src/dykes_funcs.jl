@@ -930,6 +930,24 @@ function mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,m
 	end
 end
 
+function rand_limited(u, d)
+	ans::Float64 = -1
+	while((ans <=0) || (ans >=1))
+		ans = rand(Normal(u, d),1)[1]
+	end
+
+	return ans
+end
+
+function rand_limited_2(u, d)
+	ans::Float64 = -1
+	while((ans <=0) || (ans >=1))
+		ans = rand(Normal(u, d),1)[1]
+	end
+
+	return ans
+end
+
 function read_params(gp::GridParams, vp::VarParams)
 
     dpa = Array{Float64,1}(undef, 19)#array of double values from matlab script

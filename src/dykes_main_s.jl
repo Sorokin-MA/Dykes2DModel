@@ -51,6 +51,8 @@ function main_test()
             if (maxVol * dxl * dyl >= gp.critVol[iSample])
                 @printf("%s erupting %07d cells   | ", bar2, maxVol)
                 eruption_advection(gp, vp, maxVol, maxIdx, iSample, is_eruption, it)
+                println("is_eruption")
+                println(is_eruption)
             end
 
         end
