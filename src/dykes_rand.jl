@@ -49,7 +49,7 @@ function interp1(xpt, ypt, x; method="linear", extrapvalue=nothing)
 end
 
 function dikes_rand()
-    Random.seed!(1234)
+    Random.seed!(1111)
 
     gpuid = 0 #gpu id
     tyear = 365 * 24 * 3600 #seconds in year
@@ -79,7 +79,7 @@ function dikes_rand()
     Lheat = 3.5e5#Latent heat of melting, J/kg
     T_top::Float64 = 100#temperature at depth 5 km, C
     dTdy = 20#how fast temperature decreasing with depth, K/km
-    T_magma::Float64 = 950#magma intrusion temperature, C
+    T_magma::Float64 = 1050#magma intrusion temperature, C
     T_ch = 700#?
     Qv = 0.0411 * 1.e9 / tyear#m^3/s
     dt::Float64 = 5 * tyear#time
@@ -206,17 +206,17 @@ function dikes_rand()
 
     while Q < Vtot
         #dike_a = [dike_a dike_a_rng[1] + diff(dike_a_rng)*rand];
-        append!(dike_a, dike_a_rng[1] .+ diff(dike_a_rng, dims=1) .* rand(Float64, 1))
+        append!(dike_a, dike_a_rng[1] .+ diff(dike_a_rng, dims=1) .* rand_limited_2(0.5, 0.1))
         #dike_b = [dike_b dike_b_rng[1] + diff(dike_b_rng)*rand];
-        append!(dike_b, dike_b_rng[1] .+ diff(dike_b_rng, dims=1) .* rand(Float64, 1))
+        append!(dike_b, dike_b_rng[1] .+ diff(dike_b_rng, dims=1) .* rand_limited_2(0.5, 0.1))
         if Q < Q_tsh
             #dike_x = [dike_x dike_x_rng[1] + diff(dike_x_rng)*rand];
-            append!(dike_x, dike_x_rng[1] .+ diff(dike_x_rng, dims=1) .* rand(Float64, 1))
+            append!(dike_x, dike_x_rng[1] .+ diff(dike_x_rng, dims=1) .* rand_limited_2(0.5, 0.1))
         else
-            append!(dike_x, dike_x_rng_n[1] .+ diff(dike_x_rng, dims=1) .* rand(Float64, 1))
+            append!(dike_x, dike_x_rng_n[1] .+ diff(dike_x_rng_n, dims=1) .* rand_limited_2(0.5, 0.1))
         end
-        dike_y = append!(dike_y, dike_y_rng[1] .+ diff(dike_y_rng, dims=1) .* rand(Float64, 1))
-        dike_t = append!(dike_t, dike_t_rng[1] .+ diff(dike_t_rng, dims=1) .* rand(Float64, 1))
+        dike_y = append!(dike_y, dike_y_rng[1] .+ diff(dike_y_rng, dims=1) .* rand_limited_2(0.5, 0.1))
+        dike_t = append!(dike_t, dike_t_rng[1] .+ diff(dike_t_rng, dims=1) .* rand_limited_2(0.5, 0.1))
         dike_v = append!(dike_v, pi * last(dike_a) * last(dike_b))
         Q = Q + last(dike_v)
     end
@@ -231,7 +231,7 @@ function dikes_rand()
     ndikes = Vector{Int32}(undef, 1)
     ndikes = Int32.(diff(floor.(interp1(dike_v, 1:length(dike_v), 0:dv:last(dike_v))), dims=1))
 
-    #println(ndikes)
+    println("Debug")
 
 
     #println(typeof(nt))
@@ -321,11 +321,12 @@ function dikes_rand()
         dikemx = dikemx[.!outside]
         dikemy = dikemy[.!outside]
 
-        #FIXIT:
         mx_dike[idike] = dikex0 .+ dikemx .* ct .- dikemy .* st
         my_dike[idike] = dikey0 .+ dikemx .* st .+ dikemy .* ct
         dike_nmarker[idike] = length(mx_dike[idike])
     end
+
+    println("Debug")
 
     #px_dikes     = (px_dike);
     #py_dikes     = (py_dike);
