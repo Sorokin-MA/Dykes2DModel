@@ -8,7 +8,7 @@ include("dykes_funcs.jl")
 function main_test()
     #Initialization of inner random
     Random.seed!(1234)
-	checker = Array{Float64}(undef,1);
+    checker = Array{Float64}(undef, 1)
     #TODO:Настроить фильтр
     #TODO:Настроить девайс если не выбран
 
@@ -90,13 +90,13 @@ function main_test()
                 synchronize()
             end
 
-			#check for calculation explosion
-			T_for_chek = @view gp.T[1] 
-			copyto!(checker, T_for_chek)
-			if isnan(checker[1])
-				println("EXPLOSION!!!")
-				return -1
-			end
+            #check for calculation explosion
+            T_for_chek = @view gp.T[1]
+            copyto!(checker, T_for_chek)
+            if isnan(checker[1])
+                println("EXPLOSION!!!")
+                return -1
+            end
         end
 
 
@@ -120,7 +120,7 @@ function main_test()
         if (it % vp.nout == 0 || is_eruption)
             @time begin
                 @printf("%s writing results to disk  | ", bar2)
-                filename = data_folder*"julia_grid." * string(it) * ".h5"
+                filename = data_folder * "julia_grid." * string(it) * ".h5"
 
                 small_mailbox_out(filename, gp.T, gp.pT, gp.C, gp.mT, gp.staging, is_eruption, gp.L, vp.nx, vp.ny, vp.nxl, vp.nyl, vp.max_npartcl, vp.max_nmarker, gp.px, gp.py, gp.mx, gp.my, gp.h_px_dikes, gp.pcnt, gp.mfl)
                 #mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl, max_nmarker, px, py, mx ,my, h_px_dikes,pcnt, mfl);
@@ -130,12 +130,12 @@ function main_test()
 
 
     @printf("%s writing results to disk  | ", bar2)
-    filename = data_folder*"julia_grid." * string(vp.nt + 1) * ".h5"
+    filename = data_folder * "julia_grid." * string(vp.nt + 1) * ".h5"
     small_mailbox_out(filename, gp.T, gp.pT, gp.C, gp.mT, gp.staging, is_eruption, gp.L, vp.nx, vp.ny, vp.nxl, vp.nyl, vp.max_npartcl, vp.max_nmarker, gp.px, gp.py, gp.mx, gp.my, gp.h_px_dikes, gp.pcnt, gp.mfl)
 
     @printf("\nTotal time: ")
 
-    fid = open(data_folder*"eruptions.bin", "w")
+    fid = open(data_folder * "eruptions.bin", "w")
     write(fid, iSample)
     write(fid, gp.eruptionSteps)
     close(fid)

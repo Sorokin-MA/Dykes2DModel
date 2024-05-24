@@ -10,18 +10,18 @@ end
 """
 inflatcate of matlab meshgrid function
 """
-function meshgrid_2(xin,yin)
-nx=length(xin)
-ny=length(yin)
-xout=zeros(ny,nx)
-yout=zeros(ny,nx)
-for jx=1:nx
-    for ix=1:ny
-        xout[ix,jx]=xin[jx]
-        yout[ix,jx]=yin[ix]
+function meshgrid_2(xin, yin)
+    nx = length(xin)
+    ny = length(yin)
+    xout = zeros(ny, nx)
+    yout = zeros(ny, nx)
+    for jx = 1:nx
+        for ix = 1:ny
+            xout[ix, jx] = xin[jx]
+            yout[ix, jx] = yin[ix]
+        end
     end
-end
-return (x=xout, y=yout)
+    return (x=xout, y=yout)
 end
 
 
@@ -57,7 +57,7 @@ function dikes_rand()
     Lx::Float64 = 20000 # x size of area, m
     Ly::Float64 = 20000 # y size of area, m %20000
     Lx_Ly = Lx / Ly
-    narrow_fact =1 
+    narrow_fact = 1
     dike_x_W = 10000 #m 
     dike_x_Wn = dike_x_W * narrow_fact #m 
     dike_a_rng = Vector{Int32}
@@ -83,11 +83,11 @@ function dikes_rand()
     T_ch = 700#?
     Qv = 0.0081 * 1.e9 / tyear#m^3/s
     dt::Float64 = 3 * tyear#time
-	ka_years = 300e3
-    tfin::Float64= ka_years * tyear
-    terupt::Float64= ka_years * tyear
+    ka_years = 300e3
+    tfin::Float64 = ka_years * tyear
+    terupt::Float64 = ka_years * tyear
 
-	#Qv = (0.00411 * 1.e9 / tyear)*(78000.0/(tfin/tyear))#m^3/s
+    #Qv = (0.00411 * 1.e9 / tyear)*(78000.0/(tfin/tyear))#m^3/s
 
 
     Ly_eruption::Float64 = 2000 # m
@@ -141,13 +141,13 @@ function dikes_rand()
     CFL = 0.23
     pic_amount::Float64 = 0.05
     nt::Int32 = tfin / dt
-	nout::Int32 = round(nt / 12)
+    nout::Int32 = round(nt / 12)
     nt_erupt = terupt / dt
     nerupt::Int32 = 1
-	println(nt)
-	println(dt)
-	println(typeof(dt))
-	println(dt * nt / tyear)
+    println(nt)
+    println(dt)
+    println(typeof(dt))
+    println(dt * nt / tyear)
     #preprocessing
     dx::Float64 = Lx / (nx - 1)
     dy::Float64 = Ly / (ny - 1)
@@ -192,7 +192,7 @@ function dikes_rand()
     #print T
     C = zeros(nx, ny)
 
-	#heatmap(xs, ys, transpose(T))
+    #heatmap(xs, ys, transpose(T))
 
     Q = 0
     dike_a = Vector{Float64}(undef, 0)
@@ -289,23 +289,23 @@ function dikes_rand()
         dike_npartcl[idike] = length(px_dike[idike])
 
         # markers
-		if(a/dmr) > 1
-			dikemxs = LinRange(-a, a, Int32(round(2 * a / dmr)))
-		else
-			dikemxs = LinRange(0,0,0)
-		end
+        if (a / dmr) > 1
+            dikemxs = LinRange(-a, a, Int32(round(2 * a / dmr)))
+        else
+            dikemxs = LinRange(0, 0, 0)
+        end
 
-		if(b/dmr) > 1
-        dikemys = LinRange(-b, b, Int32(round(2 * b / dmr)))
-		else
-        dikemys = LinRange(-b, b, 0)
-		end
+        if (b / dmr) > 1
+            dikemys = LinRange(-b, b, Int32(round(2 * b / dmr)))
+        else
+            dikemys = LinRange(-b, b, 0)
+        end
 
         if length(dikemxs) <= 1
-            dikemxs = LinRange(0, 0, 1) 
+            dikemxs = LinRange(0, 0, 1)
         end
         if length(dikemys) <= 1
-            dikemys = LinRange(0, 0, 1) 
+            dikemys = LinRange(0, 0, 1)
             #dikemys = [0]
         end
 
@@ -411,9 +411,9 @@ function dikes_rand()
     particles_file_name = sim_dir * "pa.bin"
 
     fid = open(particles_file_name, "w")
-	println(typeof(Lx), typeof(Ly), typeof(lam_r_rhoCp), typeof(lam_m_rhoCp), typeof(L_Cp), typeof(T_top), typeof(T_bot), typeof(T_magma), typeof(tsh), typeof(gamma), typeof(Ly_eruption), typeof(nu), typeof(G), typeof(dt_diff), typeof(dx), typeof(dy), typeof(eiter), typeof(pic_amount))
+    println(typeof(Lx), typeof(Ly), typeof(lam_r_rhoCp), typeof(lam_m_rhoCp), typeof(L_Cp), typeof(T_top), typeof(T_bot), typeof(T_magma), typeof(tsh), typeof(gamma), typeof(Ly_eruption), typeof(nu), typeof(G), typeof(dt_diff), typeof(dx), typeof(dy), typeof(eiter), typeof(pic_amount))
     write(fid, Lx, Ly, lam_r_rhoCp, lam_m_rhoCp, L_Cp, T_top, T_bot, T_magma, tsh, gamma, Ly_eruption, nu, G, dt_diff, dx, dy, eiter, pic_amount, tfin)
-	println(typeof(pmlt), typeof(nx), typeof(ny), typeof(nl), typeof(nt), typeof(niter), typeof(nout), typeof(nsub), typeof(nerupt), typeof(npartcl), typeof(nmarker), typeof(Nsample))
+    println(typeof(pmlt), typeof(nx), typeof(ny), typeof(nl), typeof(nt), typeof(niter), typeof(nout), typeof(nsub), typeof(nerupt), typeof(npartcl), typeof(nmarker), typeof(Nsample))
     write(fid, pmlt, nx, ny, nl, nt, niter, nout, nsub, nerupt, npartcl, nmarker, Nsample)
     write(fid, critVol)
     write(fid, ndikes)
@@ -432,7 +432,7 @@ function dikes_rand()
     fid["C"] = C
     close(fid)
 
-	fname = @sprintf "%sgrid.%s.h5" sim_dir "0"^(ndigits+1)
+    fname = @sprintf "%sgrid.%s.h5" sim_dir "0"^(ndigits + 1)
     fid = h5open(fname, "w")
     fid["T"] = T
     fid["C"] = C
