@@ -1,3 +1,5 @@
+include("dykes_structs.jl")
+
 bar1 = "\n├──"
 bar2 = "\n\t ├──"
 
@@ -996,11 +998,12 @@ function read_params(gp::GridParams, vp::VarParams)
 
     close(io)
 
-    cap_frac = 1.5  #value to spcify how much particles we allow to inject in runtime
+    cap_frac = 3  #value to spcify how much particles we allow to inject in runtime
     vp.npartcl0 = vp.npartcl #initial amount of particles
     vp.max_npartcl = convert(Int64, vp.npartcl * cap_frac) + gp.particle_edges[ndikes_all+1] #???#count max particles
 	println(vp.npartcl)
 	println(gp.particle_edges[ndikes_all+1])
+	println("max_npartcl")
 	println(vp.max_npartcl)
     nmarker0 = vp.nmarker
 

@@ -81,9 +81,9 @@ function dikes_rand()
     dTdy = 20#how fast temperature decreasing with depth, K/km
     T_magma::Float64 = 950#magma intrusion temperature, C
     T_ch = 700#?
-    Qv = 0.0411 * 1.e9 / tyear#m^3/s
-    dt::Float64 = 5 * tyear#time
-	ka_years = 500e3
+    Qv = 0.0081 * 1.e9 / tyear#m^3/s
+    dt::Float64 = 3 * tyear#time
+	ka_years = 300e3
     tfin::Float64= ka_years * tyear
     terupt::Float64= ka_years * tyear
 
@@ -121,7 +121,7 @@ function dikes_rand()
     Nsample::Int32 = 1000 #size of a sample
 
     critVol = ones(1, 1000)
-    critVol_hist = [265, 50, 0.5, 0.02, 0.64, 0.02, 0.02, 0.7, 0.02, 0.001, 0.001, 0.06, 0.05, 0.02, 0.07, 0.052, 0.854, 0.026, 0.018, 0.12, 0.661, 0.016, 0.02, 0.029]
+    critVol_hist = [20, 50, 0.5, 0.02, 0.64, 0.02, 0.02, 0.7, 0.02, 0.001, 0.001, 0.06, 0.05, 0.02, 0.07, 0.052, 0.854, 0.026, 0.018, 0.12, 0.661, 0.016, 0.02, 0.029]
 
     critVol_h = @view critVol[1:24]
     copy!(critVol_h, critVol_hist)
@@ -129,7 +129,7 @@ function dikes_rand()
     critVol = 10^9 * critVol / dz / (1 - gamma)
 
     #numerics
-    steph = 5
+    steph = 4
     ny::Int32 = Int32(floor(Ly / steph))
     nx::Int32 = Int32(floor(Lx_Ly * ny))
     nl::Int32 = 4
