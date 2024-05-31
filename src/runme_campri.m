@@ -59,7 +59,7 @@ T_magma     = 1050;						%magma intrusion temperature, C
 T_ch        = 700;						%WARN:уточнить		%?
 Qv          = 0.00411 * 1.e9 / tyear;	%приток магмы	%m^3/s
 dt          = 5*tyear;					%time
-tfin        = 150e3*tyear;				%final time?
+tfin        = 150e3*tyear;				%final time
 terupt      = 150e3*tyear;
 
 
