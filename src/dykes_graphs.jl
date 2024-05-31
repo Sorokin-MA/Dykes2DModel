@@ -61,8 +61,8 @@ function dykes_graph()
     xs = 0:dx:Lx
     ys = 0:dy:Ly
 
-#    fid = h5open(data_folder * "julia_grid.12001.h5", "r")
-    fid = h5open(data_folder * "julia_grid.3333.h5", "r")
+#    fid = h5open(data_folder * "julia_grid.40001.h5", "r")
+    fid = h5open(data_folder * "julia_grid.40001.h5", "r")
     T = read(fid, "T")
     C = read(fid, "C")
     close(fid)
@@ -83,12 +83,20 @@ function dykes_graph()
 
 	println(fz/sizeof(Int32))
 	if(fz_int <= 1)
-		print("No eruptions!!!")
-		return
+		println("No eruptions!!!")
+        campri_calc = Int32[10000, 20000, 25000, 26000]
+	    println(typeof(campri_calc))
+	    file = open(data_folder*"eruptions.bin", "w")
+	    write(file, campri_calc)
+	close(file)
+		
 	end
 	campri_calc = Array{Int32,1}(undef, fz_int)#array of int values from matlab script
 	read!(data_folder*"eruptions.bin", campri_calc)
 
+    campri_calc =@view campri_calc[2:end]
+
+	println(campri_calc)
 	tyear = 365 * 24 * 3600		#seconds in year
 	tfin = (tfin/tyear)/1.e3
 	campri_calc = -(1 .- campri_calc./nt) .* (tfin)

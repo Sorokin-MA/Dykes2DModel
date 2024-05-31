@@ -21,38 +21,42 @@ function main_test()
     @printf("%s reading params			  ", bar1)
     read_params(gp, vp)
 
-
     #initialisation of T and Ph variables
     @printf("%s initialization			  ", bar1)
     init(gp, vp)
 
     filename = Array{Char,1}(undef, 1024)
     eruptionSteps = Vector{Int32}()
-
+    eruption_counter::Int64 = 1
 
     #main loop
     for it in 1:vp.nt
         @printf("%s it = %d", bar1, it)
 		vp.is_eruption = false
+        eruption_counter = eruption_counter - 1
         is_intrusion = (gp.ndikes[it] > 0)
         nerupt = 1
 
         #checking eruption criteria and advect particles if eruption
         if (it % nerupt == 0)
+            #calculating maxVol
             maxVol, maxIdx = check_melt_fracton(gp, vp)
+
+            if maxVol == -1
+                return 0
+            end
 
             dxl = vp.dx * vp.nl
             dyl = vp.dy * vp.nl
-            @printf("%s accomulated %06f km^3| ", bar2, (maxVol * (dxl * dyl) / 1.e9) * 1.e4 * 0.9)
+            @printf("%s accomulated %06f km^3| ", bar2, (maxVol * (dxl * dyl) / 1.e9) * 1.e4 * vp.gamma)
 
-
-            if (maxVol * dxl * dyl >= gp.critVol[vp.iSample])
+            if (maxVol * dxl * dyl >= gp.critVol[vp.iSample] &&  eruption_counter <=0)
                 @printf("%s erupting %07d cells   | ", bar2, maxVol)
                 eruption_advection(gp, vp, maxVol, maxIdx, it)
                 println("vp.is_eruption")
                 println(vp.is_eruption)
+                eruption_counter = 10
             end
-
         end
 
 
@@ -125,7 +129,6 @@ function main_test()
             end
         end
     end
-
 
     @printf("%s writing results to disk  | ", bar2)
     filename = data_folder * "julia_grid." * string(vp.nt + 1) * ".h5"

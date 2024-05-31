@@ -107,4 +107,5 @@ end
 	max_nmarker::Int32 = 0
 
 	is_eruption::Bool = false
+	iSample::Int32 = 1
 end
