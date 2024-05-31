@@ -22,7 +22,6 @@ function idc(ix, iy, nx)
     return ((iy) * nx + ix + 1)
 end
 
-
 #Functon to write number of CUDA device
 function kernel()
     dev = Ref{Cint}()
@@ -30,7 +29,6 @@ function kernel()
     @cuprint("Running on device $(dev[])\n")
     return
 end
-
 
 #Basic info aobut GPU
 function print_gpu_properties()
@@ -73,14 +71,12 @@ function blerp(x1, x2, y1, y2, f11, f12, f21, f22, x, y)
     return invDxDy * (f11 * dx2 * dy2 + f12 * dx2 * dy1 + f21 * dx1 * dy2 + f22 * dx1 * dy1)
 end
 
-
 function dmf_rhyolite(T)
     t1 = T * T
     t9 = exp(0.961026e3 - 0.186618e-5 * t1 * T + t1 * 0.447948e-2 + T * (-0.359050e1))
     t12 = (0.1e1 + t9) * (0.1e1 + t9)
     return 0.559856e-5 / t12 * t9 * (t1 - 0.160022e4 * T + 0.641326e6)
 end
-
 
 function dmf_basalt(T)
     t1 = T * T
@@ -89,20 +85,17 @@ function dmf_basalt(T)
     return 0.6643338771e-6 * (t1 - 0.1723434948e4 * T + 0.7442458310e6) * t11 / t14
 end
 
-
 function mf_rhyolite(T)
     t2 = T * T
     t7 = exp(0.961026371384066e3 - 0.3590508961e1 * T + 0.4479483398e-2 * t2 - 0.1866187556e-5 * t2 * T)
     return 0.1e1 / (0.1e1 + t7)
 end
 
-
 function mf_basalt(T)
     t2 = T * T
     t7 = exp(960 - 3.554 * T + 0.4468e-2 * t2 - 1.907e-06 * t2 * T)
     return 0.1e1 / (0.1e1 + t7)
 end
-
 
 #coefficient which involved in heat equasion
 function dmf_magma(T)
@@ -174,7 +167,6 @@ function update_T!(T, T_old, T_top, T_bot, C, lam_r_rhoCp, lam_m_rhoCp, L_Cp, dx
     return
 end
 
-
 """
 	init_particles_Ph(pPh, ph, npartcl)
 
@@ -196,12 +188,10 @@ function init_particles_Ph(pPh, ph, npartcl)
     return
 end
 
-
 #WARN:unneccesary function?
 function sign(val)
     return (val > zero(val)) - (val < zero(val))
 end
-
 
 #TODO:specify description, wht if 'f'?
 """
@@ -216,7 +206,6 @@ function cart2ellipt(f, x, y)
     xi_eta_2 = acos(min(max(x / (f * cosh(xi_eta_1)), -1.0), 1.0)) * sign(y)
     return xi_eta_1, xi_eta_2
 end
-
 
 #TODO:specify description
 """
@@ -274,7 +263,6 @@ function disp_inf_stress(s, st, ct, c, nu, G, shxi, chxi, seta, ceta)
     return u_v[1], u_v[2]
 end
 
-
 #TODO:specify description
 """
 	displacements(st, ct, p, s1, s3, f, x, y, nu, G	)
@@ -331,7 +319,6 @@ function advect_particles_intrusion(px, py, a, b, x, y, theta, nu, G, ndikes, np
     return nothing
 end
 
-
 #TODO:specify description
 """
 	p2g_weight!(T, C, wts, nx, ny)
@@ -354,7 +341,6 @@ function p2g_weight!(T, C, wts, nx, ny)
 
     return nothing
 end
-
 
 #TODO:specify description
 """
@@ -410,7 +396,6 @@ function p2g_project!(T, C, wts, px, py, pT, pPh, dx, dy, nx, ny, npartcl, npart
     return nothing
 end
 
-
 """
 	g2p!(T, T_old, px, py, pT, dx, dy, pic_amount, nx, ny, npartcl)
 
@@ -447,7 +432,6 @@ function g2p!(T, T_old, px, py, pT, dx, dy, pic_amount, nx, ny, npartcl)
     return nothing
 end
 
-
 """
 	assignUniqueLables(mf, L, tsh, nx, ny)
 
@@ -469,14 +453,13 @@ function assignUniqueLables(mf, L, tsh, nx, ny)
     return nothing
 end
 
-
 #TODO: describe function
 """
-	cwLabel(L, nx, ny)	
+	cwLabel!(L, nx, ny)	
 
 I have no idea what this function do.
 """
-function cwLabel(L, nx, ny)
+function cwLabel!(L, nx, ny)
     iy = (blockIdx().x - 1) * blockDim().x + threadIdx().x
 
     if iy > ny
@@ -528,7 +511,6 @@ function merge_labels!(L, div, nx, ny)
     return nothing
 end
 
-
 #TODO: describe function
 """
 	relabel(L, nx, ny)
@@ -549,7 +531,6 @@ function relabel(L, nx, ny)
 
     return nothing
 end
-
 
 """
 
@@ -631,7 +612,6 @@ function average!(mfl, T, C, nl, nx, ny)
     return nothing
 end
 
-
 """
 	count_particles!(pcnt, px, py, dx, dy, nx, ny, npartcl)
 
@@ -712,11 +692,10 @@ function ccl(mf, L, tsh, nx, ny)
     blockSize1D = 32
     gridSize1D = (ny + blockSize1D - 1) ÷ blockSize1D
 
-    #decreasing upcoming variables???
+    #merge labels in components horisotally
     CUDA.@sync begin
-        @cuda blocks = gridSize1D threads = blockSize1D cwLabel(L, nx, ny)
+        @cuda blocks = gridSize1D threads = blockSize1D cwLabel!(L, nx, ny)
     end
-
 
     div = 2
     npw = Int64(ceil(log2(ny)))
@@ -724,6 +703,7 @@ function ccl(mf, L, tsh, nx, ny)
     for i = 0:(npw-1)
         gridSize1D = Int64(floor(max((nyw + blockSize1D - 1) / blockSize1D / div, 1)))
 
+        #merge roots vertically
         CUDA.@sync begin
             @cuda blocks = gridSize1D threads = blockSize1D merge_labels!(L, div, nx, ny)
         end
@@ -731,6 +711,7 @@ function ccl(mf, L, tsh, nx, ny)
         div = div * 2
     end
 
+    #relable based on roots
     CUDA.@sync begin
         @cuda blocks = gridSize2D threads = blockSize2D relabel(L, nx, ny)
     end
@@ -1202,7 +1183,6 @@ function init(gp::GridParams, vp::VarParams)
 
 end
 
-
 function check_melt_fracton(gp::GridParams, vp::VarParams)
     @time begin
         nxl = vp.nxl
@@ -1223,7 +1203,7 @@ function check_melt_fracton(gp::GridParams, vp::VarParams)
 
         copyto!(gp.L_host, gp.L)
 
-        volumes = Dict{Int32,Int32}(-1 => 0)
+        volumes = OrderedDict{Int32,Int32}(-1 => 0)
 
         #counting volumes
         for iy = 0:(nyl-1)
@@ -1249,6 +1229,8 @@ function check_melt_fracton(gp::GridParams, vp::VarParams)
         maxVol = -1
         maxIdx = -1
 
+
+
         #searching for max vol
         for (idx, vol) in volumes
             if vol > maxVol
@@ -1257,11 +1239,18 @@ function check_melt_fracton(gp::GridParams, vp::VarParams)
             end
         end
 
+        dxl = vp.dx * vp.nl
+        dyl = vp.dy * vp.nl
+
+         if (maxVol * dxl * dyl >= gp.critVol[vp.iSample])
+            #println(volumes)
+            #return -1,-1
+         end
+
     end
 
     return maxVol, maxIdx
 end
-
 
 function eruption_advection(gp::GridParams, vp::VarParams, maxVol, maxIdx, it)
     @time begin

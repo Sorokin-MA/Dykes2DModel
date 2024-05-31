@@ -1,12 +1,12 @@
 include("dykes_init.jl")
 include("dykes_structs.jl")
 
-
 function meshgrid(x, y)
     X = [i for i in x, j in 1:length(y)]
     Y = [j for i in 1:length(x), j in y]
     return X, Y
 end
+
 """
 inflatcate of matlab meshgrid function
 """
@@ -23,7 +23,6 @@ function meshgrid_2(xin, yin)
     end
     return (x=xout, y=yout)
 end
-
 
 function interp1(xpt, ypt, x; method="linear", extrapvalue=nothing)
 
@@ -57,7 +56,7 @@ function dikes_rand()
     Lx::Float64 = 20000 # x size of area, m
     Ly::Float64 = 20000 # y size of area, m %20000
     Lx_Ly = Lx / Ly
-    narrow_fact = 1
+    narrow_fact = 0.5
     dike_x_W = 10000 #m 
     dike_x_Wn = dike_x_W * narrow_fact #m 
     dike_a_rng = Vector{Int32}
@@ -67,9 +66,9 @@ function dikes_rand()
     dike_x_rng = [(Lx - dike_x_W) / 2, (Lx + dike_x_W) / 2]
     dike_x_rng_n = [(Lx - dike_x_Wn) / 2, (Lx + dike_x_Wn) / 2]
 
-    dike_y_rng = [5000, 13000]#dikes y distribution
+    dike_y_rng = [7000, 12000]#dikes y distribution
     dike_t_rng = [0.95 * pi / 2, 1.05 * pi / 2]#dykes time distribution
-    dike_to_sill = 21000#boundary where dykes turn yourself to sill, m
+    dike_to_sill = 13000#boundary where dykes turn yourself to sill, m
     dz = 10000#z dimension? i guess, m
 
     Lam_r = 1.5#thermal conductivity of rock, W/m/K
@@ -81,9 +80,9 @@ function dikes_rand()
     dTdy = 20#how fast temperature decreasing with depth, K/km
     T_magma::Float64 = 1050#magma intrusion temperature, C
     T_ch = 700#?
-    Qv = 0.0081 * 1.e9 / tyear#m^3/s
-    dt::Float64 = 3 * tyear#time
-    ka_years = 300e3
+    Qv = 0.0030 * 1.e9 / tyear#m^3/s
+    dt::Float64 = 10 * tyear#time
+    ka_years = 400e3
     tfin::Float64 = ka_years * tyear
     terupt::Float64 = ka_years * tyear
 
@@ -100,7 +99,7 @@ function dikes_rand()
     tsc = Ly^2 / lam_r_rhoCp # s
 
     # nondimensional
-    tsh::Float64 = 0.75
+    tsh::Float64 = 0.85
     lam_m_lam_r = Lam_m / Lam_r
     gamma::Float64 = 0.1
 
@@ -121,7 +120,7 @@ function dikes_rand()
     Nsample::Int32 = 1000 #size of a sample
 
     critVol = ones(1, 1000)
-    critVol_hist = [20, 50, 0.5, 0.02, 0.64, 0.02, 0.02, 0.7, 0.02, 0.001, 0.001, 0.06, 0.05, 0.02, 0.07, 0.052, 0.854, 0.026, 0.018, 0.12, 0.661, 0.016, 0.02, 0.029]
+    critVol_hist = [270, 50, 0.5, 0.02, 0.64, 0.02, 0.02, 0.7, 0.02, 0.001, 0.001, 0.06, 0.05, 0.02, 0.07, 0.052, 0.854, 0.026, 0.018, 0.12, 0.661, 0.016, 0.02, 0.029]
 
     critVol_h = @view critVol[1:24]
     copy!(critVol_h, critVol_hist)
@@ -129,7 +128,7 @@ function dikes_rand()
     critVol = 10^9 * critVol / dz / (1 - gamma)
 
     #numerics
-    steph = 4
+    steph = 5
     ny::Int32 = Int32(floor(Ly / steph))
     nx::Int32 = Int32(floor(Lx_Ly * ny))
     nl::Int32 = 4
