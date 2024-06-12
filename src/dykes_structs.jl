@@ -108,4 +108,51 @@ end
 
 	is_eruption::Bool = false
 	iSample::Int32 = 1
+	it::Int64 = 1
+end
+
+@with_kw mutable struct InitVarParams
+#Physics
+	Lx::Float64 = 0.0				#X size of researched area (m)
+	Ly::Float64 = 0.0				#Y size of researched area (m)
+	narrow_fact::Float64 = 0.5		
+	dike_x_W::Float64 = 0.0		#Thermal conductivity of rock/(density*specific heat capacity)
+
+	critVol= Array{Float64,1}(undef, 0)
+	dz::Float64 = 10000				#Thermal conductivity of magma/(density*specific heat capacity)
+	dike_to_sill::Float64 = 13000	#Thermal conductivity of magma/(density*specific heat capacity)
+	Lam_r::Float64 = 13000			#Thermal conductivity of magma/(density*specific heat capacity)
+	Lam_m::Float64 = 13000			#Thermal conductivity of magma/(density*specific heat capacity)
+	rho::Float64 = 1350				#Thermal conductivity of magma/(density*specific heat capacity)
+	Lheat::Float64 = 1350				#Thermal conductivity of magma/(density*specific heat capacity)
+	T_top::Float64 = 100			#Temperature on the top of area (°C)
+	dTdy::Float64 = 100			#Temperature on the top of area (°C)
+	T_magma::Float64 = 100			#Temperature on the top of area (°C)
+	T_ch::Float64 = 100			#Temperature on the top of area (°C)
+	Qv::Float64 = 100			#Temperature on the top of area (°C)
+	dt::Float64= 100			#Temperature on the top of area (°C)
+	ka_years::Float64= 100			#Temperature on the top of area (°C)
+	Ly_eruption::Float64= 100			#Temperature on the top of area (°C)
+	dT::Float64= 100			#Temperature on the top of area (°C)
+	E::Float64= 100			#Temperature on the top of area (°C)
+	nu::Float64= 100			#Temperature on the top of area (°C)
+	tsh::Float64= 100			#Temperature on the top of area (°C)
+	gamma::Float64= 100			#Temperature on the top of area (°C)
+	steph::Float64= 100			#Temperature on the top of area (°C)
+
+	dike_a_rng = Array{Float64,1}(undef, 0)
+	dike_y_rng = Array{Float64,1}(undef, 0)
+	dike_b_rng = Array{Float64,1}(undef, 0)
+	dike_t_rng = Array{Float64,1}(undef, 0)
+
+#numerics
+	Seed::Int64= 0.0				#seed
+
+	nl::Float64= 100			#Temperature on the top of area (°C)
+	nmy::Float64= 100			#Temperature on the top of area (°C)
+	pmlt::Float64= 100			#Temperature on the top of area (°C)
+	eiter::Float64= 100			#Temperature on the top of area (°C)
+	CFL::Float64= 100			#Temperature on the top of area (°C)
+	pic_amount::Float64= 100			#Temperature on the top of area (°C)
+	it::Int64 = 1;
 end
