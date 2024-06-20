@@ -1,10 +1,7 @@
 # Dykes2DModel
 
-> **Warning**
->
-> The code is in the pre-alpha phase, bugs and errors should be expected.
-
-## Description
+> [!WARNING]
+> The project is in the pre-alpha phase, errors and bugs should be expected. 
 
 A project aimed at numerical modeling of the formation of dikes and silos. The code is based on the [code](https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/2021JB023008) of Ivan Utkin and takes into account the effect of plasticity.
 
@@ -15,7 +12,7 @@ A project aimed at numerical modeling of the formation of dikes and silos. The c
 julia
 using Pkg; Pkg.activate("");Pkg.instantiate();
 include("run.jl")
-main()
+main_test()
 ```
 
 ## References
