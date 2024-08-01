@@ -2,7 +2,8 @@
 
 # Dykes2DModel
 
-[![GitHub tag](https://img.shields.io/github/v/release/Sorokin-MA/Dykes2DModel)](https://github.com/Sorokin-MA/Dykes2DModel/releases/latest) [![License](https://img.shields.io/github/license/Sorokin-MA/Dykes2DModel)](https://github.com/Sorokin-MA/Dykes2DModel/blob/main/LICENSE)
+[![GitHub tag](https://img.shields.io/github/v/release/Sorokin-MA/Dykes2DModel)](https://github.com/Sorokin-MA/Dykes2DModel/releases/latest) ![last commit](https://img.shields.io/github/last-commit/Sorokin-MA/Dykes2DModel) [![License](https://img.shields.io/github/license/Sorokin-MA/Dykes2DModel)](https://github.com/Sorokin-MA/Dykes2DModel/blob/main/LICENSE) 
+
 
 
 </div>
