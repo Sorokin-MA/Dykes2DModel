@@ -1,18 +1,20 @@
+<div align="center">
+
 # Dykes2DModel
 
-> [!WARNING]
-> The project is in the pre-alpha phase, errors and bugs should be expected. 
+[![GitHub tag](https://img.shields.io/github/v/release/Sorokin-MA/Dykes2DModel)](https://github.com/Sorokin-MA/Dykes2DModel/releases/latest) [![License](https://img.shields.io/github/license/Sorokin-MA/Dykes2DModel)](https://github.com/Sorokin-MA/Dykes2DModel/blob/main/LICENSE)
+
+
+</div>
 
 A project aimed at numerical modeling of the formation of dikes and silos. The code is based on the [code](https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/2021JB023008) of Ivan Utkin and takes into account the effect of plasticity.
 
-## Getting Started
-
-### Executing program
+## Quick start
 ```
 julia
 using Pkg; Pkg.activate("");Pkg.instantiate();
 include("run.jl")
-main_test()
+dikes_gui()
 ```
 
 ## References
