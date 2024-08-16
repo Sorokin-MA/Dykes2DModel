@@ -67,6 +67,7 @@ end
 @with_kw mutable struct VarParams
 	Lx::Float64 = 0.0				#X size of researched area (m)
 	Ly::Float64 = 0.0				#Y size of researched area (m)
+	Lz::Float64 = 0.0				#Z size of researched area (m)
 	lam_r_rhoCp::Float64 = 0.0		#Thermal conductivity of rock/(density*specific heat capacity)
 	lam_m_rhoCp::Float64 = 0.0		#Thermal conductivity of magma/(density*specific heat capacity)
 	L_Cp::Float64 = 0.0			#???#dT/Ste, Ste = dT/(Lheat/Cp); L_heat/Cp
@@ -91,7 +92,7 @@ end
 	nxl::Int32 = 0					#
 	nyl::Int32 = 0					#
 	nl::Int32 = 0					#?
-	nt::Int32 = 0					#?
+	nt::Int32 = 1					#?
 	niter::Int32 = 0				#?
 	nout::Int32 = 0				#?
 	nsub::Int32 = 0				#?
@@ -113,46 +114,51 @@ end
 
 @with_kw mutable struct InitVarParams
 #Physics
-	Lx::Float64 = 0.0				#X size of researched area (m)
-	Ly::Float64 = 0.0				#Y size of researched area (m)
+	Lx::Float64 = 20000				#X size of researched area (m)
+	Ly::Float64 = 20000				#Y size of researched area (m)
+	Lz::Float64 = 10000				#Y size of researched area (m)
 	narrow_fact::Float64 = 0.5		
-	dike_x_W::Float64 = 0.0		#Thermal conductivity of rock/(density*specific heat capacity)
+	dike_x_W::Float64 = 10000		#Thermal conductivity of rock/(density*specific heat capacity)
 
 	critVol= Array{Float64,1}(undef, 0)
+	critVolTime= Array{Float64,1}(undef, 0)
 	dz::Float64 = 10000				#Thermal conductivity of magma/(density*specific heat capacity)
 	dike_to_sill::Float64 = 13000	#Thermal conductivity of magma/(density*specific heat capacity)
-	Lam_r::Float64 = 13000			#Thermal conductivity of magma/(density*specific heat capacity)
-	Lam_m::Float64 = 13000			#Thermal conductivity of magma/(density*specific heat capacity)
-	rho::Float64 = 1350				#Thermal conductivity of magma/(density*specific heat capacity)
-	Lheat::Float64 = 1350				#Thermal conductivity of magma/(density*specific heat capacity)
+	Lam_r::Float64 = 1.5 #Thermal conductivity of magma/(density*specific heat capacity)
+	Lam_m::Float64 = 1.2 #Thermal conductivity of magma/(density*specific heat capacity)
+	Cp::Float64 = 1350			#Thermal conductivity of magma/(density*specific heat capacity)
+	rho::Float64 = 2650				#Thermal conductivity of magma/(density*specific heat capacity)
+	L_heat::Float64 = 3.5e5				#Thermal conductivity of magma/(density*specific heat capacity)
 	T_top::Float64 = 100			#Temperature on the top of area (°C)
-	dTdy::Float64 = 100			#Temperature on the top of area (°C)
-	T_magma::Float64 = 100			#Temperature on the top of area (°C)
-	T_ch::Float64 = 100			#Temperature on the top of area (°C)
-	Qv::Float64 = 100			#Temperature on the top of area (°C)
-	dt::Float64= 100			#Temperature on the top of area (°C)
-	ka_years::Float64= 100			#Temperature on the top of area (°C)
-	Ly_eruption::Float64= 100			#Temperature on the top of area (°C)
-	dT::Float64= 100			#Temperature on the top of area (°C)
-	E::Float64= 100			#Temperature on the top of area (°C)
-	nu::Float64= 100			#Temperature on the top of area (°C)
-	tsh::Float64= 100			#Temperature on the top of area (°C)
-	gamma::Float64= 100			#Temperature on the top of area (°C)
-	steph::Float64= 100			#Temperature on the top of area (°C)
+	dTdy::Float64 = 20			#Temperature on the top of area (°C)
+	T_magma::Float64 = 1050			#Temperature on the top of area (°C)
+	T_ch::Float64 = 700			#Temperature on the top of area (°C)
+	Qv::Float64 = 0.0030 * 1.e9			#Temperature on the top of area (°C)
+	dt::Float64= 10			#Temperature on the top of area (°C)
+	ka_years::Float64= 400e3			#Temperature on the top of area (°C)
+	Ly_eruption::Float64= 2000			#Temperature on the top of area (°C)
+	dT::Float64= 500			#Temperature on the top of area (°C)
+	E::Float64 = 1.56e10			#Temperature on the top of area (°C)
+	nu::Float64 = 0.3			#Temperature on the top of area (°C)
+	tsh::Float64 = 0.85			#Temperature on the top of area (°C)
+	gamma::Float64 = 0.1 #Temperature on the top of area (°C)
 
 	dike_a_rng = Array{Float64,1}(undef, 0)
 	dike_y_rng = Array{Float64,1}(undef, 0)
 	dike_b_rng = Array{Float64,1}(undef, 0)
 	dike_t_rng = Array{Float64,1}(undef, 0)
 
-#numerics
-	Seed::Int64= 0.0				#seed
-
-	nl::Float64= 100			#Temperature on the top of area (°C)
-	nmy::Float64= 100			#Temperature on the top of area (°C)
-	pmlt::Float64= 100			#Temperature on the top of area (°C)
-	eiter::Float64= 100			#Temperature on the top of area (°C)
-	CFL::Float64= 100			#Temperature on the top of area (°C)
-	pic_amount::Float64= 100			#Temperature on the top of area (°C)
+	#numerics
+	seed::Int64 = 666				#seed
+	nx::Int64 = 2000#Temperature on the top of area (°C)
+	ny::Int64 = 2000			#Temperature on the top of area (°C)
+	steph::Float64 = 10#Temperature on the top of area (°C)
+	nl::Float64= 4#Temperature on the top of area (°C)
+	nmy::Float64= 200			#Temperature on the top of area (°C)
+	pmlt::Float64= 2#Temperature on the top of area (°C)
+	eiter::Float64= 1e-12			#Temperature on the top of area (°C)
+	CFL::Float64= 0.23			#Temperature on the top of area (°C)
+	pic_amount::Float64 = 0.05			#Temperature on the top of area (°C)
 	it::Int64 = 1;
+	nout::Int32 = 12				#?
 end

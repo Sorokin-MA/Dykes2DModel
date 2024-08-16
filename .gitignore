@@ -17,7 +17,6 @@ untitled*
 *.png
 *.fig
 *init_data
-*.csv
 *~
 *.exe
 *.cu
