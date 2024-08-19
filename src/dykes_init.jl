@@ -21,6 +21,10 @@ data_folder::String = "..\\data_test\\"
 start_flag::Bool = false;
 flag_break::Bool = false;
 G_FLAG_INIT::Bool = true;
+
+D2DM_STARTED::Bool = false;
+D2DM_STOPED::Bool = true;
+
 buf = "\n\nWelcome to Dykes2DModel!\n 1.Set parameters and upload history of eruptions \n 2. Generate dykes \n 3. Start calculations\n"
 time_of_loop::Float64 = 0;
 str_time_left = Time(0)

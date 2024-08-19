@@ -82,9 +82,9 @@ function dikes_rand()
     T_ch = 700#?
     Qv = 0.0030 * 1.e9 / tyear#m^3/s
     dt::Float64 = 10 * tyear#time
-    ka_years = 400e3
-    tfin::Float64 = ka_years * tyear
-    terupt::Float64 = ka_years * tyear
+    calc_years = 400e3
+    tfin::Float64 = calc_years * tyear
+    terupt::Float64 = calc_years * tyear
 
     #Qv = (0.00411 * 1.e9 / tyear)*(78000.0/(tfin/tyear))#m^3/s
 
@@ -500,9 +500,9 @@ function dikes_rand_param(init_vp)
     T_ch = init_vp.T_ch#?
     Qv = init_vp.Qv / tyear#m^3/s
     dt::Float64 = init_vp.dt * tyear#time
-    ka_years = init_vp.ka_years
-    tfin::Float64 = ka_years * tyear
-    terupt::Float64 = ka_years * tyear
+    calc_years = init_vp.calc_years
+    tfin::Float64 = calc_years * tyear
+    terupt::Float64 = calc_years * tyear
 
     #Qv = (0.00411 * 1.e9 / tyear)*(78000.0/(tfin/tyear))#m^3/s
 

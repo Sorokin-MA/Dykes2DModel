@@ -135,7 +135,7 @@ end
 	T_ch::Float64 = 700			#Temperature on the top of area (°C)
 	Qv::Float64 = 0.0030 * 1.e9			#Temperature on the top of area (°C)
 	dt::Float64= 10			#Temperature on the top of area (°C)
-	ka_years::Float64= 400e3			#Temperature on the top of area (°C)
+	calc_years::Float64= 400e3			#Temperature on the top of area (°C)
 	Ly_eruption::Float64= 2000			#Temperature on the top of area (°C)
 	dT::Float64= 500			#Temperature on the top of area (°C)
 	E::Float64 = 1.56e10			#Temperature on the top of area (°C)
@@ -159,6 +159,6 @@ end
 	eiter::Float64= 1e-12			#Temperature on the top of area (°C)
 	CFL::Float64= 0.23			#Temperature on the top of area (°C)
 	pic_amount::Float64 = 0.05			#Temperature on the top of area (°C)
-	it::Int64 = 1;
+	it::Int64 = 0;
 	nout::Int32 = 12				#?
 end

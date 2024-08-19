@@ -21,6 +21,8 @@ function main_test()
     @printf("%s reading params			  ", bar1)
     read_params(gp, vp)
 
+	println(gp)
+	println(vp)
     #initialisation of T and Ph variables
     @printf("%s initialization			  ", bar1)
     init(gp, vp)
@@ -130,7 +132,7 @@ function main_test()
 
 
         #mailbox output
-        if (it % vp.nout == 0 || vp.is_eruption)
+        if (it % vp.nout == 0 || vp.is_eruption || is_intrusion)
             @time begin
                 @printf("%s writing results to disk  | ", bar2)
                 filename = data_folder * "julia_grid." * string(it) * ".h5"
@@ -177,6 +179,8 @@ function main_test_gui(gp::GridParams, vp::VarParams, FLAG_init::Bool)
 
     read_params(gp, vp)
 
+	println(gp)
+	println(vp)
     #initialisation of T and Ph variables
     @printf("%s initialization			  ", bar1)
 	log_to_buffer(@sprintf("%s initialization			  ", bar1))
@@ -193,11 +197,9 @@ function main_test_gui(gp::GridParams, vp::VarParams, FLAG_init::Bool)
     for vp.it in vp.it:vp.nt
         @printf("%s it = %d", bar1, vp.it)
 		log_to_buffer(@sprintf("%s it = %d", bar1, vp.it))
-#       local_buff = @sprintf("%s it = %d", bar1, vp.it)
-#		log_to_buffer(buf,local_buff)
-println("")#
-		global str_time_left = Time(0) + Second(Int64(floor(time_of_loop/(vp.it/Float64(vp.nt)))))
-		global time_of_loop += @elapsed begin	
+
+		#global str_time_left = Time(0) + Second(Int64(floor(time_of_loop/(vp.it/Float64(vp.nt)))))
+		#global time_of_loop += @elapsed begin	
 		vp.is_eruption = false
         eruption_counter = eruption_counter - 1
         is_intrusion = (gp.ndikes[vp.it] > 0)
@@ -217,7 +219,7 @@ println("")#
             @printf("%s accomulated %06f km^3| ", bar2, (maxVol * (dxl * dyl) / 1.e9) * 1.e4 * vp.gamma)
 			log_to_buffer(@sprintf("%s accomulated %06f km^3| ", bar2, (maxVol * (dxl * dyl) / 1.e9) * 1.e4 * vp.gamma))
 
-            if (maxVol * dxl * dyl >= gp.critVol[vp.iSample] &&  eruption_counter <=0)
+			if (maxVol * dxl * dyl >= gp.critVol[vp.iSample] &&  eruption_counter <=0 )
                 @printf("%s erupting %07d cells   | ", bar2, maxVol)
 				log_to_buffer(@sprintf("%s erupting %07d cells   | ", bar2, maxVol))
                 eruption_advection(gp, vp, maxVol, maxIdx, vp.it)
@@ -304,9 +306,9 @@ println("")#
                 #mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl, max_nmarker, px, py, mx ,my, h_px_dikes,pcnt, mfl);
             end
         end
-	end
+	#end
 		if((flag_break) ==true)
-			vp.it = vp.it + 1;
+			#vp.it = vp.it + 1;
 			return 0	
 		end
     end

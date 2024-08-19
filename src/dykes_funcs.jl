@@ -819,8 +819,6 @@ write some variables in 'filename' in h5 format
 """
 function small_mailbox_out(filename, T, pT, C, mT, staging, L, nx, ny, nxl, nyl, max_npartcl, max_nmarker, px, py, mx, my, h_px_dikes, pcnt, mfl)
     @time begin
-        bar1 = "├──"
-        bar2 = "\t ├──"
         #@printf("%s writing results to disk  | ", bar2)
         #filename = "grid." * string(it) * ".h5"
 
