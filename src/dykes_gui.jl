@@ -58,7 +58,11 @@ function dikes_gui()
 	#
 		#p = PlotlyJS.figure()
 
-			#main layout
+	#main layout
+	init_vp.critVol = global_EruptionVolumesVec
+	init_vp.critVolTime = global_EruptionTimesVec
+
+	#
 	app.layout = html_div(style=Dict("background_color" => "blue")) do
 		html_h1(
 			"Dykes2DModel",
@@ -104,7 +108,7 @@ function dikes_gui()
 				dcc_input(id="percent_done_label", value="Done",  debounce=true)
 			],
 		),
-		html_progress(id = "progress_bar", value = string(vp.it), max = vp.nt, style=Dict("width" => "100%")),
+		#html_progress(id = "progress_bar", value = string(vp.it), max = vp.nt, style=Dict("width" => "100%")),
 		html_div(id="eruptions-timeline", className="row",style=Dict("columnCount" => 1) ) do
         			#dcc_graph(id="T_graph",figure = Plot(PlotlyJS.heatmap(x = xs, y =ys, z=collect(eachcol(h_T)), title="T")))
 			#dcc_graph(id="eruptions-timeline-graph")
@@ -171,6 +175,7 @@ function dikes_gui()
 			            simple_imput("nu", init_vp.nu),
 			            simple_imput("tsh", init_vp.tsh),
 			            simple_imput("gamma", init_vp.gamma)
+
 			        end
 			    end
 
@@ -196,19 +201,7 @@ function dikes_gui()
 			if tab == "tab-3-example-graph"
 				return html_div(className="row") do
 					#callback for eruption csv file
-					callback!(app,
-						Output("output-data-upload", "children"),
-						Input("upload-data", "contents"),
-						State("upload-data", "filename"),
-						State("upload-data", "last_modified"),
-						) do contents, filename, last_modified
-							if !(contents isa Nothing)
-							children = [
-							parse_contents_csv(c..., init_vp) for c in
-								zip(contents, filename, last_modified)]
-								return children
-							end
-						end
+					
 					dcc_upload(
 						id="upload-data",
 						children=html_div([
@@ -311,9 +304,9 @@ function dikes_gui()
 	end
 
 	#update progress bar
-	callback!(app, Output("progress_bar", "value"),Output("progress_bar", "max"), Input("interval-component", "n_intervals")) do n_intervals
-		return string(vp.it), vp.nt
-	end
+	# callback!(app, Output("progress_bar", "value"),Output("progress_bar", "max"), Input("interval-component", "n_intervals")) do n_intervals
+	# 	return string(vp.it), vp.nt
+	# end
 
 	#update progress bar
 	callback!(app, Output("eruptions-timeline", "children"), Input("interval-component", "n_intervals")) do n_intervals
@@ -321,7 +314,7 @@ function dikes_gui()
 		return html_div(className="row") do
 
 			campri_calc = -(vp.nt .- gp.eruptionSteps)./vp.nt.*init_vp.calc_years/1000;
-			campri_real = -vcat(39.8, 14.9, 14.3, 13, 12, 12.8, 11.8, 11, 11.5, 11, 10.6, 9.6, 9.3, 5.1, 4.9, 4.5, 4.3, 4.2, 4.2, 4.2, 4.1, 3.9, 0.5);
+			campri_real = -vcat(init_vp.critVolTime);
 			campri_now = [-(vp.nt - vp.it)/vp.nt*init_vp.calc_years/1000];
 
 			campri_cal_graph  = PlotlyJS.scatter(x=campri_calc, y= zeros(length(campri_calc)), mode="markers", name="campri_calc", showlegend=true, marker_size=14)
@@ -350,13 +343,192 @@ function dikes_gui()
 		return buf
 	end
 
+	begin
+		callback!(app, Output("Lx", "value"), Input("Lx", "value")) do input_value
+			init_vp.Lx = input_value
+			return init_vp.Lx
+		end
 
-	#Output for Lx
-	callback!(app, Output("Lx", "value"), Input("Lx", "value")) do input_value
-		init_vp.Lx = input_value
-		return init_vp.Lx
+		callback!(app, Output("Ly", "value"), Input("Ly", "value")) do input_value
+			init_vp.Ly = input_value
+			return init_vp.Ly
+		end
+
+		callback!(app, Output("Lz", "value"), Input("Lz", "value")) do input_value
+			init_vp.Lz = input_value
+			return init_vp.Lz
+		end
+
+		callback!(app, Output("calc_years", "value"), Input("calc_years", "value")) do input_value
+			init_vp.calc_years = input_value
+			return init_vp.calc_years
+		end
+
+		callback!(app, Output("narrow_fact", "value"), Input("narrow_fact", "value")) do input_value
+			init_vp.narrow_fact = input_value
+			return init_vp.narrow_fact
+		end
+
+		callback!(app, Output("dike_to_sill", "value"), Input("dike_to_sill", "value")) do input_value
+			init_vp.dike_to_sill = input_value
+			return init_vp.dike_to_sill
+		end
+
+		callback!(app, Output("Lam_r", "value"), Input("Lam_r", "value")) do input_value
+			init_vp.Lam_r = input_value
+			return init_vp.Lam_r
+		end
+
+		callback!(app, Output("Lam_m", "value"), Input("Lam_m", "value")) do input_value
+			init_vp.Lam_m = input_value
+			return init_vp.Lam_m
+		end
+
+		callback!(app, Output("rho", "value"), Input("rho", "value")) do input_value
+			init_vp.rho = input_value
+			return init_vp.rho
+		end
+
+		callback!(app, Output("Cp", "value"), Input("Cp", "value")) do input_value
+			init_vp.Cp = input_value
+			return init_vp.Cp
+		end
+
+		callback!(app, Output("L_heat", "value"), Input("L_heat", "value")) do input_value
+			init_vp.L_heat = input_value
+			return init_vp.L_heat
+		end
+
+		callback!(app, Output("T_top", "value"), Input("T_top", "value")) do input_value
+			init_vp.T_top = input_value
+			return init_vp.T_top
+		end
+
+		callback!(app, Output("dTdy", "value"), Input("dTdy", "value")) do input_value
+			init_vp.dTdy = input_value
+			return init_vp.dTdy
+		end
+
+		callback!(app, Output("T_magma", "value"), Input("T_magma", "value")) do input_value
+			init_vp.T_magma = input_value
+			return init_vp.T_magma
+		end
+
+		callback!(app, Output("T_ch", "value"), Input("T_ch", "value")) do input_value
+			init_vp.T_ch = input_value
+			return init_vp.T_ch
+		end
+
+		callback!(app, Output("Qv", "value"), Input("Qv", "value")) do input_value
+			init_vp.Qv = input_value
+			return init_vp.Qv
+		end
+
+		callback!(app, Output("Ly_eruption", "value"), Input("Ly_eruption", "value")) do input_value
+			init_vp.Ly_eruption = input_value
+			return init_vp.Ly_eruption
+		end
+
+		callback!(app, Output("dT", "value"), Input("dT", "value")) do input_value
+			init_vp.dT = input_value
+			return init_vp.dT
+		end
+
+		callback!(app, Output("E", "value"), Input("E", "value")) do input_value
+			init_vp.E = input_value
+			return init_vp.E
+		end
+
+		callback!(app, Output("nu", "value"), Input("nu", "value")) do input_value
+			init_vp.nu = input_value
+			return init_vp.nu
+		end
+
+		callback!(app, Output("tsh", "value"), Input("tsh", "value")) do input_value
+			init_vp.tsh = input_value
+			return init_vp.tsh
+		end
+
+		callback!(app, Output("gamma", "value"), Input("gamma", "value")) do input_value
+			init_vp.gamma = input_value
+			return init_vp.gamma
+		end
+
+
 	end
 
+	begin
+
+		callback!(app, Output("nx", "value"), Input("nx", "value")) do input_value
+			init_vp.nx= input_value
+			return init_vp.nx
+		end
+
+		callback!(app, Output("ny", "value"), Input("ny", "value")) do input_value
+			init_vp.ny= input_value
+			return init_vp.ny
+		end
+
+		callback!(app, Output("dt", "value"), Input("dt", "value")) do input_value
+			init_vp.dt = input_value
+			return init_vp.dt
+		end
+
+		callback!(app, Output("steph", "value"), Input("steph", "value")) do input_value
+			init_vp.steph = input_value
+			return init_vp.steph
+		end
+
+		callback!(app, Output("nl", "value"), Input("nl", "value")) do input_value
+			init_vp.nl = input_value
+			return init_vp.nl
+		end
+
+		callback!(app, Output("nmy", "value"), Input("nmy", "value")) do input_value
+			init_vp.nmy = input_value
+			return init_vp.nmy
+		end
+
+		callback!(app, Output("pmlt", "value"), Input("pmlt", "value")) do input_value
+			init_vp.pmlt = input_value
+			return init_vp.pmlt
+		end
+
+		callback!(app, Output("eiter", "value"), Input("eiter", "value")) do input_value
+			init_vp.eiter = input_value
+			return init_vp.eiter
+		end
+
+		callback!(app, Output("CFL", "value"), Input("CFL", "value")) do input_value
+			init_vp.CFL = input_value
+			return init_vp.CFL
+		end
+
+		callback!(app, Output("pic_amount", "value"), Input("pic_amount", "value")) do input_value
+			init_vp.pic_amount = input_value
+			return init_vp.pic_amount
+		end
+
+		callback!(app, Output("nout", "value"), Input("nout", "value")) do input_value
+			init_vp.nout = input_value
+			return init_vp.nout
+		end
+
+	end
+	
+	callback!(app,
+		Output("output-data-upload", "children"),
+		Input("upload-data", "contents"),
+		State("upload-data", "filename"),
+		State("upload-data", "last_modified"),
+		) do contents, filename, last_modified
+			if !(contents isa Nothing)
+				children = [
+				parse_contents_csv(c..., init_vp) for c in
+					zip(contents, filename, last_modified)]
+					return children
+				end
+		end
 
 	run_server(app, debug=true)
 #    run_server(app)

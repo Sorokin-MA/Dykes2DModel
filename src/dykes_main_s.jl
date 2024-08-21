@@ -198,8 +198,8 @@ function main_test_gui(gp::GridParams, vp::VarParams, FLAG_init::Bool)
         @printf("%s it = %d", bar1, vp.it)
 		log_to_buffer(@sprintf("%s it = %d", bar1, vp.it))
 
-		#global str_time_left = Time(0) + Second(Int64(floor(time_of_loop/(vp.it/Float64(vp.nt)))))
-		#global time_of_loop += @elapsed begin	
+		global str_time_left = Time(0) + Second(Int64(floor(time_of_loop/(vp.it/Float64(vp.nt)))))
+		global time_of_loop += @elapsed begin	
 		vp.is_eruption = false
         eruption_counter = eruption_counter - 1
         is_intrusion = (gp.ndikes[vp.it] > 0)
@@ -311,6 +311,7 @@ function main_test_gui(gp::GridParams, vp::VarParams, FLAG_init::Bool)
 			#vp.it = vp.it + 1;
 			return 0	
 		end
+	end
     end
 
     @printf("%s writing results to disk  | ", bar2)
