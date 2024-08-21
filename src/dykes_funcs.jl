@@ -909,6 +909,66 @@ function mailbox_out(filename, T, pT, C, mT, staging, L, nx, ny, nxl, nyl, max_n
     end
 end
 
+function make_snapshot(filename, VarParams, GridParams)
+    @time begin
+        #@printf("%s writing results to disk  | ", bar2)
+        #filename = "grid." * string(it) * ".h5"
+
+        if isfile(filename)
+            rm(filename)
+        end
+
+        fid = h5open(filename, "w")
+        #h5write(filename, "T", T)
+        #h5write(filename, "C", C)
+
+        h_pcnt = Array{Int32,1}(undef, nx * ny)#array of double values from matlab script
+        h_T = Array{Float64,1}(undef, nx * ny)#array of double values from matlab script
+        h_C = Array{Float64,1}(undef, nx * ny)#array of double values from matlab script
+        h_pT = Array{Float64,1}(undef, max_npartcl)#array of double values from matlab script
+        h_mT = Array{Float64,1}(undef, max_nmarker)#array of double values from matlab script
+        h_L = Array{Int32,1}(undef, nxl * nyl)#array of double values from matlab script
+        h_px = Array{Float64,1}(undef, max_npartcl)#array of double values from matlab script
+        h_py = Array{Float64,1}(undef, max_npartcl)#array of double values from matlab script
+        h_mx = Array{Float64,1}(undef, max_nmarker)#array of double values from matlab script
+        h_my = Array{Float64,1}(undef, max_nmarker)#array of double values from matlab script
+        h_mfl = Array{Float64,1}(undef, nxl * nyl)#array of double values from matlab script
+
+        copyto!(h_pcnt, pcnt)
+        copyto!(h_T, T)
+        copyto!(h_pT, pT)
+        copyto!(h_mT, mT)
+        copyto!(h_C, C)
+
+        copyto!(h_px, px)
+        copyto!(h_py, py)
+        copyto!(h_mx, mx)
+        copyto!(h_my, my)
+        copyto!(h_mfl, mfl)
+
+        write(fid, "pcnt", h_pcnt)
+        write(fid, "T", h_T)
+        write(fid, "pT", h_pT)
+        write(fid, "mT", h_mT)
+        write(fid, "C", h_C)
+
+        write(fid, "px", h_px)
+        write(fid, "py", h_py)
+        write(fid, "mx", h_mx)
+        write(fid, "my", h_my)
+        write(fid, "px_dikes", h_px_dikes)
+        write(fid, "mfl", h_mfl)
+        #write(fid, "L", h_L)
+
+        copyto!(h_L, L)
+        write(fid, "L", h_L)
+
+        close(fid)
+    end
+end
+
+
+
 function rand_limited(u, d)
     ans::Float64 = -1
     while ((ans <= 0) || (ans >= 1))

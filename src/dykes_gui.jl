@@ -73,7 +73,7 @@ function dikes_gui()
 				"1. Set parameters.",
 				style=Dict("color" => "#000000", "textAlign" => "left"),
 			),
-			html_button("Load config", id="load-config-but"),
+#			html_button("Load config", id="load-config-but"),
 			dcc_tabs(id="tabs-example-graph", value="tab-1-example-graph", children=[
 				dcc_tab(label="Physics", value="tab-1-example-graph"),
 				dcc_tab(label="Numerics", value="tab-2-example-graph"),
@@ -110,7 +110,7 @@ function dikes_gui()
 		),
 		#html_progress(id = "progress_bar", value = string(vp.it), max = vp.nt, style=Dict("width" => "100%")),
 		html_div(id="eruptions-timeline", className="row",style=Dict("columnCount" => 1) ) do
-        			#dcc_graph(id="T_graph",figure = Plot(PlotlyJS.heatmap(x = xs, y =ys, z=collect(eachcol(h_T)), title="T")))
+			#dcc_graph(id="T_graph",figure = Plot(PlotlyJS.heatmap(x = xs, y =ys, z=collect(eachcol(h_T)), title="T")))
 			#dcc_graph(id="eruptions-timeline-graph")
 		end,
 		html_h2(
@@ -137,8 +137,8 @@ function dikes_gui()
 		html_div() do
 			dcc_tabs(id="tabs-figure-graph", value="tab-1-figure-graph", children=[
 					dcc_tab(label="T", value="tab-1-figure-graph"),
-					dcc_tab(label="C", value="tab-2-figure-graph"),
-					dcc_tab(label="P", value="tab-3-figure-graph")
+					dcc_tab(label="C", value="tab-2-figure-graph")
+					#dcc_tab(label="P", value="tab-3-figure-graph")
 				]
 			),
 			html_div(id="tabs-content-figure-graph")
@@ -530,7 +530,7 @@ function dikes_gui()
 				end
 		end
 
-	run_server(app, debug=true)
+	run_server(app)
 #    run_server(app)
 end
 

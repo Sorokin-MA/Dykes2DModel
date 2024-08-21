@@ -224,8 +224,13 @@ function main_test_gui(gp::GridParams, vp::VarParams, FLAG_init::Bool)
 				log_to_buffer(@sprintf("%s erupting %07d cells   | ", bar2, maxVol))
                 eruption_advection(gp, vp, maxVol, maxIdx, vp.it)
 
-                println("vp.is_eruption")
-                println(vp.is_eruption)
+
+				if(vp.is_eruption)
+					filename = data_folder * "julia_grid." * string(vp.it) * ".before_eruption" * ".h5"
+				else
+					filename = data_folder * "julia_grid." * string(vp.it) * ".h5"
+				end
+
                 eruption_counter = 10
             end
         end
@@ -300,7 +305,11 @@ function main_test_gui(gp::GridParams, vp::VarParams, FLAG_init::Bool)
             @time begin
                 @printf("%s writing results to disk  | ", bar2)
 				log_to_buffer(@sprintf("%s writing results to disk  | ", bar2))
+			if(vp.is_eruption)
+                filename = data_folder * "julia_grid." * string(vp.it) * ".after_eruption" * ".h5"
+			else
                 filename = data_folder * "julia_grid." * string(vp.it) * ".h5"
+			end
 
                 small_mailbox_out(filename, gp.T, gp.pT, gp.C, gp.mT, gp.staging, gp.L, vp.nx, vp.ny, vp.nxl, vp.nyl, vp.max_npartcl, vp.max_nmarker, gp.px, gp.py, gp.mx, gp.my, gp.h_px_dikes, gp.pcnt, gp.mfl)
                 #mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl, max_nmarker, px, py, mx ,my, h_px_dikes,pcnt, mfl);

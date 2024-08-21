@@ -18,6 +18,10 @@ using Dates
 
 data_folder::String = "..\\d2dm_data\\"
 
+if(isdir(data_folder) == false)
+	mkdir(data_folder)
+end
+
 start_flag::Bool = false;
 flag_break::Bool = false;
 G_FLAG_INIT::Bool = true;
