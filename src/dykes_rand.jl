@@ -404,7 +404,7 @@ function dikes_rand()
 
     #println("typeof(ndikes)")
     #println(typeof(ndikes))
-    sim_dir = "..\\data_test\\"
+    sim_dir = "..\\d2dm_data\\"
 
     #save data
     particles_file_name = sim_dir * "pa.bin"
@@ -755,7 +755,11 @@ function dikes_rand_param(init_vp)
     partcl_edges = vcat([Int32(0)], accumulate(+, dike_npartcl))
     marker_edges = vcat([Int32(0)], accumulate(+, dike_nmarker))
 
-    sim_dir = "..\\data_test\\"
+    sim_dir = "..\\d2dm_data\\"
+
+	if(isdir(sim_dir) == false)
+		mkdir(sim_dir)
+	end
 
     #save data
     particles_file_name = sim_dir * "pa.bin"

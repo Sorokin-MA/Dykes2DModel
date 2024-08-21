@@ -16,7 +16,7 @@ using Base64
 using Core: Typeof
 using Dates
 
-data_folder::String = "..\\data_test\\"
+data_folder::String = "..\\d2dm_data\\"
 
 start_flag::Bool = false;
 flag_break::Bool = false;
