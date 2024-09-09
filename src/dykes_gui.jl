@@ -133,7 +133,7 @@ function dikes_gui()
 			style=Dict("color" => "#000000", "textAlign" => "left"),
 		),
 		html_button("Make snapshot", id="make-snap-but", disabled = false),
-		html_button("Load snapshot", id="load-snap-but", disabled = false),
+		dcc_upload(html_button("Load snapshot",id="load-snap-but"), id="load-snap"),
 		html_div() do
 			dcc_tabs(id="tabs-figure-graph", value="tab-1-figure-graph", children=[
 					dcc_tab(label="T", value="tab-1-figure-graph"),
@@ -530,6 +530,55 @@ function dikes_gui()
 				end
 		end
 
+	callback!(app,
+		Output("load-snap", "contents"),
+		Input("load-snap", "contents"),
+		State("load-snap", "filename"),
+		State("load-snap", "last_modified"),
+		) do contents, filename, last_modified
+
+			fid = h5open(filename, "r")
+			#h5write(filename, "T", T)
+			#h5write(filename, "C", C)
+			
+			read(fid, "nx", vp.nx)
+			read(fid, "ny", vp.ny)
+
+	        read(fid, "dx", vp.dx)
+	        read(fid, "dy", vp.dy)
+
+	        read(fid, "Lx", vp.Lx)
+	        read(fid, "Ly", vp.Ly)
+
+
+			h_T = Array{Float64,1}(undef, vp.nx * vp.ny)#array of double values from matlab script
+			h_C = Array{Float64,1}(undef, vp.nx * vp.ny)#array of double values from matlab script
+
+			println(vp.nx)
+			println(vp.ny)
+
+			println(vp.dx)
+			println(vp.dy)
+
+			println(vp.Lx)
+			println(vp.Ly)
+
+			read(fid, "T", h_T)
+			read(fid, "C", h_C)
+
+			vp.nx = nx
+			vp.ny = ny
+
+
+			copyto!(gp.T, h_T)
+			copyto!(gp.C, h_C)
+
+			close(fid)
+
+			return contents
+		end
+
+
 	run_server(app)
 #    run_server(app)
 end
@@ -537,6 +586,8 @@ end
 function log_to_buffer(input_string)
 	global buf= input_string*buf
 end
+
+
 
 #parse csv file
 function parse_contents_csv(contents, filename, date, init_vp)
