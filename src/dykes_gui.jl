@@ -7,27 +7,27 @@ using Plots
 plotly()
 
 function simple_imput(name::String, init_val)
-    html_div() do
-        html_label(name * ": "),
-        html_div(
-            children=[
-                dcc_input(id=name, value=init_val, type="number", debounce=true)
-            ],
-        )
-    end
+	html_div() do
+		html_label(name * ": "),
+		html_div(
+			children=[
+				dcc_input(id=name, value=init_val, type="number", debounce=true)
+			],
+		)
+	end
 end
 
 
 function simple_imput_desc(name::String, init_val, description)
-    html_div() do
-        #html_label(name * ": "),
-        html_label(children="$name :", title=description),
-        html_div(
-            children=[
-                dcc_input(id=name, value=init_val, type="number", debounce=true)
-            ],
-        )
-    end
+	html_div() do
+		#html_label(name * ": "),
+		html_label(children="$name :", title=description),
+		html_div(
+			children=[
+				dcc_input(id=name, value=init_val, type="number", debounce=true)
+			],
+		)
+	end
 end
 
 
@@ -35,56 +35,39 @@ function dikes_gui()
 	#init dash
 	app = dash()
 
-	num_columns = 6
-
 	#init main structs
 	gp = GridParams()			#array params
 	vp = VarParams()			#scalar params
 	init_vp = InitVarParams()	#params for generate random
 
-	# campri_calc = Int32[10000, 20000, 25000, 26000]
-	# tyear = 365 * 24 * 3600		#seconds in year
-	# tfin = (tfin/tyear)/1.e3
-	# campri_calc = -(1 .- campri_calc./nt) .* (tfin)
-
-	#cat(159.8, 124.9, 18, 5, 1);
-
-	#append!(gp.eruptionSteps, 1000)
-	#append!(gp.eruptionSteps, 20000)
-
-	#append!(gp.eruptionSteps, 200)
-	#append!(gp.eruptionSteps, 10000)
-	#vp.nt = 20000
-	#
-		#p = PlotlyJS.figure()
+	num_columns = 6 #number of columns in params part
 
 	#main layout
 	init_vp.critVol = global_EruptionVolumesVec
 	init_vp.critVolTime = global_EruptionTimesVec
 
-	#
+	#main layout
 	app.layout = html_div(style=Dict("background_color" => "blue")) do
 		html_h1(
 			"Dykes2DModel",
 			style=Dict("color" => "#000000", "textAlign" => "center"),
 		),
-		html_div() do
-			html_h2(
-				"1. Set parameters.",
-				style=Dict("color" => "#000000", "textAlign" => "left"),
-			),
-#			html_button("Load config", id="load-config-but"),
-			dcc_tabs(id="tabs-example-graph", value="tab-1-example-graph", children=[
-				dcc_tab(label="Physics", value="tab-1-example-graph"),
-				dcc_tab(label="Numerics", value="tab-2-example-graph"),
-				dcc_tab(label="Eruptions", value="tab-3-example-graph")
-			]
-			),
-			html_div(id="tabs-content-example-graph")
-		end,
-		html_br(),
-		html_div(id="my-output"),
-
+			html_div() do
+				html_h2(
+					"1. Set parameters.",
+					style=Dict("color" => "#000000", "textAlign" => "left"),
+				),
+				#html_button("Load config", id="load-config-but"),
+				dcc_tabs(id="tabs-example-graph", value="tab-1-example-graph", children=[
+					dcc_tab(label="Physics", value="tab-1-example-graph"),
+					dcc_tab(label="Numerics", value="tab-2-example-graph"),
+					dcc_tab(label="Eruptions", value="tab-3-example-graph")
+				]
+				),
+				html_div(id="tabs-content-example-graph")
+			end,
+			html_br(),
+			html_div(id="my-output"),
 		html_h2(
 			"2. Generate data.",
 			style=Dict("color" => "#000000", "textAlign" => "left"),
@@ -149,52 +132,52 @@ function dikes_gui()
 	callback!(app, Output("tabs-content-example-graph", "children"),
 		Input("tabs-example-graph", "value")) do tab
 			if tab == "tab-1-example-graph"
-			    return html_div(className="row") do
-			        html_div(className="info", style=Dict("columnCount" => num_columns)) do
-			        end,
-			        html_div(className="row", style=Dict("columnCount" => num_columns)) do
-			            simple_imput_desc("Lx", init_vp.Lx, descr_Lx),
-			            simple_imput_desc("Ly", init_vp.Ly, descr_Ly),
-			            simple_imput_desc("Lz", init_vp.Lz, descr_Lz),
-			            simple_imput("calc_years", init_vp.calc_years),
-			            simple_imput("dike_to_sill", init_vp.dike_to_sill),
-			            simple_imput("narrow_fact", init_vp.narrow_fact),
-			            simple_imput("Lam_r", init_vp.Lam_r),
-			            simple_imput("Lam_m", init_vp.Lam_m),
-			            simple_imput("rho", init_vp.rho),
-			            simple_imput("Cp", init_vp.Cp),
-			            simple_imput("L_heat", init_vp.L_heat),
-			            simple_imput("T_top", init_vp.T_top),
-			            simple_imput("dTdy", init_vp.dTdy),
-			            simple_imput("T_magma", init_vp.T_magma),
-			            simple_imput("T_ch", init_vp.T_ch),
-			            simple_imput("Qv", init_vp.Qv),
-			            simple_imput("Ly_eruption", init_vp.Ly_eruption),
-			            simple_imput("dT", init_vp.dT),
-			            simple_imput("E", init_vp.E),
-			            simple_imput("nu", init_vp.nu),
-			            simple_imput("tsh", init_vp.tsh),
-			            simple_imput("gamma", init_vp.gamma)
+				return html_div(className="row") do
+					html_div(className="info", style=Dict("columnCount" => num_columns)) do
+					end,
+					html_div(className="row", style=Dict("columnCount" => num_columns)) do
+						simple_imput_desc("Lx", init_vp.Lx, descr_Lx),
+						simple_imput_desc("Ly", init_vp.Ly, descr_Ly),
+						simple_imput_desc("Lz", init_vp.Lz, descr_Lz),
+						simple_imput("calc_years", init_vp.calc_years),
+						simple_imput("dike_to_sill", init_vp.dike_to_sill),
+						simple_imput("narrow_fact", init_vp.narrow_fact),
+						simple_imput("Lam_r", init_vp.Lam_r),
+						simple_imput("Lam_m", init_vp.Lam_m),
+						simple_imput("rho", init_vp.rho),
+						simple_imput("Cp", init_vp.Cp),
+						simple_imput("L_heat", init_vp.L_heat),
+						simple_imput("T_top", init_vp.T_top),
+						simple_imput("dTdy", init_vp.dTdy),
+						simple_imput("T_magma", init_vp.T_magma),
+						simple_imput("T_ch", init_vp.T_ch),
+						simple_imput("Qv", init_vp.Qv),
+						simple_imput("Ly_eruption", init_vp.Ly_eruption),
+						simple_imput("dT", init_vp.dT),
+						simple_imput("E", init_vp.E),
+						simple_imput("nu", init_vp.nu),
+						simple_imput("tsh", init_vp.tsh),
+						simple_imput("gamma", init_vp.gamma)
 
-			        end
-			    end
+					end
+				end
 
 			end
 			if tab == "tab-2-example-graph"
-			    return html_div(className="row") do
+				return html_div(className="row") do
 					simple_imput("seed", init_vp.seed),
 					html_div(className="row", style=Dict("columnCount" => num_columns)) do
-				        simple_imput("nx", init_vp.nx),
-				        simple_imput("ny", init_vp.ny),
-				        simple_imput("dt", init_vp.dt),
-				        simple_imput("steph", init_vp.steph),
-				        simple_imput("nl", init_vp.nl),
-				        simple_imput("nmy", init_vp.nmy),
-				        simple_imput("pmlt", init_vp.pmlt),
-				        simple_imput("eiter", init_vp.eiter),
-				        simple_imput("CFL", init_vp.CFL),
-				        simple_imput("pic_amount", init_vp.pic_amount),
-				        simple_imput("nout", init_vp.nout)
+						simple_imput("nx", init_vp.nx),
+						simple_imput("ny", init_vp.ny),
+						simple_imput("dt", init_vp.dt),
+						simple_imput("steph", init_vp.steph),
+						simple_imput("nl", init_vp.nl),
+						simple_imput("nmy", init_vp.nmy),
+						simple_imput("pmlt", init_vp.pmlt),
+						simple_imput("eiter", init_vp.eiter),
+						simple_imput("CFL", init_vp.CFL),
+						simple_imput("pic_amount", init_vp.pic_amount),
+						simple_imput("nout", init_vp.nout)
 					end
 				end
 			end
@@ -544,11 +527,11 @@ function dikes_gui()
 			read(fid, "nx", vp.nx)
 			read(fid, "ny", vp.ny)
 
-	        read(fid, "dx", vp.dx)
-	        read(fid, "dy", vp.dy)
+			read(fid, "dx", vp.dx)
+			read(fid, "dy", vp.dy)
 
-	        read(fid, "Lx", vp.Lx)
-	        read(fid, "Ly", vp.Ly)
+			read(fid, "Lx", vp.Lx)
+			read(fid, "Ly", vp.Ly)
 
 
 			h_T = Array{Float64,1}(undef, vp.nx * vp.ny)#array of double values from matlab script
@@ -580,7 +563,7 @@ function dikes_gui()
 
 
 	run_server(app)
-#    run_server(app)
+	#run_server(app)
 end
 
 function log_to_buffer(input_string)
