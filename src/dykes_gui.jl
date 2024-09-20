@@ -129,10 +129,10 @@ function dikes_gui()
 	end
 
 	#table for input params
-	callback!(app, Output("tabs-content-example-graph", "children"),
-		Input("tabs-example-graph", "value")) do tab
+	callback!(app, [Output("tabs-content-example-graph", "children")],
+		   [Input("tabs-example-graph", "value")]) do tab
 			if tab == "tab-1-example-graph"
-				return html_div(className="row") do
+				return [html_div(className="row") do
 					html_div(className="info", style=Dict("columnCount" => num_columns)) do
 					end,
 					html_div(className="row", style=Dict("columnCount" => num_columns)) do
@@ -158,13 +158,11 @@ function dikes_gui()
 						simple_imput("nu", init_vp.nu),
 						simple_imput("tsh", init_vp.tsh),
 						simple_imput("gamma", init_vp.gamma)
-
 					end
-				end
-
+				end]
 			end
 			if tab == "tab-2-example-graph"
-				return html_div(className="row") do
+				return [html_div(className="row") do
 					simple_imput("seed", init_vp.seed),
 					html_div(className="row", style=Dict("columnCount" => num_columns)) do
 						simple_imput("nx", init_vp.nx),
@@ -179,10 +177,10 @@ function dikes_gui()
 						simple_imput("pic_amount", init_vp.pic_amount),
 						simple_imput("nout", init_vp.nout)
 					end
-				end
+				end]
 			end
 			if tab == "tab-3-example-graph"
-				return html_div(className="row") do
+				return [html_div(className="row") do
 					#callback for eruption csv file
 					
 					dcc_upload(
@@ -210,19 +208,19 @@ function dikes_gui()
 					# 	columns=[Dict("name" =>i, "id" => i) for i in names(df)],
 					# 	data = Dict.(pairs.(eachrow(df)))
 					# )
-				end
+				end]
 			end
 	end
 
 	#callback for generate button
-	callback!(app, Output("generate-but", "n_clicks"), Input("generate-but", "n_clicks"), prevent_initial_call=true) do n_clicks
+	callback!(app, [Output("generate-but", "n_clicks")], [Input("generate-but", "n_clicks")], prevent_initial_call=true) do n_clicks
 		println("generate button clicked")
 		dikes_rand_param(init_vp)
-		return n_clicks + 1
+		return [n_clicks + 1]
 	end
 
 	#callback for start button
-	callback!(app, Output("stop-but", "disabled"), Input("start-but", "n_clicks"), prevent_initial_call=true) do n_clicks
+	callback!(app, [Output("stop-but", "disabled")], [Input("start-but", "n_clicks")], prevent_initial_call=true) do n_clicks
 		println("start_button clicked")
 
 		global D2DM_STARTED = true;
@@ -230,18 +228,18 @@ function dikes_gui()
 		global flag_break = false;
 
 		main_test_gui(gp, vp, G_FLAG_INIT)
-		return false
+		return [false]
 	end
 
 	#callback for stop button
-	callback!(app, Output("stop-but", "n_clicks"), Input("stop-but", "n_clicks"), prevent_initial_call=true) do n_clicks
+	callback!(app, [Output("stop-but", "n_clicks")], [Input("stop-but", "n_clicks")], prevent_initial_call=true) do n_clicks
 		println("stop button clicked")
 	
 		global D2DM_STARTED = false;
 		global D2DM_STOPED = true;
 		global flag_break = true;
 	
-		return n_clicks + 1
+		return [n_clicks + 1]
 	end
 	
 	# callback!(app, Output("start-but", "disabled"), Input("stop-but", "disabled"),  prevent_initial_call=true) do n_clicks
@@ -249,7 +247,7 @@ function dikes_gui()
 	# end
 
 	#callback for figures panel
-	callback!(app, Output("tabs-content-figure-graph", "children"), Input("tabs-figure-graph", "value"), prevent_initial_call=true) do tab
+	callback!(app, [Output("tabs-content-figure-graph", "children")], [Input("tabs-figure-graph", "value")], prevent_initial_call=true) do tab
 		if tab == "tab-1-figure-graph"
 			if(vp.dx == 0.0)
 				return nothing
@@ -259,10 +257,10 @@ function dikes_gui()
 
 			h_T = Array{Float64,1}(undef, vp.nx * vp.ny)#array of double values from matlab script
 			copyto!(h_T, gp.T)
-			return html_div(id="dikes_figures_T", className="row",style=Dict("columnCount" => 3) ) do
+			return [html_div(id="dikes_figures_T", className="row",style=Dict("columnCount" => 3) ) do
 				#dcc_graph(id="T_graph",figure = Plot(PlotlyJS.heatmap(x = xs, y =ys, z=collect(eachcol(h_T)), title="T")))
 				dcc_graph(id="T_graph", figure = Plot(PlotlyJS.heatmap(x = xs, y =ys, z = collect(eachrow(reshape(h_T, (vp.nx, vp.ny)))), title="T")))
-			end
+			end]
 		end
 		if tab == "tab-2-figure-graph"
 			if(vp.dx == 0.0)
@@ -272,7 +270,7 @@ function dikes_gui()
 			ys = 0:vp.dy:vp.Ly
 			h_C = Array{Float64,1}(undef, vp.nx * vp.ny)#array of double values from matlab script
 			copyto!(h_C, gp.C)
-			return html_div(id="dikes_figures_C", className="row",style=Dict("columnCount" => 3)) do
+			return [html_div(id="dikes_figures_C", className="row",style=Dict("columnCount" => 3)) do
 				#NOTE: dash bug, see https://github.com/plotly/Dash.jl/issues/60
 				
 				#p = Plot(PlotlyJS.heatmap(x = xs, y =ys, z = collect(eachrow(h_C)), title="C"))
@@ -282,7 +280,7 @@ function dikes_gui()
 				#dcc_graph(id="C_graph", figure = (;data, layout), title="C")
 
 				dcc_graph(id="C_graph", figure = Plot(PlotlyJS.heatmap(x = xs, y =ys, z = collect(eachrow(reshape(h_C, (vp.nx, vp.ny)))), title="C")))
-			end
+			end]
 		end
 	end
 
@@ -292,149 +290,148 @@ function dikes_gui()
 	# end
 
 	#update progress bar
-	callback!(app, Output("eruptions-timeline", "children"), Input("interval-component", "n_intervals")) do n_intervals
+	callback!(app, [Output("eruptions-timeline", "children")], [Input("interval-component", "n_intervals")]) do n_intervals
 		
-		return html_div(className="row") do
+		campri_calc = -(vp.nt .- gp.eruptionSteps)./vp.nt.*init_vp.calc_years/1000;
+		campri_real = -vcat(init_vp.critVolTime);
+		campri_now = [-(vp.nt - vp.it)/vp.nt*init_vp.calc_years/1000];
 
-			campri_calc = -(vp.nt .- gp.eruptionSteps)./vp.nt.*init_vp.calc_years/1000;
-			campri_real = -vcat(init_vp.critVolTime);
-			campri_now = [-(vp.nt - vp.it)/vp.nt*init_vp.calc_years/1000];
+		campri_cal_graph  = PlotlyJS.scatter(x=campri_calc, y= zeros(length(campri_calc)), mode="markers", name="campri_calc", showlegend=true, marker_size=14)
+		campri_real_graph = PlotlyJS.scatter(x=campri_real, y= zeros(length(campri_real)), mode="markers", name="campri_real", showlegend=true, marker_size=10)
+		campri_now_graph = PlotlyJS.scatter(x=campri_now, y= zeros(length(campri_now)), mode="markers", name="now", showlegend=true, marker_size=10)
+		data = [campri_cal_graph, campri_real_graph,campri_now_graph]
 
-			campri_cal_graph  = PlotlyJS.scatter(x=campri_calc, y= zeros(length(campri_calc)), mode="markers", name="campri_calc", showlegend=true, marker_size=14)
-			campri_real_graph = PlotlyJS.scatter(x=campri_real, y= zeros(length(campri_real)), mode="markers", name="campri_real", showlegend=true, marker_size=10)
-			campri_now_graph = PlotlyJS.scatter(x=campri_now, y= zeros(length(campri_now)), mode="markers", name="now", showlegend=true, marker_size=10)
-			data = [campri_cal_graph, campri_real_graph,campri_now_graph]
+		layout = Layout(title="Eruptions graph",
+						xaxis=attr(title="time, (ka)", showgrid=false, zeroline=false),
+						yaxis=attr(showgrid=false, range=[0, 0]))
 
-			layout = Layout(title="Eruptions graph",
-							xaxis=attr(title="time, (ka)", showgrid=false, zeroline=false),
-							yaxis=attr(showgrid=false, range=[0, 0]))
+		p = PlotlyJS.plot(data, layout)
 
-			p = PlotlyJS.plot(data, layout)
-
+		return [html_div(className="row") do
 			dcc_graph(id="eruptions-timeline-graph", figure = p)
-		end
+		end]
 	end
 
 	#time left label callback
-	callback!(app, Output("time_left_label", "value"),Output("percent_done_label", "value"), Input("interval-component", "n_intervals")) do n_intervals
-		return "Time left: "*string(str_time_left), "Done: "*string(@sprintf("%03s", ((Float64(vp.it)-1)/Float64(vp.nt))*100))*"%"
+	callback!(app, [Output("time_left_label", "value"),Output("percent_done_label", "value")], [Input("interval-component", "n_intervals")]) do n_intervals
+		return ["Time left: "*string(str_time_left), "Done: "*string(@sprintf("%03s", ((Float64(vp.it)-1)/Float64(vp.nt))*100))*"%"]
 	end
 
 	#refresh buffer every n_intrervals seconds
-	callback!(app, Output("log_buffer", "value"), Input("interval-component", "n_intervals")) do n_intervals
+	callback!(app, [Output("log_buffer", "value")], [Input("interval-component", "n_intervals")]) do n_intervals
 		#println("debug time_interval")
-		return buf
+		return [buf]
 	end
 
 	begin
-		callback!(app, Output("Lx", "value"), Input("Lx", "value")) do input_value
+		callback!(app, [Output("Lx", "value")], [Input("Lx", "value")]) do input_value
 			init_vp.Lx = input_value
-			return init_vp.Lx
+			return [init_vp.Lx]
 		end
 
-		callback!(app, Output("Ly", "value"), Input("Ly", "value")) do input_value
+		callback!(app, [Output("Ly", "value")], [Input("Ly", "value")]) do input_value
 			init_vp.Ly = input_value
-			return init_vp.Ly
+			return [init_vp.Ly]
 		end
 
-		callback!(app, Output("Lz", "value"), Input("Lz", "value")) do input_value
+		callback!(app, [Output("Lz", "value")], [Input("Lz", "value")]) do input_value
 			init_vp.Lz = input_value
-			return init_vp.Lz
+			return [init_vp.Lz]
 		end
 
-		callback!(app, Output("calc_years", "value"), Input("calc_years", "value")) do input_value
+		callback!(app, [Output("calc_years", "value")], [Input("calc_years", "value")]) do input_value
 			init_vp.calc_years = input_value
-			return init_vp.calc_years
+			return [init_vp.calc_years]
 		end
 
-		callback!(app, Output("narrow_fact", "value"), Input("narrow_fact", "value")) do input_value
+		callback!(app, [Output("narrow_fact", "value")], [Input("narrow_fact", "value")]) do input_value
 			init_vp.narrow_fact = input_value
-			return init_vp.narrow_fact
+			return [init_vp.narrow_fact]
 		end
 
-		callback!(app, Output("dike_to_sill", "value"), Input("dike_to_sill", "value")) do input_value
+		callback!(app, [Output("dike_to_sill", "value")], [Input("dike_to_sill", "value")]) do input_value
 			init_vp.dike_to_sill = input_value
-			return init_vp.dike_to_sill
+			return [init_vp.dike_to_sill]
 		end
 
-		callback!(app, Output("Lam_r", "value"), Input("Lam_r", "value")) do input_value
+		callback!(app, [Output("Lam_r", "value")], [Input("Lam_r", "value")]) do input_value
 			init_vp.Lam_r = input_value
-			return init_vp.Lam_r
+			return [init_vp.Lam_r]
 		end
 
-		callback!(app, Output("Lam_m", "value"), Input("Lam_m", "value")) do input_value
+		callback!(app, [Output("Lam_m", "value")], [Input("Lam_m", "value")]) do input_value
 			init_vp.Lam_m = input_value
-			return init_vp.Lam_m
+			return [init_vp.Lam_m]
 		end
 
-		callback!(app, Output("rho", "value"), Input("rho", "value")) do input_value
+		callback!(app, [Output("rho", "value")], [Input("rho", "value")]) do input_value
 			init_vp.rho = input_value
-			return init_vp.rho
+			return [init_vp.rho]
 		end
 
-		callback!(app, Output("Cp", "value"), Input("Cp", "value")) do input_value
+		callback!(app, [Output("Cp", "value")], [Input("Cp", "value")]) do input_value
 			init_vp.Cp = input_value
-			return init_vp.Cp
+			return [init_vp.Cp]
 		end
 
-		callback!(app, Output("L_heat", "value"), Input("L_heat", "value")) do input_value
+		callback!(app, [Output("L_heat", "value")], [Input("L_heat", "value")]) do input_value
 			init_vp.L_heat = input_value
-			return init_vp.L_heat
+			return [init_vp.L_heat]
 		end
 
-		callback!(app, Output("T_top", "value"), Input("T_top", "value")) do input_value
+		callback!(app, [Output("T_top", "value")], [Input("T_top", "value")]) do input_value
 			init_vp.T_top = input_value
-			return init_vp.T_top
+			return [init_vp.T_top]
 		end
 
-		callback!(app, Output("dTdy", "value"), Input("dTdy", "value")) do input_value
+		callback!(app, [Output("dTdy", "value")], [Input("dTdy", "value")]) do input_value
 			init_vp.dTdy = input_value
-			return init_vp.dTdy
+			return [init_vp.dTdy]
 		end
 
-		callback!(app, Output("T_magma", "value"), Input("T_magma", "value")) do input_value
+		callback!(app, [Output("T_magma", "value")], [Input("T_magma", "value")]) do input_value
 			init_vp.T_magma = input_value
-			return init_vp.T_magma
+			return [init_vp.T_magma]
 		end
 
-		callback!(app, Output("T_ch", "value"), Input("T_ch", "value")) do input_value
+		callback!(app, [Output("T_ch", "value")], [Input("T_ch", "value")]) do input_value
 			init_vp.T_ch = input_value
-			return init_vp.T_ch
+			return [init_vp.T_ch]
 		end
 
-		callback!(app, Output("Qv", "value"), Input("Qv", "value")) do input_value
+		callback!(app, [Output("Qv", "value")], [Input("Qv", "value")]) do input_value
 			init_vp.Qv = input_value
-			return init_vp.Qv
+			return [init_vp.Qv]
 		end
 
-		callback!(app, Output("Ly_eruption", "value"), Input("Ly_eruption", "value")) do input_value
+		callback!(app, [Output("Ly_eruption", "value")], [Input("Ly_eruption", "value")]) do input_value
 			init_vp.Ly_eruption = input_value
-			return init_vp.Ly_eruption
+			return [init_vp.Ly_eruption]
 		end
 
-		callback!(app, Output("dT", "value"), Input("dT", "value")) do input_value
+		callback!(app, [Output("dT", "value")], [Input("dT", "value")]) do input_value
 			init_vp.dT = input_value
-			return init_vp.dT
+			return [init_vp.dT]
 		end
 
-		callback!(app, Output("E", "value"), Input("E", "value")) do input_value
+		callback!(app, [Output("E", "value")], [Input("E", "value")]) do input_value
 			init_vp.E = input_value
-			return init_vp.E
+			return [init_vp.E]
 		end
 
-		callback!(app, Output("nu", "value"), Input("nu", "value")) do input_value
+		callback!(app, [Output("nu", "value")], [Input("nu", "value")]) do input_value
 			init_vp.nu = input_value
-			return init_vp.nu
+			return [init_vp.nu]
 		end
 
-		callback!(app, Output("tsh", "value"), Input("tsh", "value")) do input_value
+		callback!(app, [Output("tsh", "value")], [Input("tsh", "value")]) do input_value
 			init_vp.tsh = input_value
-			return init_vp.tsh
+			return [init_vp.tsh]
 		end
 
-		callback!(app, Output("gamma", "value"), Input("gamma", "value")) do input_value
+		callback!(app, [Output("gamma", "value")], [Input("gamma", "value")]) do input_value
 			init_vp.gamma = input_value
-			return init_vp.gamma
+			return [init_vp.gamma]
 		end
 
 
@@ -442,125 +439,120 @@ function dikes_gui()
 
 	begin
 
-		callback!(app, Output("nx", "value"), Input("nx", "value")) do input_value
+		callback!(app, [Output("nx", "value")], [Input("nx", "value")]) do input_value
 			init_vp.nx= input_value
-			return init_vp.nx
+			return [init_vp.nx]
 		end
 
-		callback!(app, Output("ny", "value"), Input("ny", "value")) do input_value
+		callback!(app, [Output("ny", "value")], [Input("ny", "value")]) do input_value
 			init_vp.ny= input_value
-			return init_vp.ny
+			return [init_vp.ny]
 		end
 
-		callback!(app, Output("dt", "value"), Input("dt", "value")) do input_value
+		callback!(app, [Output("dt", "value")], [Input("dt", "value")]) do input_value
 			init_vp.dt = input_value
-			return init_vp.dt
+			return [init_vp.dt]
 		end
 
-		callback!(app, Output("steph", "value"), Input("steph", "value")) do input_value
+		callback!(app, [Output("steph", "value")], [Input("steph", "value")]) do input_value
 			init_vp.steph = input_value
-			return init_vp.steph
+			return [init_vp.steph]
 		end
 
-		callback!(app, Output("nl", "value"), Input("nl", "value")) do input_value
+		callback!(app, [Output("nl", "value")], [Input("nl", "value")]) do input_value
 			init_vp.nl = input_value
-			return init_vp.nl
+			return [init_vp.nl]
 		end
 
-		callback!(app, Output("nmy", "value"), Input("nmy", "value")) do input_value
+		callback!(app, [Output("nmy", "value")], [Input("nmy", "value")]) do input_value
 			init_vp.nmy = input_value
-			return init_vp.nmy
+			return [init_vp.nmy]
 		end
 
-		callback!(app, Output("pmlt", "value"), Input("pmlt", "value")) do input_value
+		callback!(app, [Output("pmlt", "value")], [Input("pmlt", "value")]) do input_value
 			init_vp.pmlt = input_value
-			return init_vp.pmlt
+			return [init_vp.pmlt]
 		end
 
-		callback!(app, Output("eiter", "value"), Input("eiter", "value")) do input_value
+		callback!(app, [Output("eiter", "value")], [Input("eiter", "value")]) do input_value
 			init_vp.eiter = input_value
-			return init_vp.eiter
+			return [init_vp.eiter]
 		end
 
-		callback!(app, Output("CFL", "value"), Input("CFL", "value")) do input_value
+		callback!(app, [Output("CFL", "value")], [Input("CFL", "value")]) do input_value
 			init_vp.CFL = input_value
-			return init_vp.CFL
+			return [init_vp.CFL]
 		end
 
-		callback!(app, Output("pic_amount", "value"), Input("pic_amount", "value")) do input_value
+		callback!(app, [Output("pic_amount", "value")], [Input("pic_amount", "value")]) do input_value
 			init_vp.pic_amount = input_value
-			return init_vp.pic_amount
+			return [init_vp.pic_amount]
 		end
 
-		callback!(app, Output("nout", "value"), Input("nout", "value")) do input_value
+		callback!(app, [Output("nout", "value")], [Input("nout", "value")]) do input_value
 			init_vp.nout = input_value
-			return init_vp.nout
+			return [init_vp.nout]
 		end
-
 	end
 	
 	callback!(app,
-		Output("output-data-upload", "children"),
-		Input("upload-data", "contents"),
-		State("upload-data", "filename"),
-		State("upload-data", "last_modified"),
+		   [Output("output-data-upload", "children")],
+		   [Input("upload-data", "contents")],
+		   [State("upload-data", "filename"), State("upload-data", "last_modified")],
 		) do contents, filename, last_modified
 			if !(contents isa Nothing)
 				children = [
 				parse_contents_csv(c..., init_vp) for c in
 					zip(contents, filename, last_modified)]
-					return children
+				return [children]
 				end
 		end
 
-	callback!(app,
-		Output("load-snap", "contents"),
-		Input("load-snap", "contents"),
-		State("load-snap", "filename"),
-		State("load-snap", "last_modified"),
-		) do contents, filename, last_modified
-
-			fid = h5open(filename, "r")
-			#h5write(filename, "T", T)
-			#h5write(filename, "C", C)
-			
-			read(fid, "nx", vp.nx)
-			read(fid, "ny", vp.ny)
-
-			read(fid, "dx", vp.dx)
-			read(fid, "dy", vp.dy)
-
-			read(fid, "Lx", vp.Lx)
-			read(fid, "Ly", vp.Ly)
-
-
-			h_T = Array{Float64,1}(undef, vp.nx * vp.ny)#array of double values from matlab script
-			h_C = Array{Float64,1}(undef, vp.nx * vp.ny)#array of double values from matlab script
-
-			println(vp.nx)
-			println(vp.ny)
-
-			println(vp.dx)
-			println(vp.dy)
-
-			println(vp.Lx)
-			println(vp.Ly)
-
-			read(fid, "T", h_T)
-			read(fid, "C", h_C)
-
-			vp.nx = nx
-			vp.ny = ny
-
-
-			copyto!(gp.T, h_T)
-			copyto!(gp.C, h_C)
-
-			close(fid)
-
-			return contents
-		end
-
+	# callback!(app,
+	# 	   [Output("load-snap", "contents")],
+	# 	   [Input("load-snap", "contents")],
+	# 	   [State("load-snap", "filename"), State("load-snap", "last_modified")],
+	# 	) do contents, filename, last_modified
+	# 		# filename = states[1]
+	# 		# last_modified = states[1]
+	#
+	# 		fid = h5open(filename, "r")
+	# 		#h5write(filename, "T", T)
+	# 		#h5write(filename, "C", C)
+	# 		
+	# 		vp.nx = read(fid, "nx")
+	# 		vp.ny = read(fid, "ny")
+	#
+	# 		vp.dx = read(fid, "dx")
+	# 		vp.dy = read(fid, "dy")
+	#
+	# 		vp.Lx = read(fid, "Lx")
+	# 		vp.Ly = read(fid, "Ly")
+	#
+	#
+	# 		h_T = Array{Float64,1}(undef, vp.nx * vp.ny)#array of double values from matlab script
+	# 		h_C = Array{Float64,1}(undef, vp.nx * vp.ny)#array of double values from matlab script
+	#
+	# 		println(vp.nx)
+	# 		println(vp.ny)
+	#
+	# 		println(vp.dx)
+	# 		println(vp.dy)
+	#
+	# 		println(vp.Lx)
+	# 		println(vp.Ly)
+	#
+	# 		h_T = read(fid, "T")
+	# 		h_C = read(fid, "C")
+	#
+	#
+	# 		copyto!(gp.T, h_T)
+	# 		copyto!(gp.C, h_C)
+	#
+	# 		close(fid)
+	#
+	# 		return [contents]
+	# 	end
 
 	run_server(app)
 	#run_server(app)
