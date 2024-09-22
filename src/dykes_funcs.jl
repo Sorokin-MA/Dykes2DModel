@@ -990,7 +990,8 @@ end
 function rand_limited_2(u, d)
 	ans::Float64 = -1
 	while ((ans <= 0) || (ans >= 1))
-		ans = rand(Normal(u, d), 1)[1]
+		#ans = rand(Normal(u, d), 1)[1]
+		ans = rand(Uniform(), 1)[1]
 	end
 
 	return ans

@@ -14,7 +14,7 @@ A project aimed at numerical modeling of the formation of dikes and silos. The c
 julia
 using Pkg; Pkg.activate("");Pkg.instantiate();
 include("run.jl")
-dikes_gui()
+dykes_gui()
 ```
 
 ## References

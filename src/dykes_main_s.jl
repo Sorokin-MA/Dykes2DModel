@@ -323,6 +323,7 @@ function main_test_gui(gp::GridParams, vp::VarParams, FLAG_init::Bool)
 		end
 
 	end
+
 	#to make percents right
 	vp.it++
 

@@ -76,7 +76,7 @@ function parse_contents_csv(contents, filename, date, init_vp)
 	])
 end
 
-function dikes_gui()
+function dykes_gui()
 	#init dash
 	app = dash()
 
@@ -97,28 +97,35 @@ function dikes_gui()
 			"Dykes2DModel",
 			style=Dict("color" => "#000000", "textAlign" => "center"),
 		),
-			html_div() do
-				html_h2(
-					"1. Set parameters.",
-					style=Dict("color" => "#000000", "textAlign" => "left"),
-				),
-				#html_button("Load config", id="load-config-but"),
-				dcc_tabs(id="tabs-example-graph", value="tab-1-example-graph", children=[
-					dcc_tab(label="Physics", value="tab-1-example-graph"),
-					dcc_tab(label="Numerics", value="tab-2-example-graph"),
-					dcc_tab(label="Eruptions", value="tab-3-example-graph")
-				]
-				),
-				html_div(id="tabs-content-example-graph")
-			end,
-			html_br(),
-			html_div(id="my-output"),
+
+		dcc_upload(html_button("Load config", id="load-config-but"), id="load-config-upload"),
+		html_div() do
+			html_button("Save config", id="save-config-but"),
+			dcc_download(id="save-config-download")
+		end,
+		html_div() do
+			html_h2(
+				"1. Set parameters.",
+				style=Dict("color" => "#000000", "textAlign" => "left"),
+			),
+			#html_button("Load config", id="load-config-but"),
+			dcc_tabs(id="tabs-example-graph", value="tab-1-example-graph", children=[
+				dcc_tab(label="Physics", value="tab-1-example-graph"),
+				dcc_tab(label="Numerics", value="tab-2-example-graph"),
+				dcc_tab(label="Eruptions", value="tab-3-example-graph")
+			]
+			),
+			html_div(id="tabs-content-example-graph")
+		end,
+		html_br(),
+		html_div(id="my-output"),
 		html_h2(
 			"2. Generate data.",
 			style=Dict("color" => "#000000", "textAlign" => "left"),
 		),
 		html_button("Generate", id="generate-but"),
-
+		html_button("Show dikes", id="show-dikes-but"),
+		html_div(id="dikes-graph"),
 		html_h2(
 			"3. Start\\Stop.",
 			style=Dict("color" => "#000000", "textAlign" => "left"),
@@ -261,7 +268,131 @@ function dikes_gui()
 		dikes_rand_param(init_vp)
 		return [n_clicks + 1]
 	end
-#[Output("tabs-content-figure-graph", "children")]
+
+	callback!(app, [Output("dikes-graph", "children")], [Input("show-dikes-but", "n_clicks")], prevent_initial_call=true) do n_clicks
+			dpa = Array{Float64,1}(undef, 19)#array of double values from matlab script
+		ipa = Array{Int32,1}(undef, 12)#array of int values from matlab script
+
+		io = open(data_folder * "pa.bin", "r")
+		read!(io, dpa)
+		read!(io, ipa)
+
+		ipar = 1
+		Lx, ipar = read_par(dpa, ipar)
+		Ly, ipar = read_par(dpa, ipar)
+		lam_r_rhoCp, ipar = read_par(dpa, ipar)
+		lam_m_rhoCp, ipar = read_par(dpa, ipar)
+		L_Cp, ipar = read_par(dpa, ipar)
+		T_top, ipar = read_par(dpa, ipar)
+		T_bot, ipar = read_par(dpa, ipar)
+		T_magma, ipar = read_par(dpa, ipar)
+		tsh, ipar = read_par(dpa, ipar)
+		gamma, ipar = read_par(dpa, ipar)
+		Ly_eruption, ipar = read_par(dpa, ipar)
+		nu, ipar = read_par(dpa, ipar)
+		G, ipar = read_par(dpa, ipar)
+		dt, ipar = read_par(dpa, ipar)
+		dx, ipar = read_par(dpa, ipar)
+		dy, ipar = read_par(dpa, ipar)
+		eiter, ipar = read_par(dpa, ipar)
+		pic_amount, ipar = read_par(dpa, ipar)
+		tfin, ipar = read_par(dpa, ipar)
+
+		ipar = 1
+
+		pmlt, ipar = read_par(ipa, ipar)
+		nx, ipar = read_par(ipa, ipar)
+		ny, ipar = read_par(ipa, ipar)
+		nl, ipar = read_par(ipa, ipar)
+		nt, ipar = read_par(ipa, ipar)
+		niter, ipar = read_par(ipa, ipar)
+		nout, ipar = read_par(ipa, ipar)
+		nsub, ipar = read_par(ipa, ipar)
+		nerupt, ipar = read_par(ipa, ipar)
+		npartcl, ipar = read_par(ipa, ipar)
+		nmarker, ipar = read_par(ipa, ipar)
+		nSample, ipar = read_par(ipa, ipar)
+
+		critVol = Array{Float64,1}(undef, nSample) #???#Critical volume when eruption appears, predefined variable
+		read!(io, critVol)
+
+		#array 0 0 1 0 0 ... like, where 1 -instrusion
+		ndikes = Array{Int32,1}(undef, nt)#number of dykes intruded on n-th time step
+		read!(io, ndikes)
+
+		ndikes_all = 0
+
+		#count all dykes
+		for istep in 1:nt
+			ndikes_all = ndikes_all + ndikes[istep]
+		end
+
+		#array which describes amount of particles in new dyke
+		particle_edges = Array{Int32,1}(undef, ndikes_all + 1)
+		read!(io, particle_edges)
+
+		marker_edges = Array{Int32,1}(undef, ndikes_all + 1)
+		read!(io, marker_edges)
+
+		close(io)
+
+		cap_frac = 3  #value to spcify how much particles we allow to inject in runtime
+		npartcl0 = npartcl #initial amount of particles
+		max_npartcl = convert(Int64, npartcl * cap_frac) + particle_edges[ndikes_all+1] #???#count max particles
+		println(npartcl)
+		println(particle_edges[ndikes_all+1])
+		println("max_npartcl")
+		println(max_npartcl)
+		nmarker0 = nmarker
+
+
+	#	max_nmarker = nmarker + marker_edges[ndikes_all+1]
+
+
+
+		np_dikes = particle_edges[ndikes_all+1]#number of particles in each dike during intrusion
+
+		fid = h5open(data_folder * "particles.h5", "r")
+
+		h_px = Array{Float64,1}(undef, max_npartcl)
+		h_py = Array{Float64,1}(undef, max_npartcl)
+
+		h_px = read(fid, "px")
+		h_py = read(fid, "py")
+
+
+		h_px_dikes = Array{Float64,1}(undef, np_dikes)
+		h_py_dikes = Array{Float64,1}(undef, np_dikes)
+
+		h_px_dikes = read(fid, "px_dikes")
+		h_py_dikes = read(fid, "py_dikes")
+
+		#PlotlyJS.scatter([1,2,3],[4,5,6])
+
+		close(fid)
+
+	#	PlotlyJS.plot([
+	#	test_fig = PlotlyJS.scatter(x=h_px_dikes, y=h_py_dikes, mode="markers", name="markers")
+
+	d2d_limit =np_dikes
+	d2d_limit_gap = 100
+	#ret_plot = Plots.scatter(markersize = 0.1, h_px_dikes[1:d2d_limit_gap:d2d_limit],h_py_dikes[1:d2d_limit_gap:d2d_limit], xlimit = [1, 20000], ylimit = [1, 20000])
+
+	new_plot = Plot([
+			PlotlyJS.scatter(x = h_px_dikes[1:d2d_limit_gap:d2d_limit], y = h_py_dikes[1:d2d_limit_gap:d2d_limit], mode="markers", line_width=0.001)
+				],Layout(title="Dash Data Visualization", xaxis_range=[1, 20000], yaxis_range=[1, 20000]))
+
+#	layout = Layout(xaxis_range=[1, 20000], yaxis_range=[1, 20000])
+
+		return [html_div(id="dikes_figures_dikes", className="row", style=Dict("columnCount" => 2)) do
+			#dcc_graph(id="T_graph",figure = Plot(PlotlyJS.heatmap(x = xs, y =ys, z=collect(eachcol(h_T)), title="T")))
+			
+			dcc_graph(id="dd_graph", figure = new_plot)
+
+			#dcc_graph(id="dikes_graph", figure = Plot(ret_plot))
+		end]
+	end
+
 	#callback for generate button
 	callback!(app, [Output("T-graph", "children"), Output("C-graph", "children")], [Input("show-cur-but", "n_clicks")], prevent_initial_call=true) do n_clicks
 			if(vp.dx == 0.0)
@@ -575,6 +706,53 @@ function dikes_gui()
 				end
 		end
 
+	callback!(app,
+		   [Output("load-config-upload", "contents")],
+		   [Input("load-config-upload", "contents")],
+		   [State("load-config-upload", "filename")], prevent_initial_call=true
+		) do contents, filename
+
+		fid = h5open(filename, "r")
+
+		for n in fieldnames(typeof(init_vp))
+			println(n)
+			println(getfield(init_vp,n))
+			setfield!(init_vp, n, read(fid, string(n)))
+		end
+
+		println("config loaded from" * filename)
+		log_to_buffer("config loaded from " *  filename)
+		
+		close(fid)
+		
+		return [contents]
+	end
+
+
+	callback!(app,
+		   [Output("save-config-but", "n_clicks")],
+		   [Input("save-config-but", "n_clicks")], prevent_initial_call=true
+		) do n_clicks
+
+			filename_donwload = @sprintf("d2d_config_%s.hdf5",Dates.format(now(), "yyyy_mm_dd_HH_MM_SS"))
+
+			#file_as_bytes = h5open("AnyName_InMemory", "w"; driver=Drivers.Core(; backing_store=false)) do fid
+			fid = h5open(filename_donwload, "w")
+
+			for n in fieldnames(typeof(init_vp))
+				println(getfield(init_vp,n))
+				write(fid, string(n), getfield(init_vp,n))
+			end
+
+				#return Dict("content" => Vector{UInt8}(fid), "filename" => filename_donwload) # get a byte vector to send, e.g., using HTTP, MQTT or similar.
+			println("config saved to " * filename_donwload)
+			log_to_buffer("config saved to " *  filename_donwload)
+			close(fid)
+
+		return [n_clicks]
+	end
+
+
 	# callback!(app,
 	# 	   [Output("load-snap", "contents")],
 	# 	   [Input("load-snap", "contents")],
@@ -620,6 +798,7 @@ function dikes_gui()
 	#
 	# 		return [contents]
 	# 	end
+
 
 	run_server(app)
 	#run_server(app)
