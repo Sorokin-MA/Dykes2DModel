@@ -31,6 +31,51 @@ function simple_imput_desc(name::String, init_val, description)
 end
 
 
+function log_to_buffer(input_string)
+	global buf= input_string*buf
+end
+
+#parse csv file
+function parse_contents_csv(contents, filename, date, init_vp)
+	content_type, content_string = split(contents, ',')
+	decoded = base64decode(content_string)
+	df = DataFrame()
+	try
+		if occursin("csv", filename)
+			str = String(decoded)
+			df =  CSV.read(IOBuffer(str), DataFrame)
+			init_vp.critVol = collect(df[1:end, :EruptionVolumes])
+			init_vp.critVolTime = collect(df[1:end, :EruptionTimes])
+			println(init_vp.critVolTime)
+		end
+	catch e
+		print(e)
+		return html_div([
+		"There was an error processing this file."
+		])
+	end
+
+	return html_div([
+		html_h5(filename),
+		html_h6(Libc.strftime(date)),
+
+		dash_datatable(
+				data=[Dict(pairs(NamedTuple(eachrow(df)[j]))) for j in 1:nrow(df)],
+				columns=[Dict("name" =>i, "id" => i) for i in names(df)]
+		),
+
+		# horizontal line
+		html_hr()
+
+		# For debugging, display the raw contents provided by the web browser
+		# html_div("Raw Content"),
+		# html_pre(string(contents[1:200], "..."), style=Dict(
+		#     "whiteSpace" => "pre-wrap",
+		#     "wordBreak" => "break-all"
+		# ))
+	])
+end
+
 function dikes_gui()
 	#init dash
 	app = dash()
@@ -42,7 +87,7 @@ function dikes_gui()
 
 	num_columns = 6 #number of columns in params part
 
-	#main layout
+	#init default eruption history
 	init_vp.critVol = global_EruptionVolumesVec
 	init_vp.critVolTime = global_EruptionTimesVec
 
@@ -115,16 +160,14 @@ function dikes_gui()
 			"4. Snapshots.",
 			style=Dict("color" => "#000000", "textAlign" => "left"),
 		),
-		html_button("Make snapshot", id="make-snap-but", disabled = false),
-		dcc_upload(html_button("Load snapshot",id="load-snap-but"), id="load-snap"),
-		html_div() do
-			dcc_tabs(id="tabs-figure-graph", value="tab-1-figure-graph", children=[
-					dcc_tab(label="T", value="tab-1-figure-graph"),
-					dcc_tab(label="C", value="tab-2-figure-graph")
-					#dcc_tab(label="P", value="tab-3-figure-graph")
-				]
-			),
-			html_div(id="tabs-content-figure-graph")
+		html_div(className="info", style=Dict("columnCount" => num_columns)) do
+			html_button("Show current state", id="show-cur-but", disabled = false),
+			html_button("Make snapshot", id="make-snap-but", disabled = false),
+			dcc_upload(html_button("Load snapshot",id="load-snap-but"), id="load-snap")
+		end,
+		html_div(style=Dict("columnCount" => 2)) do
+			html_div(id="T-graph"),
+			html_div(id="C-graph")
 		end
 	end
 
@@ -218,6 +261,30 @@ function dikes_gui()
 		dikes_rand_param(init_vp)
 		return [n_clicks + 1]
 	end
+#[Output("tabs-content-figure-graph", "children")]
+	#callback for generate button
+	callback!(app, [Output("T-graph", "children"), Output("C-graph", "children")], [Input("show-cur-but", "n_clicks")], prevent_initial_call=true) do n_clicks
+			if(vp.dx == 0.0)
+				return nothing
+			end
+			xs = 0:vp.dx:vp.Lx
+			ys = 0:vp.dy:vp.Ly
+
+			h_T = Array{Float64,1}(undef, vp.nx * vp.ny)#array of double values from matlab script
+			copyto!(h_T, gp.T)
+
+			h_C = Array{Float64,1}(undef, vp.nx * vp.ny)#array of double values from matlab script
+			copyto!(h_C, gp.C)
+
+			return [html_div(id="dikes_figures_T", className="row" ) do
+				#dcc_graph(id="T_graph",figure = Plot(PlotlyJS.heatmap(x = xs, y =ys, z=collect(eachcol(h_T)), title="T")))
+				dcc_graph(id="T_graph", figure = Plot(PlotlyJS.heatmap(x = xs, y =ys, z = collect(eachrow(reshape(h_T, (vp.nx, vp.ny)))), title="T")))
+			end,
+			html_div(id="dikes_figures_C", className="row") do
+				dcc_graph(id="C_graph", figure = Plot(PlotlyJS.heatmap(x = xs, y =ys, z = collect(eachrow(reshape(h_C, (vp.nx, vp.ny)))), title="C")))
+			end]
+	end
+
 
 	#callback for start button
 	callback!(app, [Output("stop-but", "disabled")], [Input("start-but", "n_clicks")], prevent_initial_call=true) do n_clicks
@@ -556,51 +623,4 @@ function dikes_gui()
 
 	run_server(app)
 	#run_server(app)
-end
-
-function log_to_buffer(input_string)
-	global buf= input_string*buf
-end
-
-
-
-#parse csv file
-function parse_contents_csv(contents, filename, date, init_vp)
-	content_type, content_string = split(contents, ',')
-	decoded = base64decode(content_string)
-	df = DataFrame()
-	try
-		if occursin("csv", filename)
-			str = String(decoded)
-			df =  CSV.read(IOBuffer(str), DataFrame)
-			init_vp.critVol = collect(df[1:end, :EruptionVolumes])
-			init_vp.critVolTime = collect(df[1:end, :EruptionTimes])
-			println(init_vp.critVolTime)
-		end
-	catch e
-		print(e)
-		return html_div([
-		"There was an error processing this file."
-		])
-	end
-
-	return html_div([
-		html_h5(filename),
-		html_h6(Libc.strftime(date)),
-
-		dash_datatable(
-				data=[Dict(pairs(NamedTuple(eachrow(df)[j]))) for j in 1:nrow(df)],
-				columns=[Dict("name" =>i, "id" => i) for i in names(df)]
-		),
-
-		# horizontal line
-		html_hr()
-
-		# For debugging, display the raw contents provided by the web browser
-		# html_div("Raw Content"),
-		# html_pre(string(contents[1:200], "..."), style=Dict(
-		#     "whiteSpace" => "pre-wrap",
-		#     "wordBreak" => "break-all"
-		# ))
-	])
 end
