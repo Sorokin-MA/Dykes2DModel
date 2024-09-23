@@ -7,6 +7,7 @@ particles.h5
 eruptions.bin
 init_data
 d2d_config*
+d2d_snapshot*
 *.asv
 *.vim
 *.norg

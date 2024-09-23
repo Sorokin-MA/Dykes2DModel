@@ -1,4 +1,5 @@
 @with_kw mutable struct GridParams
+	cumulutive_erupt = Vector{Float64}()
 	cumulutive_vol = Vector{Float64}()
 	cumulutive_time = Vector{Float64}()
 	critVol::Array{Float64,1} = Array{Float64,1}(undef,0);

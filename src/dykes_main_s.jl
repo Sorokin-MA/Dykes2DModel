@@ -52,8 +52,6 @@ function main_test()
 			dxl = vp.dx * vp.nl
 			dyl = vp.dy * vp.nl
 			real_vol = (maxVol * (dxl * dyl) / 1.e9) * 1.e4 * vp.gamma
-			append!(gp.cumulutive_vol, real_vol)
-			append!(gp.cumulutive_time, vp.it)
 
 			@printf("%s accomulated %06f km^3| ", bar2, (maxVol * (dxl * dyl) / 1.e9) * 1.e4 * vp.gamma)
 
@@ -222,6 +220,14 @@ function main_test_gui(gp::GridParams, vp::VarParams, FLAG_init::Bool)
 
 					dxl = vp.dx * vp.nl
 					dyl = vp.dy * vp.nl
+
+					real_vol = (maxVol * (dxl * dyl) / 1.e9) * 1.e4 * vp.gamma
+					real_vol_2 = (maxVol * (dxl * dyl) / 1.e9) * 1.e4 * (1-vp.gamma)
+
+					append!(gp.cumulutive_erupt, (gp.critVol[vp.iSample]/1.e9)*1.e4*(1-vp.gamma))
+					append!(gp.cumulutive_vol, real_vol_2)
+					append!(gp.cumulutive_time, vp.it)
+
 					@printf("%s accomulated %06f km^3| ", bar2, (maxVol * (dxl * dyl) / 1.e9) * 1.e4 * vp.gamma)
 					log_to_buffer(@sprintf("%s accomulated %06f km^3| ", bar2, (maxVol * (dxl * dyl) / 1.e9) * 1.e4 * vp.gamma))
 

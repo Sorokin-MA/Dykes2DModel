@@ -537,7 +537,7 @@ function dikes_rand_param(init_vp)
 	alpha = 2 # parameter
 	Nsample::Int32 = 1000 #size of a sample
 
-	critVol = ones(1, 1000)
+	critVol = 10*ones(1, 1000)
 	critVol_size = size(init_vp.critVol)
 	if(critVol_size == 0)
 		log_to_buffer("Error! No data about eruptions found!\n")
