@@ -17,6 +17,7 @@ using Core: Typeof
 using Dates
 
 data_folder::String = "..\\d2dm_data\\"
+path_to_snap::String = "c:\\"
 
 if(isdir(data_folder) == false)
 	mkdir(data_folder)
@@ -28,9 +29,11 @@ G_FLAG_INIT::Bool = true;
 
 D2DM_STARTED::Bool = false;
 D2DM_STOPED::Bool = true;
+D2DM_MARKERS::Bool = false;
 
 buf = "\n\nWelcome to Dykes2DModel!\n 1.Set parameters and upload history of eruptions \n 2. Generate dykes \n 3. Start calculations\n"
 time_of_loop::Float64 = 0;
+str_time_spend::Float64 = 0;
 str_time_left = Time(0)
 
 descr_Lx = "Lx\n\nThe size of the area along the x axis\n\nDimension: [m]"

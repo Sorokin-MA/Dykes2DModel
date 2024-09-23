@@ -1,4 +1,6 @@
 @with_kw mutable struct GridParams
+	cumulutive_vol = Vector{Float64}()
+	cumulutive_time = Vector{Float64}()
 	critVol::Array{Float64,1} = Array{Float64,1}(undef,0);
 	ndikes::Array{Int32,1} = Array{Int32,1}(undef,0);
 	particle_edges::Array{Int32,1} = Array{Int32,1}(undef,0);
@@ -9,7 +11,7 @@
 	wts::CuArray{Float64,1} = CuArray{Float64,1}(undef, 0);
 	pcnt::CuArray{Int32,1} = CuArray{Int32,1}(undef, 0);
 
-	a::CuArray{Float64} = CuArray{Float64}(undef, (1, 2));
+	#a::CuArray{Float64} = CuArray{Float64}(undef, (1, 2));
 
 	px::CuArray{Float64} = CuArray{Float64}(undef, 0);	#x coordinate of particle
 	py::CuArray{Float64} = CuArray{Float64}(undef, 0); #y coordinate of particle

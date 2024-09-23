@@ -97,8 +97,7 @@ function dykes_gui()
 			"Dykes2DModel",
 			style=Dict("color" => "#000000", "textAlign" => "center"),
 		),
-
-		dcc_upload(html_button("Load config", id="load-config-but"), id="load-config-upload"),
+		dcc_upload(id="load-config-upload", html_button("Load config", id="load-config-but")),
 		html_div() do
 			html_button("Save config", id="save-config-but"),
 			dcc_download(id="save-config-download")
@@ -148,6 +147,10 @@ function dykes_gui()
 			#dcc_graph(id="T_graph",figure = Plot(PlotlyJS.heatmap(x = xs, y =ys, z=collect(eachcol(h_T)), title="T")))
 			#dcc_graph(id="eruptions-timeline-graph")
 		end,
+		html_div(id="cumul-timeline", className="row",style=Dict("columnCount" => 1) ) do
+			#dcc_graph(id="T_graph",figure = Plot(PlotlyJS.heatmap(x = xs, y =ys, z=collect(eachcol(h_T)), title="T")))
+			#dcc_graph(id="eruptions-timeline-graph")
+		end,
 		html_h2(
 			"Log",
 			style=Dict("color" => "#000000", "textAlign" => "left"),
@@ -167,10 +170,18 @@ function dykes_gui()
 			"4. Snapshots.",
 			style=Dict("color" => "#000000", "textAlign" => "left"),
 		),
+		html_button("Show current state", id="show-cur-but", disabled = false),
 		html_div(className="info", style=Dict("columnCount" => num_columns)) do
-			html_button("Show current state", id="show-cur-but", disabled = false),
-			html_button("Make snapshot", id="make-snap-but", disabled = false),
-			dcc_upload(html_button("Load snapshot",id="load-snap-but"), id="load-snap")
+			html_button("Make snapshot", id="save-snapshot-but", disabled = false),
+			html_button("Load snapshot", id="load-snapshot-but", disabled = false)
+		end,
+		html_div() do
+			html_label(children="Path to snapshot:"),
+			html_div(
+				children=[
+					dcc_input(id="path_to_snap_id", value=path_to_snap, type="text", debounce=true)
+				],
+			)
 		end,
 		html_div(style=Dict("columnCount" => 2)) do
 			html_div(id="T-graph"),
@@ -346,7 +357,7 @@ function dykes_gui()
 		nmarker0 = nmarker
 
 
-	#	max_nmarker = nmarker + marker_edges[ndikes_all+1]
+		#	max_nmarker = nmarker + marker_edges[ndikes_all+1]
 
 
 
@@ -371,18 +382,18 @@ function dykes_gui()
 
 		close(fid)
 
-	#	PlotlyJS.plot([
-	#	test_fig = PlotlyJS.scatter(x=h_px_dikes, y=h_py_dikes, mode="markers", name="markers")
+		#	PlotlyJS.plot([
+		#	test_fig = PlotlyJS.scatter(x=h_px_dikes, y=h_py_dikes, mode="markers", name="markers")
 
-	d2d_limit =np_dikes
-	d2d_limit_gap = 100
-	#ret_plot = Plots.scatter(markersize = 0.1, h_px_dikes[1:d2d_limit_gap:d2d_limit],h_py_dikes[1:d2d_limit_gap:d2d_limit], xlimit = [1, 20000], ylimit = [1, 20000])
+		d2d_limit =np_dikes
+		d2d_limit_gap = 100
+		#ret_plot = Plots.scatter(markersize = 0.1, h_px_dikes[1:d2d_limit_gap:d2d_limit],h_py_dikes[1:d2d_limit_gap:d2d_limit], xlimit = [1, 20000], ylimit = [1, 20000])
 
-	new_plot = Plot([
+		new_plot = Plot([
 			PlotlyJS.scatter(x = h_px_dikes[1:d2d_limit_gap:d2d_limit], y = h_py_dikes[1:d2d_limit_gap:d2d_limit], mode="markers", line_width=0.001)
 				],Layout(title="Dash Data Visualization", xaxis_range=[1, 20000], yaxis_range=[1, 20000]))
 
-#	layout = Layout(xaxis_range=[1, 20000], yaxis_range=[1, 20000])
+		#	layout = Layout(xaxis_range=[1, 20000], yaxis_range=[1, 20000])
 
 		return [html_div(id="dikes_figures_dikes", className="row", style=Dict("columnCount" => 2)) do
 			#dcc_graph(id="T_graph",figure = Plot(PlotlyJS.heatmap(x = xs, y =ys, z=collect(eachcol(h_T)), title="T")))
@@ -493,15 +504,17 @@ function dykes_gui()
 		campri_calc = -(vp.nt .- gp.eruptionSteps)./vp.nt.*init_vp.calc_years/1000;
 		campri_real = -vcat(init_vp.critVolTime);
 		campri_now = [-(vp.nt - vp.it)/vp.nt*init_vp.calc_years/1000];
+		campri_cumulut = [-(vp.nt .- gp.cumulutive_time)./vp.nt.*init_vp.calc_years/1000];
 
 		campri_cal_graph  = PlotlyJS.scatter(x=campri_calc, y= zeros(length(campri_calc)), mode="markers", name="campri_calc", showlegend=true, marker_size=14)
 		campri_real_graph = PlotlyJS.scatter(x=campri_real, y= zeros(length(campri_real)), mode="markers", name="campri_real", showlegend=true, marker_size=10)
 		campri_now_graph = PlotlyJS.scatter(x=campri_now, y= zeros(length(campri_now)), mode="markers", name="now", showlegend=true, marker_size=10)
-		data = [campri_cal_graph, campri_real_graph,campri_now_graph]
+		campri_cumulut_graph = PlotlyJS.scatter(x=gp.cumulutive_time, y=gp.cumulutive_vol, mode="lines")
+		data = [campri_cal_graph, campri_real_graph, campri_now_graph, campri_cumulut_graph]
 
 		layout = Layout(title="Eruptions graph",
 						xaxis=attr(title="time, (ka)", showgrid=false, zeroline=false),
-						yaxis=attr(showgrid=false, range=[0, 0]))
+						yaxis=attr(showgrid=false ))
 
 		p = PlotlyJS.plot(data, layout)
 
@@ -509,6 +522,29 @@ function dykes_gui()
 			dcc_graph(id="eruptions-timeline-graph", figure = p)
 		end]
 	end
+
+	# #cumulut
+	# callback!(app, [Output("cumul-timeline", "children")], [Input("interval-component", "n_intervals")]) do n_intervals
+	# 	
+	# 	campri_calc = -(vp.nt .- gp.eruptionSteps)./vp.nt.*init_vp.calc_years/1000;
+	# 	campri_real = -vcat(init_vp.critVolTime);
+	# 	campri_now = [-(vp.nt - vp.it)/vp.nt*init_vp.calc_years/1000];
+	#
+	# 	campri_cal_graph  = PlotlyJS.scatter(x=campri_calc, y= zeros(length(campri_calc)), mode="markers", name="campri_calc", showlegend=true, marker_size=14)
+	# 	campri_real_graph = PlotlyJS.scatter(x=campri_real, y= zeros(length(campri_real)), mode="markers", name="campri_real", showlegend=true, marker_size=10)
+	# 	campri_now_graph = PlotlyJS.scatter(x=campri_now, y= zeros(length(campri_now)), mode="markers", name="now", showlegend=true, marker_size=10)
+	#
+	# 	layout = Layout(title="Eruptions graph",
+	# 					xaxis=attr(title="time, (ka)", showgrid=false, zeroline=false),
+	# 					yaxis=attr(showgrid=false))
+	#
+	# 	p = PlotlyJS.plot(data, layout)
+	#
+	# 	return [html_div(className="row") do
+	# 		dcc_graph(id="eruptions-timeline-graph", figure = p)
+	# 	end]
+	# end
+	#
 
 	#time left label callback
 	callback!(app, [Output("time_left_label", "value"),Output("percent_done_label", "value")], [Input("interval-component", "n_intervals")]) do n_intervals
@@ -692,6 +728,12 @@ function dykes_gui()
 			return [init_vp.nout]
 		end
 	end
+
+	callback!(app, [Output("path_to_snap_id", "value")], [Input("path_to_snap_id", "value")]) do input_value
+		global path_to_snap = input_value
+		return [path_to_snap]
+	end
+
 	
 	callback!(app,
 		   [Output("output-data-upload", "children")],
@@ -733,7 +775,6 @@ function dykes_gui()
 		   [Output("save-config-but", "n_clicks")],
 		   [Input("save-config-but", "n_clicks")], prevent_initial_call=true
 		) do n_clicks
-
 			filename_donwload = @sprintf("d2d_config_%s.hdf5",Dates.format(now(), "yyyy_mm_dd_HH_MM_SS"))
 
 			#file_as_bytes = h5open("AnyName_InMemory", "w"; driver=Drivers.Core(; backing_store=false)) do fid
@@ -753,51 +794,86 @@ function dykes_gui()
 	end
 
 
+	callback!(app,
+		   [Output("save-snapshot-but", "n_clicks")],
+		   [Input("save-snapshot-but", "n_clicks")], prevent_initial_call=true
+		) do n_clicks
+			filename_donwload = @sprintf("d2d_snapshot_%d_%s.hdf5",vp.it, Dates.format(now(), "yyyy_mm_dd_HH_MM_SS"))
+			#filename_donwload = @sprintf("d2d_snapshot.hdf5")
+			fid = h5open(filename_donwload, "w")
+
+			for n in fieldnames(typeof(vp))
+				println(getfield(vp,n))
+				write(fid, string(n), getfield(vp,n))
+			end
+
+			for n in fieldnames(typeof(gp))
+				if(getfield(gp,n) isa CuArray)
+					d2d_cu_type = eltype(getfield(gp,n))
+
+					nn::Array{d2d_cu_type,1} = Array{d2d_cu_type,1}(undef, size(getfield(gp,n))[1]);
+					copyto!(nn, getfield(gp,n))
+
+					#println(getfield(gp,n))
+					write(fid, string(n), nn)
+					println("sucess!!")
+				else
+					#println(getfield(gp,n))
+					write(fid, string(n), getfield(gp,n))
+				end
+			end
+
+			println("snapshot saved to " * filename_donwload)
+			log_to_buffer("snapshot saved to " *  filename_donwload)
+
+			close(fid)
+
+			return [n_clicks]
+	end
+
+
 	# callback!(app,
-	# 	   [Output("load-snap", "contents")],
-	# 	   [Input("load-snap", "contents")],
-	# 	   [State("load-snap", "filename"), State("load-snap", "last_modified")],
-	# 	) do contents, filename, last_modified
-	# 		# filename = states[1]
-	# 		# last_modified = states[1]
-	#
-	# 		fid = h5open(filename, "r")
-	# 		#h5write(filename, "T", T)
-	# 		#h5write(filename, "C", C)
-	# 		
-	# 		vp.nx = read(fid, "nx")
-	# 		vp.ny = read(fid, "ny")
-	#
-	# 		vp.dx = read(fid, "dx")
-	# 		vp.dy = read(fid, "dy")
-	#
-	# 		vp.Lx = read(fid, "Lx")
-	# 		vp.Ly = read(fid, "Ly")
-	#
-	#
-	# 		h_T = Array{Float64,1}(undef, vp.nx * vp.ny)#array of double values from matlab script
-	# 		h_C = Array{Float64,1}(undef, vp.nx * vp.ny)#array of double values from matlab script
-	#
-	# 		println(vp.nx)
-	# 		println(vp.ny)
-	#
-	# 		println(vp.dx)
-	# 		println(vp.dy)
-	#
-	# 		println(vp.Lx)
-	# 		println(vp.Ly)
-	#
-	# 		h_T = read(fid, "T")
-	# 		h_C = read(fid, "C")
-	#
-	#
-	# 		copyto!(gp.T, h_T)
-	# 		copyto!(gp.C, h_C)
-	#
-	# 		close(fid)
-	#
-	# 		return [contents]
-	# 	end
+	# 	   [Output("loadsnapshot", "contents")],
+	# 	   [Input("loadsnapshot", "contents")],
+	# 	   [State("loadsnapshot", "filename")], prevent_initial_call=true
+	callback!(app,
+		   [Output("load-snapshot-but", "n_clicks")],
+		   [Input("load-snapshot-but", "n_clicks")], prevent_initial_call=true
+		) do n_clicks
+		#filename = @sprintf("d2d_snapshot.hdf5")
+
+		filename =  path_to_snap
+
+		fid = h5open(filename, "r")
+
+
+		for n in fieldnames(typeof(vp))
+			setfield!(vp, n, read(fid, string(n)))
+			println(getfield(vp,n))
+		end
+
+		for n in fieldnames(typeof(gp))
+			if(getfield(gp,n) isa CuArray)
+				d2d_cu_type = eltype(getfield(gp,n))
+				nn::CuArray{d2d_cu_type,1} = CuArray{d2d_cu_type,1}(undef, size(getfield(gp,n))[1])
+				nn = read(fid, string(n))
+				setfield!(gp, n, nn)
+				println("GPU")
+				#println(getfield(gp,n))
+			else
+				setfield!(gp, n,  read(fid, string(n)))
+				println("CPU")
+				#println(getfield(gp,n))
+			end
+		end
+	
+		println("snapshot loaded from " * filename)
+		log_to_buffer("snapshot loaded from " *  filename)
+	
+		close(fid)
+
+		return [n_clicks]
+	end
 
 
 	run_server(app)

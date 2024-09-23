@@ -852,6 +852,39 @@ function small_mailbox_out(filename, T, pT, C, mT, staging, L, nx, ny, nxl, nyl,
 	end
 end
 
+function make_snapshot(vp, gp, filename)
+	#filename_donwload = @sprintf("d2d_snapshot_%d_%s.hdf5",vp.it, Dates.format(now(), "yyyy_mm_dd_HH_MM_SS"))
+	#filename_donwload = @sprintf("d2d_snapshot.hdf5")
+	fid = h5open(filename, "w")
+
+	for n in fieldnames(typeof(vp))
+		println(getfield(vp,n))
+		write(fid, string(n), getfield(vp,n))
+	end
+
+	for n in fieldnames(typeof(gp))
+		if(getfield(gp,n) isa CuArray)
+			d2d_cu_type = eltype(getfield(gp,n))
+
+			nn::Array{d2d_cu_type,1} = Array{d2d_cu_type,1}(undef, size(getfield(gp,n))[1]);
+			copyto!(nn, getfield(gp,n))
+
+			#println(getfield(gp,n))
+			write(fid, string(n), nn)
+			println("sucess!!")
+		else
+			#println(getfield(gp,n))
+			write(fid, string(n), getfield(gp,n))
+		end
+	end
+
+	println("snapshot saved to " * filename)
+	log_to_buffer("snapshot saved to " *  filename)
+
+	close(fid)
+
+end
+
 """
 
 	mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl,max_nmarker, px,py,mx,my,h_px_dikes,pcnt, mfl)
@@ -918,63 +951,63 @@ function mailbox_out(filename, T, pT, C, mT, staging, L, nx, ny, nxl, nyl, max_n
 	end
 end
 
-function make_snapshot(filename, VarParams, GridParams)
-	@time begin
-		#@printf("%s writing results to disk  | ", bar2)
-		#filename = "grid." * string(it) * ".h5"
-
-		if isfile(filename)
-			rm(filename)
-		end
-
-		fid = h5open(filename, "w")
-		#h5write(filename, "T", T)
-		#h5write(filename, "C", C)
-
-		h_pcnt = Array{Int32,1}(undef, nx * ny)#array of double values from matlab script
-		h_T = Array{Float64,1}(undef, nx * ny)#array of double values from matlab script
-		h_C = Array{Float64,1}(undef, nx * ny)#array of double values from matlab script
-		h_pT = Array{Float64,1}(undef, max_npartcl)#array of double values from matlab script
-		h_mT = Array{Float64,1}(undef, max_nmarker)#array of double values from matlab script
-		h_L = Array{Int32,1}(undef, nxl * nyl)#array of double values from matlab script
-		h_px = Array{Float64,1}(undef, max_npartcl)#array of double values from matlab script
-		h_py = Array{Float64,1}(undef, max_npartcl)#array of double values from matlab script
-		h_mx = Array{Float64,1}(undef, max_nmarker)#array of double values from matlab script
-		h_my = Array{Float64,1}(undef, max_nmarker)#array of double values from matlab script
-		h_mfl = Array{Float64,1}(undef, nxl * nyl)#array of double values from matlab script
-
-		copyto!(h_pcnt, pcnt)
-		copyto!(h_T, T)
-		copyto!(h_pT, pT)
-		copyto!(h_mT, mT)
-		copyto!(h_C, C)
-
-		copyto!(h_px, px)
-		copyto!(h_py, py)
-		copyto!(h_mx, mx)
-		copyto!(h_my, my)
-		copyto!(h_mfl, mfl)
-
-		write(fid, "pcnt", h_pcnt)
-		write(fid, "T", h_T)
-		write(fid, "pT", h_pT)
-		write(fid, "mT", h_mT)
-		write(fid, "C", h_C)
-
-		write(fid, "px", h_px)
-		write(fid, "py", h_py)
-		write(fid, "mx", h_mx)
-		write(fid, "my", h_my)
-		write(fid, "px_dikes", h_px_dikes)
-		write(fid, "mfl", h_mfl)
-		#write(fid, "L", h_L)
-
-		copyto!(h_L, L)
-		write(fid, "L", h_L)
-
-		close(fid)
-	end
-end
+# function make_snapshot(filename, VarParams, GridParams)
+# 	@time begin
+# 		#@printf("%s writing results to disk  | ", bar2)
+# 		#filename = "grid." * string(it) * ".h5"
+#
+# 		if isfile(filename)
+# 			rm(filename)
+# 		end
+#
+# 		fid = h5open(filename, "w")
+# 		#h5write(filename, "T", T)
+# 		#h5write(filename, "C", C)
+#
+# 		h_pcnt = Array{Int32,1}(undef, nx * ny)#array of double values from matlab script
+# 		h_T = Array{Float64,1}(undef, nx * ny)#array of double values from matlab script
+# 		h_C = Array{Float64,1}(undef, nx * ny)#array of double values from matlab script
+# 		h_pT = Array{Float64,1}(undef, max_npartcl)#array of double values from matlab script
+# 		h_mT = Array{Float64,1}(undef, max_nmarker)#array of double values from matlab script
+# 		h_L = Array{Int32,1}(undef, nxl * nyl)#array of double values from matlab script
+# 		h_px = Array{Float64,1}(undef, max_npartcl)#array of double values from matlab script
+# 		h_py = Array{Float64,1}(undef, max_npartcl)#array of double values from matlab script
+# 		h_mx = Array{Float64,1}(undef, max_nmarker)#array of double values from matlab script
+# 		h_my = Array{Float64,1}(undef, max_nmarker)#array of double values from matlab script
+# 		h_mfl = Array{Float64,1}(undef, nxl * nyl)#array of double values from matlab script
+#
+# 		copyto!(h_pcnt, pcnt)
+# 		copyto!(h_T, T)
+# 		copyto!(h_pT, pT)
+# 		copyto!(h_mT, mT)
+# 		copyto!(h_C, C)
+#
+# 		copyto!(h_px, px)
+# 		copyto!(h_py, py)
+# 		copyto!(h_mx, mx)
+# 		copyto!(h_my, my)
+# 		copyto!(h_mfl, mfl)
+#
+# 		write(fid, "pcnt", h_pcnt)
+# 		write(fid, "T", h_T)
+# 		write(fid, "pT", h_pT)
+# 		write(fid, "mT", h_mT)
+# 		write(fid, "C", h_C)
+#
+# 		write(fid, "px", h_px)
+# 		write(fid, "py", h_py)
+# 		write(fid, "mx", h_mx)
+# 		write(fid, "my", h_my)
+# 		write(fid, "px_dikes", h_px_dikes)
+# 		write(fid, "mfl", h_mfl)
+# 		#write(fid, "L", h_L)
+#
+# 		copyto!(h_L, L)
+# 		write(fid, "L", h_L)
+#
+# 		close(fid)
+# 	end
+# end
 
 
 
@@ -1090,7 +1123,7 @@ function read_params(gp::GridParams, vp::VarParams)
 	gp.wts = CuArray{Float64,1}(undef, vp.nx * vp.ny)
 	gp.pcnt = CuArray{Int32,1}(undef, vp.nx * vp.ny)
 
-	gp.a = CuArray{Float64}(undef, (1, 2))
+#	gp.a = CuArray{Float64}(undef, (1, 2))
 
 	gp.px = CuArray{Float64}(undef, vp.max_npartcl)#x coordinate of particle
 	gp.py = CuArray{Float64}(undef, vp.max_npartcl)#y coordinate of particle
@@ -1240,10 +1273,12 @@ function init(gp::GridParams, vp::VarParams)
 	println(vp.max_nmarker)
 	println(vp.nmarker)
 
-	#processing all markers 
-	gridSize1D = Int64(floor((vp.max_nmarker - vp.nmarker + blockSize1D - 1) / blockSize1D))
-	mTs = @view gp.mT[vp.nmarker+1:end]
-	@cuda blocks = gridSize1D threads = blockSize1D init_particles_T(mTs, vp.T_magma, vp.max_nmarker - vp.nmarker)
+	if(D2DM_MARKERS)
+		#processing all markers 
+		gridSize1D = Int64(floor((vp.max_nmarker - vp.nmarker + blockSize1D - 1) / blockSize1D))
+		mTs = @view gp.mT[vp.nmarker+1:end]
+		@cuda blocks = gridSize1D threads = blockSize1D init_particles_T(mTs, vp.T_magma, vp.max_nmarker - vp.nmarker)
+	end
 
 	synchronize()
 
@@ -1352,9 +1387,11 @@ function eruption_advection(gp::GridParams, vp::VarParams, maxVol, maxIdx, it)
 
 
 
-		gridSize1D = (vp.nmarker + blockSize1D - 1) ÷ blockSize1D
-		#advect markers
-		@cuda blocks = gridSize1D threads = blockSize1D advect_particles_eruption(gp.mx, gp.my, cell_idx, vp.gamma, dxl, dyl, vp.nmarker, maxVol, vp.nxl, vp.nyl)
+		if(D2DM_MARKERS)
+			gridSize1D = (vp.nmarker + blockSize1D - 1) ÷ blockSize1D
+			#advect markers
+			@cuda blocks = gridSize1D threads = blockSize1D advect_particles_eruption(gp.mx, gp.my, cell_idx, vp.gamma, dxl, dyl, vp.nmarker, maxVol, vp.nxl, vp.nyl)
+		end
 		synchronize()
 
 		vp.iSample = vp.iSample + 1
@@ -1413,24 +1450,25 @@ function inserting_dykes(gp::GridParams, vp::VarParams, it)
 			gridSize1D = (vp.nmarker + blockSize1D - 1) ÷ blockSize1D
 
 
-			@cuda blocks = gridSize1D threads = blockSize1D advect_particles_intrusion(
-				gp.mx,
-				gp.my,
-				gp.dike_a[idike],
-				gp.dike_b[idike],
-				gp.dike_x[idike],
-				gp.dike_y[idike],
-				gp.dike_t[idike],
-				vp.nu,
-				vp.G,
-				gp.ndikes[it],
-				vp.nmarker,
-			)
+			if(D2DM_MARKERS)
+				@cuda blocks = gridSize1D threads = blockSize1D advect_particles_intrusion(
+					gp.mx,
+					gp.my,
+					gp.dike_a[idike],
+					gp.dike_b[idike],
+					gp.dike_x[idike],
+					gp.dike_y[idike],
+					gp.dike_t[idike],
+					vp.nu,
+					vp.G,
+					gp.ndikes[it],
+					vp.nmarker,
+				)
 
-			synchronize()
+				synchronize()
 
-			vp.nmarker += gp.marker_edges[idike+1] - gp.marker_edges[idike]
-
+				vp.nmarker += gp.marker_edges[idike+1] - gp.marker_edges[idike]
+			end
 		end
 	end
 end
