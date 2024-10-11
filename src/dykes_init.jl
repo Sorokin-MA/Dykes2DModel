@@ -23,6 +23,8 @@ if(isdir(data_folder) == false)
 	mkdir(data_folder)
 end
 
+FLAG_make_snapshot::Bool = false;
+
 start_flag::Bool = false;
 flag_break::Bool = false;
 G_FLAG_INIT::Bool = true;

@@ -144,7 +144,7 @@ end
 	E::Float64 = 1.56e10			#Temperature on the top of area (°C)
 	nu::Float64 = 0.3			#Temperature on the top of area (°C)
 	tsh::Float64 = 0.85			#Temperature on the top of area (°C)
-	gamma::Float64 = 0.1 #Temperature on the top of area (°C)
+	gamma::Float64 = 0.1
 
 	dike_a_rng = Array{Float64,1}(undef, 0)
 	dike_y_rng = Array{Float64,1}(undef, 0)

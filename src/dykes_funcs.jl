@@ -853,36 +853,37 @@ function small_mailbox_out(filename, T, pT, C, mT, staging, L, nx, ny, nxl, nyl,
 end
 
 function make_snapshot(vp, gp, filename)
-	#filename_donwload = @sprintf("d2d_snapshot_%d_%s.hdf5",vp.it, Dates.format(now(), "yyyy_mm_dd_HH_MM_SS"))
-	#filename_donwload = @sprintf("d2d_snapshot.hdf5")
-	fid = h5open(filename, "w")
+	if(FLAG_make_snapshot)
+		#filename_donwload = @sprintf("d2d_snapshot_%d_%s.hdf5",vp.it, Dates.format(now(), "yyyy_mm_dd_HH_MM_SS"))
+		#filename_donwload = @sprintf("d2d_snapshot.hdf5")
+		fid = h5open(filename, "w")
 
-	for n in fieldnames(typeof(vp))
-		println(getfield(vp,n))
-		write(fid, string(n), getfield(vp,n))
-	end
-
-	for n in fieldnames(typeof(gp))
-		if(getfield(gp,n) isa CuArray)
-			d2d_cu_type = eltype(getfield(gp,n))
-
-			nn::Array{d2d_cu_type,1} = Array{d2d_cu_type,1}(undef, size(getfield(gp,n))[1]);
-			copyto!(nn, getfield(gp,n))
-
-			#println(getfield(gp,n))
-			write(fid, string(n), nn)
-			println("sucess!!")
-		else
-			#println(getfield(gp,n))
-			write(fid, string(n), getfield(gp,n))
+		for n in fieldnames(typeof(vp))
+			println(getfield(vp,n))
+			write(fid, string(n), getfield(vp,n))
 		end
+
+		for n in fieldnames(typeof(gp))
+			if(getfield(gp,n) isa CuArray)
+				d2d_cu_type = eltype(getfield(gp,n))
+
+				nn::Array{d2d_cu_type,1} = Array{d2d_cu_type,1}(undef, size(getfield(gp,n))[1]);
+				copyto!(nn, getfield(gp,n))
+
+				#println(getfield(gp,n))
+				write(fid, string(n), nn)
+				println("sucess!!")
+			else
+				#println(getfield(gp,n))
+				write(fid, string(n), getfield(gp,n))
+			end
+		end
+
+		println("snapshot saved to " * filename)
+		log_to_buffer("snapshot saved to " *  filename)
+
+		close(fid)
 	end
-
-	println("snapshot saved to " * filename)
-	log_to_buffer("snapshot saved to " *  filename)
-
-	close(fid)
-
 end
 
 """
