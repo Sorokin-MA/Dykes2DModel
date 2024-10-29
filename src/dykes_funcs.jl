@@ -78,9 +78,7 @@ d2dm_campi_rhyolite_temp = Vector{Float64}([0, 703.9651009116576, 739.2545589231
 d2dm_campi_rhyolite::Interpolations.MonotonicInterpolation = interpolate(dykes_temp, dykes_crystalinity, SteffenMonotonicInterpolation())
 
 function mf_campi_rhyolite(T)
-	a::Float64 = 0
-	copyto!(a, T)
-	return d2dm_campi_rhyolite(a[1])
+	return itp(T)
 end
 
 
@@ -767,14 +765,14 @@ end
 # Arguments
 - `T`: Temperature variable, [°C]
 """
-function mf_magma(T)
-	t2 = T * T
-	t7 = exp(
-		0.961026371384066e3 - 0.3590508961e1 * T + 0.4479483398e-2 * t2 -
-		0.1866187556e-5 * t2 * T,
-	)
-	return 0.1e1 / (0.1e1 + t7)
-end
+# function mf_magma(T)
+# 	t2 = T * T
+# 	t7 = exp(
+# 		0.961026371384066e3 - 0.3590508961e1 * T + 0.4479483398e-2 * t2 -
+# 		0.1866187556e-5 * t2 * T,
+# 	)
+# 	return 0.1e1 / (0.1e1 + t7)
+# end
 
 #=
 function average(mfl, T, C, nl, nx, ny)
