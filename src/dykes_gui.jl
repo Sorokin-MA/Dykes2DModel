@@ -185,7 +185,9 @@ function dykes_gui()
 		end,
 		html_div(style=Dict("columnCount" => 2)) do
 			html_div(id="T-graph"),
-			html_div(id="C-graph")
+			html_div(id="C-graph"),
+			html_div(id="dmf-graph"),
+			html_div(id="lam_rhoCp-graph")
 		end
 	end
 
@@ -405,7 +407,7 @@ function dykes_gui()
 	end
 
 	#callback for generate button
-	callback!(app, [Output("T-graph", "children"), Output("C-graph", "children")], [Input("show-cur-but", "n_clicks")], prevent_initial_call=true) do n_clicks
+	callback!(app, [Output("T-graph", "children"), Output("C-graph", "children"), Output("dmf-graph", "children"), Output("lam_rhoCp-graph", "children")], [Input("show-cur-but", "n_clicks")], prevent_initial_call=true) do n_clicks
 			if(vp.dx == 0.0)
 				return nothing
 			end
@@ -418,13 +420,23 @@ function dykes_gui()
 			h_C = Array{Float64,1}(undef, vp.nx * vp.ny)#array of double values from matlab script
 			copyto!(h_C, gp.C)
 
-			return [html_div(id="dikes_figures_T", className="row" ) do
-				#dcc_graph(id="T_graph",figure = Plot(PlotlyJS.heatmap(x = xs, y =ys, z=collect(eachcol(h_T)), title="T")))
+			dmf = dmf_magma.(h_T) .* h_C + dmf_rock.(h_T) .* (1.0 .- h_C)
+			lam_rhoCp = (vp.lam_m_rhoCp .* h_C) + vp.lam_r_rhoCp .* (1.0 .- h_C)
+
+			return [
+			html_div(id="dikes_figures_T", className="row" ) do
 				dcc_graph(id="T_graph", figure = Plot(PlotlyJS.heatmap(x = xs, y =ys, z = collect(eachrow(reshape(h_T, (vp.nx, vp.ny)))), title="T")))
 			end,
 			html_div(id="dikes_figures_C", className="row") do
 				dcc_graph(id="C_graph", figure = Plot(PlotlyJS.heatmap(x = xs, y =ys, z = collect(eachrow(reshape(h_C, (vp.nx, vp.ny)))), title="C")))
-			end]
+			end,
+			html_div(id="dikes_figures_dmf", className="row") do
+				dcc_graph(id="dmf_graph", figure = Plot(PlotlyJS.heatmap(x = xs, y =ys, z = collect(eachrow(reshape(dmf, (vp.nx, vp.ny)))), title="dmf")))
+			end,
+			html_div(id="dikes_figures_lam_rhoCp-graph", className="row") do
+				dcc_graph(id="lam_rhoCp_graph", figure = Plot(PlotlyJS.heatmap(x = xs, y =ys, z = collect(eachrow(reshape(lam_rhoCp, (vp.nx, vp.ny)))), title="lam_rhoCp")))
+			end
+			]
 	end
 
 
