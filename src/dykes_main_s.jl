@@ -117,7 +117,11 @@ function main_test_gui(gp::GridParams, vp::VarParams, FLAG_init::Bool)
 
 					copyto!(gp.T_old, gp.T)
 					for isub = 0:vp.nsub-1
-						@cuda blocks = gridSize[1], gridSize[2] threads = blockSize[1], blockSize[2] update_T!(gp.T, gp.T_old, vp.T_top, vp.T_bot, gp.C, vp.lam_r_rhoCp, vp.lam_m_rhoCp, vp.L_Cp, vp.dx, vp.dy, vp.dt, vp.nx, vp.ny)
+						dmf_rock_c = CuArray{Float64,1}(undef, vp.nx * vp.ny)
+					#	dmf_rock_c = cuitp.(gp.T)
+						dmf_rock_c = only.(Interpolations.gradient.(Ref(cuitp), gp.T))
+
+						@cuda blocks = gridSize[1], gridSize[2] threads = blockSize[1], blockSize[2] update_T!(gp.T, gp.T_old, vp.T_top, vp.T_bot, gp.C, vp.lam_r_rhoCp, vp.lam_m_rhoCp, vp.L_Cp, vp.dx, vp.dy, vp.dt, vp.nx, vp.ny, dmf_rock_c)
 						synchronize()
 					end
 

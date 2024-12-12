@@ -115,7 +115,7 @@ end
 
 #coefficient which involved in heat equasion
 function dmf_rock(T)
-	return dmf_rhyolite(T)
+	return only.(Interpolations.gradient.(Ref(itp), T))
 end
 
 #melt fraction of magma
@@ -139,7 +139,7 @@ end
 
 Solve heat equasion
 """
-function update_T!(T, T_old, T_top, T_bot, C, lam_r_rhoCp, lam_m_rhoCp, L_Cp, dx, dy, dt, nx, ny)
+function update_T!(T, T_old, T_top, T_bot, C, lam_r_rhoCp, lam_m_rhoCp, L_Cp, dx, dy, dt, nx, ny, dmf_rock_arr)
 	ix = (blockIdx().x - 1) * blockDim().x + threadIdx().x - 1
 	iy = (blockIdx().y - 1) * blockDim().y + threadIdx().y - 1
 
@@ -175,7 +175,7 @@ function update_T!(T, T_old, T_top, T_bot, C, lam_r_rhoCp, lam_m_rhoCp, L_Cp, dx
 		qyn = -(T[idc(ix, iy + 1, nx)] - T[idc(ix, iy, nx)]) / dy
 	end
 
-	dmf::Float64 = dmf_magma(T[idc(ix, iy, nx)]) * C[idc(ix, iy, nx)] + dmf_rock(T[idc(ix, iy, nx)]) * (1.0 - C[idc(ix, iy, nx)])
+	dmf::Float64 = dmf_magma(T[idc(ix, iy, nx)]) * C[idc(ix, iy, nx)] + dmf_rock_arr[idc(ix, iy, nx)] * (1.0 - C[idc(ix, iy, nx)])
 	lam_rhoCp::Float64 = (lam_m_rhoCp * C[idc(ix, iy, nx)]) + lam_r_rhoCp * (1.0 - C[idc(ix, iy, nx)])
 
 	chi::Float64 = lam_rhoCp / (1.0 + L_Cp * dmf)
