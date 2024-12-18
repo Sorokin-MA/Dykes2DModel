@@ -185,18 +185,116 @@ function dykes_muskh()
 #
 # return p
 #
-	x = range(-2, 2, length=10)
-	y = range(-2, 2, length=10)
-	z = @. cos(x) + sin(y')
+	# x = range(-2, 2, length=10)
+	# y = range(-2, 2, length=10)
+	# z = @. cos(x) + sin(y')
+	#
+	# # Interpolation object (caches coefficients and such)
+	# itp = LinearInterpolation((x, y), z)
+	# # Fine grid
+	# x2 = range(extrema(x)..., length=300)
+	# y2 = range(extrema(y)..., length=200)
+	# # Interpolate
+	# z2 = [itp(x,y) for y in y2, x in x2]
+	# # Plot
+	# p = Plots.heatmap(x2, y2, z2, clim=(-2,2), title="Interpolated heatmap")
+	# Plots.scatter!(p, [x for _ in y for x in x], [y for y in y for _ in x], zcolor=z[:]; lab="original data", clim=(-2,2))
+	
 
-	# Interpolation object (caches coefficients and such)
-	itp = LinearInterpolation((x, y), z)
-	# Fine grid
-	x2 = range(extrema(x)..., length=300)
-	y2 = range(extrema(y)..., length=200)
-	# Interpolate
-	z2 = [itp(x,y) for y in y2, x in x2]
-	# Plot
-	p = Plots.heatmap(x2, y2, z2, clim=(-2,2), title="Interpolated heatmap")
-	Plots.scatter!(p, [x for _ in y for x in x], [y for y in y for _ in x], zcolor=z[:]; lab="original data", clim=(-2,2))
+	# x = range(-3, 3, length=100)
+	# y = range(-3, 3, length=100)
+	#
+	#
+	# x2 = range(extrema(x)..., length=300)
+	# y2 = range(extrema(y)..., length=200)
+	#
+	# z2 = [calc_Srr(x, y, m, Pcr, eta, rc, Po) for y in y2, x in x2]
+	#
+	# p = Plots.heatmap(x2, y2, z2, clim=(-3,3), title="Interpolated heatmap")
+	
+	#dykes_crystalinity = 1 .- Vector{Float64}([1, 1, 0.9978, 0.9955, 0.9918, 0.9881, 0.9401, 0.9273, 0.9231, 0.9189, 0.9029, 0.8859, 0.8532, 0.7972, 0.6777, 0.371, 0.2195, 0.1545, 0.1184, 0.1111, 0.1038, 0.0965, 0.0892, 0.0819, 0.0769, 0.0721, 0.0672, 0.0624, 0.0573, 0.0516, 0.0459, 0.0402, 0.0338, 0.0265, 0.0192, 0.0143, 0.0143, 0.0143, 0.0143, 0.0121, 0.0099, 0.0076, 0.006, 0.0056, 0.0051, 0.0047, 0.0043, 0.0037, 0.0028, 0.0019, 0.0009, 0, 0])
+	#dykes_temp = Vector{Float64}([0, 699.2355, 708.9755, 718.7156, 728.4557, 738.1957, 747.9358, 757.6758, 767.4159, 777.156, 786.896, 796.6361, 806.3761, 816.1162, 825.8563, 835.5963, 845.3364, 855.0765, 864.8165, 874.5566, 884.2966, 894.0367, 903.7768, 913.5168, 923.2569, 932.9969, 942.737, 952.4771, 962.2171, 971.9572, 981.6972, 991.4373, 1001.1774, 1010.9174, 1020.6575, 1030.3976, 1040.1376, 1049.8777, 1059.6177, 1069.3578, 1079.0979, 1088.8379, 1098.578, 1108.318, 1118.0581, 1127.7982, 1137.5382, 1147.2783, 1157.0183, 1166.7584, 1176.4985, 1186.2385, 1200])
+	#dykes_temp = Vector{Float64}( [699.2355, 708.9755, 718.7156, 728.4557, 738.1957, 747.9358, 757.6758, 767.4159, 777.156, 786.896, 796.6361, 806.3761, 816.1162, 825.8563, 835.5963, 845.3364, 855.0765, 864.8165, 874.5566, 884.2966, 894.0367, 903.7768, 913.5168, 923.2569, 932.9969, 942.737, 952.4771, 962.2171, 971.9572, 981.6972, 991.4373, 1001.1774, 1010.9174, 1020.6575, 1030.3976, 1040.1376, 1049.8777, 1059.6177, 1069.3578, 1079.0979, 1088.8379, 1098.578, 1108.318, 1118.0581, 1127.7982, 1137.5382, 1147.2783, 1157.0183, 1166.7584, 1176.4985, 118.2385]);
+	#dykes_crystalinity = 1 .- Vector{Float64}([1, 0.9978, 0.9955, 0.9918, 0.9881, 0.9401, 0.9273, 0.9231, 0.9189, 0.9029, 0.8859, 0.8532, 0.7972, 0.6777, 0.371, 0.2195, 0.1545, 0.1184, 0.1111, 0.1038, 0.0965, 0.0892, 0.0819, 0.0769, 0.0721, 0.0672, 0.0624, 0.0573, 0.0516, 0.0459, 0.0402, 0.0338, 0.0265, 0.0192, 0.0143, 0.0143, 0.0143, 0.0143, 0.0121, 0.0099, 0.0076, 0.006, 0.0056, 0.0051, 0.0047, 0.0043, 0.0037, 0.0028, 0.0019, 0.0009, 0]);
+
+
+	# itp = itp = interpolate(A, BSpline(Linear()))
+	#A_x = range(699.2355, 1186.2385, 51);
+	#itp = DataInterpolations.LinearInterpolation(dykes_crystalinity, dykes_temp,extrapolate = true)
+
+
+	# for i in eachindex(x)
+	# 	y[i] = ForwardDiff.derivative(itp,y[i])
+	# end
+	
+	#dykes_crystalinity = 1 .- Vector{Float64}([1, 1, 0.9978, 0.9955, 0.9918, 0.9881, 0.9401, 0.9273, 0.9231, 0.9189, 0.9029, 0.8859, 0.8532, 0.7972, 0.6777, 0.371, 0.2195, 0.1545, 0.1184, 0.1111, 0.1038, 0.0965, 0.0892, 0.0819, 0.0769, 0.0721, 0.0672, 0.0624, 0.0573, 0.0516, 0.0459, 0.0402, 0.0338, 0.0265, 0.0192, 0.0143, 0.0143, 0.0143, 0.0143, 0.0121, 0.0099, 0.0076, 0.006, 0.0056, 0.0051, 0.0047, 0.0043, 0.0037, 0.0028, 0.0019, 0.0009, 0, 0])
+	#dykes_temp = Vector{Float64}([0, 699.2355, 708.9755, 718.7156, 728.4557, 738.1957, 747.9358, 757.6758, 767.4159, 777.156, 786.896, 796.6361, 806.3761, 816.1162, 825.8563, 835.5963, 845.3364, 855.0765, 864.8165, 874.5566, 884.2966, 894.0367, 903.7768, 913.5168, 923.2569, 932.9969, 942.737, 952.4771, 962.2171, 971.9572, 981.6972, 991.4373, 1001.1774, 1010.9174, 1020.6575, 1030.3976, 1040.1376, 1049.8777, 1059.6177, 1069.3578, 1079.0979, 1088.8379, 1098.578, 1108.318, 1118.0581, 1127.7982, 1137.5382, 1147.2783, 1157.0183, 1166.7584, 1176.4985, 1186.2385, 1200])
+	
+
+	dykes_crystalinity = 1 .- Vector{Float64}([ 1, 0.9978, 0.9955, 0.9918, 0.9881, 0.9401, 0.9273, 0.9231, 0.9189, 0.9029, 0.8859, 0.8532, 0.7972, 0.6777, 0.371, 0.2195, 0.1545, 0.1184, 0.1111, 0.1038, 0.0965, 0.0892, 0.0819, 0.0769, 0.0721, 0.0672, 0.0624, 0.0573, 0.0516, 0.0459, 0.0402, 0.0338, 0.0265, 0.0192, 0.0143, 0.0143, 0.0143, 0.0143, 0.0121, 0.0099, 0.0076, 0.006, 0.0056, 0.0051, 0.0047, 0.0043, 0.0037, 0.0028, 0.0019, 0.0009, 0 ])
+	dykes_temp = Vector{Float64}([ 699.2355, 708.9755, 718.7156, 728.4557, 738.1957, 747.9358, 757.6758, 767.4159, 777.156, 786.896, 796.6361, 806.3761, 816.1162, 825.8563, 835.5963, 845.3364, 855.0765, 864.8165, 874.5566, 884.2966, 894.0367, 903.7768, 913.5168, 923.2569, 932.9969, 942.737, 952.4771, 962.2171, 971.9572, 981.6972, 991.4373, 1001.1774, 1010.9174, 1020.6575, 1030.3976, 1040.1376, 1049.8777, 1059.6177, 1069.3578, 1079.0979, 1088.8379, 1098.578, 1108.318, 1118.0581, 1127.7982, 1137.5382, 1147.2783, 1157.0183, 1166.7584, 1176.4985, 1186.2385])
+
+	x = range(700, 1200, 600);
+
+
+	#A_x = 0:1/52.0:1
+	#A_x = 1.:52.0:52
+
+	A_x = range(699.2355, 1186.2385, 51);
+	itp = interpolate(dykes_crystalinity, BSpline(Cubic(Line(OnGrid()))))
+	itp = Interpolations.scale(itp, A_x)
+	itp = extrapolate(itp, Flat())
+
+	# nodes = (dykes_temp,)
+	# itp   = interpolate(nodes, dykes_crystalinity, Gridded(Linear()))
+	y = itp(x)
+
+
+	#println(y);
+
+
+	p = Plots.plot(x,y)
+	
+	# for i in eachindex(x)
+	# 	y[i] = ForwardDiff.derivative(itp,y[i])
+	# end
+
+	cuitp = adapt(CuArray{eltype(dykes_temp)}, itp);
+
+	y = only.(Interpolations.gradient.(Ref(cuitp), x))
+
+	dmf_cuitp = adapt(CuArray{eltype(dykes_temp)}, itp);
+	# p = Plots.plot( x, y)
+	# for i in eachindex(x)
+	# 	y[i] = ForwardDiff.derivative(itp,y[i])
+	# end
+	println(typeof(y))
+	@CUDA.allowscalar Plots.plot!(p, x, y)
+	
+	Plots.plot!(p, dykes_temp, dykes_crystalinity, seriestype=:scatter)
+
+	return p
+
+end
+
+function calc_Srr(point_x, point_y, m, Pcr, eta, rc, Po)
+	upsilon, rho = cart2pol(point_x, point_y);
+	Z_real = rho*exp(1i*upsilon);
+	if(point_x >= 0)
+		Zr_rev_z = Z_real + sqrt(Z_real^2 -m);
+	else
+		Zr_rev_z = Z_real - sqrt(Z_real^2 -m);
+	end
+
+	X=real(Zr_rev_z);
+	Y=imag(Zr_rev_z);
+
+	upsilon, rho = cart2pol(X, Y);
+	if(rho>=1)
+		Srr =  (eta*rho^2*Pcr*m^3*cos(2*upsilon)*log(1/(rho^32))+eta*rho^2*Pcr*m^4*log(1/(rc^8))+eta*Pcr*m^4*log(rho^8*rc^8)+eta*rho^6*Pcr*log(rc^8)+eta*m^2*rho^4*Po*log(1/(rho^32))+eta*m^2*rho^4*Pcr*log(rho^32)+eta*m*rho^6*Po*cos(2*upsilon)*log(rho^32)+eta*m^2*rho^2*Pcr*log(1/(rc^8))+eta*rho^2*Po*m^4*log(rc^8)+eta*rho^8*Pcr*log(1/rc^8*rho^8)+eta*rho^8*Po*log(1/rho^8*rc^8)+8*eta*Po*m^4+24*eta*m^2*rho^2*Pcr+16*eta*m^2*rho^4*Po-16*eta*m^2*rho^4*Pcr-8*eta*rho^6*Pcr*m^2+8*eta*rho^6*Po*m^2-8*eta*Pcr*m^4-24*eta*m^2*rho^2*Po+eta*rho^6*Pcr*m^2*log(rc^8)+8*eta*rho^2*Pcr*m^4-8*eta*rho^2*Po*m^4+8*eta*rho^2*Pcr*m^3*cos(2*upsilon)-8*eta*m^3*Pcr*cos(2*upsilon)+8*eta*m^3*Po*cos(2*upsilon)+eta*Po*m^4*log(1/(rho^8*rc^8))+eta*rho^6*Po*log(1/(rc^8))+24*eta*m*rho^4*Po*cos(2*upsilon)-8*eta*m^2*rho^2*Po*cos(4*upsilon)+8*eta*m^2*rho^4*Po*cos(4*upsilon)-24*eta*m*rho^6*Po*cos(2*upsilon)+8*eta*m^2*rho^2*Pcr*cos(4*upsilon)-8*eta*m^2*rho^4*Pcr*cos(4*upsilon)-8*eta*rho^2*Po*m^3*cos(2*upsilon)+eta*m^2*rho^4*Pcr*log(rho^16)*cos(4*upsilon)+eta*m^2*rho^4*Po*log(1/(rho^16))*cos(4*upsilon)-24*eta*m*rho^4*Pcr*cos(2*upsilon)+eta*rho^2*Po*m^3*cos(2*upsilon)*log(rho^32)+24*eta*m*rho^6*Pcr*cos(2*upsilon)+eta*m^2*rho^2*Po*log(rc^8)+eta*rho^6*Po*m^2*log(1/(rc^8))+eta*m*rho^6*Pcr*cos(2*upsilon)*log(1/(rho^32)))/(m^2*rho^4*cos(4*upsilon)*log(rc^16)+m^2*rho^4*log(rc^32)+rho^6*m*cos(2*upsilon)*log(1/(rc^32))+rho^2*m^3*cos(2*upsilon)*log(1/(rc^32))+rho^8*log(rc^8)+m^4*log(rc^8));
+	else
+		Srr = -1;
+	end
+
+	return Srr
 end

@@ -1,19 +1,8 @@
 using Dates
 include("dykes_init.jl")
-include("dykes_funcs.jl")
-
-using Dash
-using Dash
-using DashHtmlComponents
-using DashCoreComponents
-
 
 using PlotlyJS, CSV, DataFrames
-
 using Plots
-plotly()
-
-
 
 function main()
 	# global_time = @elapsed begin

@@ -1,5 +1,5 @@
 include("dykes_init.jl")
-include("dykes_structs.jl")
+#include("dykes_structs.jl")
 
 function meshgrid(x, y)
 	X = [i for i in x, j in 1:length(y)]

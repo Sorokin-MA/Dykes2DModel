@@ -1,10 +1,4 @@
-using Dash
-using Dash
-using DashHtmlComponents
-using DashCoreComponents
-
-using Plots
-plotly()
+include("dykes_init.jl")
 
 function simple_imput(name::String, init_val)
 	html_div() do
@@ -36,7 +30,7 @@ function log_to_buffer(input_string)
 end
 
 #parse csv file
-function parse_contents_csv(contents, filename, date, init_vp)
+function parse_contents_csv(contents, filename, date, init_vp::InitVarParams)
 	content_type, content_string = split(contents, ',')
 	decoded = base64decode(content_string)
 	df = DataFrame()

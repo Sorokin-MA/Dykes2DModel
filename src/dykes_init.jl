@@ -18,6 +18,9 @@ using Dates
 using Adapt
 using ForwardDiff
 using DataInterpolations
+using Dash
+
+plotly()
 
 data_folder::String = "..\\d2dm_data\\"
 path_to_snap::String = "c:\\"
@@ -67,10 +70,7 @@ dykes_temp = Vector{Float64}([0, 699.2355, 708.9755, 718.7156, 728.4557, 738.195
 
 d2dm_crystal::Interpolations.MonotonicInterpolation = interpolate(dykes_temp, dykes_crystalinity, SteffenMonotonicInterpolation())
 
-
-
 nodes = (dykes_temp,)
 itp   = interpolate(nodes, dykes_crystalinity, Gridded(Linear()))
 cuitp = adapt(CuArray{eltype(dykes_temp)}, itp);
-
 

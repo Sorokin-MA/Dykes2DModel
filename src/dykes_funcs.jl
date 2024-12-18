@@ -1,4 +1,4 @@
-include("dykes_structs.jl")
+include("dykes_init.jl")
 
 bar1 = "\n├──"
 bar2 = "\n\t ├──"
@@ -126,12 +126,6 @@ end
 #melt fraction of host rocks
 function mf_rock(T)
 	return mf_campi_rhyolite(T)
-end
-
-function get_dmf_and_lam_rhoCp(T, T_old, T_top, T_bot, C, lam_r_rhoCp, lam_m_rhoCp, L_Cp, nx, ny)
-	dmf::Float64 = dmf_magma(T[idc(ix, iy, nx)]) * C[idc(ix, iy, nx)] + dmf_rock(T[idc(ix, iy, nx)]) * (1.0 - C[idc(ix, iy, nx)])
-	lam_rhoCp::Float64 = (lam_m_rhoCp * C[idc(ix, iy, nx)]) + lam_r_rhoCp * (1.0 - C[idc(ix, iy, nx)])
-	chi::Float64 = (lam_m_rhoCp * C[idc(ix, iy, nx)]) + lam_r_rhoCp * (1.0 - C[idc(ix, iy, nx)])
 end
 
 """

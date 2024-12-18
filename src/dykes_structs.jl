@@ -1,4 +1,4 @@
-@with_kw mutable struct GridParams
+Base.@kwdef mutable struct GridParams
 	cumulutive_erupt = Vector{Float64}()
 	cumulutive_vol = Vector{Float64}()
 	cumulutive_time = Vector{Float64}()
@@ -22,7 +22,7 @@
 
 	px_dikes::CuArray{Float64,1} = CuArray{Float64,1}(undef, 0);	#x of dykes particles
 	py_dikes::CuArray{Float64,1} = CuArray{Float64,1}(undef, 0);	#y of dykes particles
-	
+
 
 	mx::CuArray{Float64,1} = CuArray{Float64,1}(undef, 0);		#x of marker
 	my::CuArray{Float64,1} = CuArray{Float64,1}(undef, 0);		#y of marker
@@ -67,7 +67,7 @@
 	eruptionSteps = Vector{Int32}();
 end
 
-@with_kw mutable struct VarParams
+Base.@kwdef mutable struct VarParams
 	Lx::Float64 = 0.0				#X size of researched area (m)
 	Ly::Float64 = 0.0				#Y size of researched area (m)
 	Lz::Float64 = 0.0				#Z size of researched area (m)
@@ -115,15 +115,15 @@ end
 	it::Int64 = 1
 end
 
-@with_kw mutable struct InitVarParams
-#Physics
+Base.@kwdef mutable struct InitVarParams
+	#Physics
 	Lx::Float64 = 20000				#X size of researched area (m)
 	Ly::Float64 = 20000				#Y size of researched area (m)
 	Lz::Float64 = 10000				#Y size of researched area (m)
 	narrow_fact::Float64 = 0.5		
 	dike_x_W::Float64 = 10000		#Thermal conductivity of rock/(density*specific heat capacity)
 
-	critVol= Array{Float64,1}(undef, 0)
+	critVol::Array{Float64,1} = Array{Float64,1}(undef, 0)
 	critVolTime= Array{Float64,1}(undef, 0)
 	dz::Float64 = 10000				#Thermal conductivity of magma/(density*specific heat capacity)
 	dike_to_sill::Float64 = 13000	#Thermal conductivity of magma/(density*specific heat capacity)
@@ -151,7 +151,7 @@ end
 	dike_b_rng = Array{Float64,1}(undef, 0)
 	dike_t_rng = Array{Float64,1}(undef, 0)
 
-	#numerics
+	#Numerics
 	seed::Int64 = 666				#seed
 	nx::Int64 = 2000#Temperature on the top of area (°C)
 	ny::Int64 = 2000			#Temperature on the top of area (°C)

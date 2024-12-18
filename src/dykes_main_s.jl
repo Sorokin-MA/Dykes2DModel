@@ -1,7 +1,5 @@
 #main jl file made with structs
 include("dykes_init.jl")
-include("dykes_structs.jl")
-include("dykes_funcs.jl")
 
 function main_test_gui(gp::GridParams, vp::VarParams, FLAG_init::Bool)
 	local_buff::String = ""
