@@ -606,7 +606,7 @@ function main()
 				copyto!(T_old, T)
 				for isub = 0:nsub-1
 					dmf_rock_c = CuArray{Float64,1}(undef, vp.nx * vp.ny)
-					dmf_rock_c = cuitp.(gp.T)
+					dmf_rock_c = dmf_rock(gp.T)
 					@cuda blocks=gridSize[1],gridSize[2] threads=blockSize[1],blockSize[2] update_T!(T,  T_old, T_top, T_bot, C, lam_r_rhoCp, lam_m_rhoCp, L_Cp, dx, dy, dt, nx, ny, dmf_rock_c);
 					synchronize()
 				end

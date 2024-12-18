@@ -245,20 +245,9 @@ function dykes_muskh()
 	itp = Interpolations.scale(itp, A_x)
 	itp = extrapolate(itp, Flat())
 
-	# nodes = (dykes_temp,)
-	# itp   = interpolate(nodes, dykes_crystalinity, Gridded(Linear()))
 	y = itp(x)
-
-
-	#println(y);
-
-
 	p = Plots.plot(x,y)
 	
-	# for i in eachindex(x)
-	# 	y[i] = ForwardDiff.derivative(itp,y[i])
-	# end
-
 	cuitp = adapt(CuArray{eltype(dykes_temp)}, itp);
 
 	y = only.(Interpolations.gradient.(Ref(cuitp), x))
