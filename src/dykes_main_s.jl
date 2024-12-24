@@ -179,7 +179,7 @@ function main_test_gui(gp::GridParams, vp::VarParams, FLAG_init::Bool)
 	end
 
 	#to make percents right
-	vp.it++
+	vp.it = vp.it + 1;
 
 	@printf("%s writing results to disk  | ", bar2)
 	log_to_buffer(@sprintf("%s writing results to disk  | ", bar2))
