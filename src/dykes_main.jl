@@ -101,24 +101,24 @@ function main()
 	read!(io, critVol)
 
 	#array 0 0 1 0 0 ... like, where 1 -instrusion
-	ndikes = Array{Int32,1}(undef, nt)	#number of dykes intruded on n-th time step
-	read!(io, ndikes)
+	ndykes = Array{Int32,1}(undef, nt)	#number of dykes intruded on n-th time step
+	read!(io, ndykes)
 
-	ndikes_all = 0
+	ndykes_all = 0
 
 	#count all dykes
 	for istep in 1:nt
-		ndikes_all = ndikes_all + ndikes[istep]
+		ndykes_all = ndykes_all + ndykes[istep]
 	end
 
-	println("ndikes_all")
-	println(ndikes_all)
+	println("ndykes_all")
+	println(ndykes_all)
 
 	#array which describes amount of particles in new dyke
-	particle_edges = Array{Int32,1}(undef, ndikes_all + 1)
+	particle_edges = Array{Int32,1}(undef, ndykes_all + 1)
 	read!(io, particle_edges)
 
-	marker_edges = Array{Int32,1}(undef, ndikes_all + 1)
+	marker_edges = Array{Int32,1}(undef, ndykes_all + 1)
 	read!(io, marker_edges)
 
 	close(io)
@@ -127,14 +127,14 @@ function main()
 
 	cap_frac = 1.5  #value to spcify how much particles we allow to inject in runtime
 	npartcl0 = npartcl #initial amount of particles
-	max_npartcl = convert(Int64, npartcl * cap_frac) + particle_edges[ndikes_all+1] #???#count max particles
+	max_npartcl = convert(Int64, npartcl * cap_frac) + particle_edges[ndykes_all+1] #???#count max particles
 
 	println("max_npartcl")
 	println(max_npartcl)
 
 	nmarker0 = nmarker
 
-	max_nmarker = nmarker + marker_edges[ndikes_all+1]
+	max_nmarker = nmarker + marker_edges[ndykes_all+1]
 
 
 	#blockSize(16, 32);
@@ -158,10 +158,10 @@ function main()
 	pT = CuArray{Float64}(undef, max_npartcl)	#Temperature of particle
 	pPh = CuArray{Int8}(undef, max_npartcl)		#???#Ph?
 
-	np_dikes = particle_edges[ndikes_all+1]		#number of particles in each dike during intrusion
+	np_dykes = particle_edges[ndykes_all+1]		#number of particles in each dyke during intrusion
 
-	px_dikes = CuArray{Float64,1}(undef, np_dikes)	#x of dykes particles
-	py_dikes = CuArray{Float64,1}(undef, np_dikes)	#y of dykes particles
+	px_dykes = CuArray{Float64,1}(undef, np_dykes)	#x of dykes particles
+	py_dykes = CuArray{Float64,1}(undef, np_dykes)	#y of dykes particles
 	
 
 	mx = CuArray{Float64,1}(undef, max_nmarker)		#x of marker
@@ -192,25 +192,25 @@ function main()
 	mfl = CuArray{Float64,1}(undef, nxl * nyl)
 
 
-	#a and b of ellips for dikes
-	dike_a = Array{Float64,1}(undef, ndikes_all)
-	dike_b = Array{Float64,1}(undef, ndikes_all)
+	#a and b of ellips for dykes
+	dyke_a = Array{Float64,1}(undef, ndykes_all)
+	dyke_b = Array{Float64,1}(undef, ndykes_all)
 
 	#x and y coordinate of center
-	dike_x = Array{Float64,1}(undef, ndikes_all)
-	dike_y = Array{Float64,1}(undef, ndikes_all)
+	dyke_x = Array{Float64,1}(undef, ndykes_all)
+	dyke_y = Array{Float64,1}(undef, ndykes_all)
 
 	#???
-	dike_t = Array{Float64,1}(undef, ndikes_all)
+	dyke_t = Array{Float64,1}(undef, ndykes_all)
 
 
 	#NOTE:Dykes data upload takes time
-	io = open("data/dikes.bin", "r");
-	read!(io, dike_a)
-	read!(io, dike_b)
-	read!(io, dike_x)
-	read!(io, dike_y)
-	read!(io, dike_t)
+	io = open("data/dykes.bin", "r");
+	read!(io, dyke_a)
+	read!(io, dyke_b)
+	read!(io, dyke_x)
+	read!(io, dyke_y)
+	read!(io, dyke_t)
 
 	close(io)
 
@@ -226,14 +226,14 @@ function main()
 	copyto!(py, h_py)
 
 	#???
-	h_px_dikes = Array{Float64,1}(undef, np_dikes)
-	h_py_dikes = Array{Float64,1}(undef, np_dikes)
+	h_px_dykes = Array{Float64,1}(undef, np_dykes)
+	h_py_dykes = Array{Float64,1}(undef, np_dykes)
 
-	h_px_dikes = read(fid,"px_dikes")
-	h_py_dikes = read(fid,"py_dikes")
+	h_px_dykes = read(fid,"px_dykes")
+	h_py_dykes = read(fid,"py_dykes")
 
-	copyto!(px_dikes, h_px_dikes)
-	copyto!(py_dikes, h_py_dikes)
+	copyto!(px_dykes, h_px_dykes)
+	copyto!(py_dykes, h_py_dykes)
 	close(fid)
 
 #=	
@@ -316,7 +316,7 @@ function main()
 		#end
 
 		
-		idike = 0
+		idyke = 0
 		global iSample = Int32(1)
 
 		eruptionSteps = Vector{Int32}()
@@ -327,7 +327,7 @@ function main()
 			#action
 			@printf("%s it = %d", bar1, it)
 			is_eruption = false
-			is_intrusion = (ndikes[it] > 0)
+			is_intrusion = (ndykes[it] > 0)
 			#is_intrusion = false
 			nerupt = 1;
 
@@ -435,12 +435,12 @@ function main()
 			end
 
 
-			#processing intrusions of dike
+			#processing intrusions of dyke
 			if (is_intrusion)
-				@printf("%s inserting %02d dikes	   | ", bar2, ndikes[it])
+				@printf("%s inserting %02d dykes	   | ", bar2, ndykes[it])
 				@time begin
-					for i = 1:ndikes[it]
-						idike = idike + 1
+					for i = 1:ndykes[it]
+						idyke = idyke + 1
 
 						blockSize1D = 512
 						gridSize1D = (npartcl + blockSize1D - 1) ÷ blockSize1D
@@ -449,38 +449,38 @@ function main()
 						@cuda blocks = gridSize1D threads = blockSize1D advect_particles_intrusion(
 							px,
 							py,
-							dike_a[idike],
-							dike_b[idike],
-							dike_x[idike],
-							dike_y[idike],
-							dike_t[idike],
+							dyke_a[idyke],
+							dyke_b[idyke],
+							dyke_x[idyke],
+							dyke_y[idyke],
+							dyke_t[idyke],
 							nu,
 							G,
-							ndikes[it],
+							ndykes[it],
 							npartcl
 						)
 
-						dike_start = particle_edges[idike]
-						dike_end = particle_edges[idike + 1]
-						np_dike = dike_end - dike_start
+						dyke_start = particle_edges[idyke]
+						dyke_end = particle_edges[idyke + 1]
+						np_dyke = dyke_end - dyke_start
 
-						if (npartcl + np_dike > max_npartcl)
+						if (npartcl + np_dyke > max_npartcl)
 							@printf("ERROR: number of particles exceeds maximum value, increase capacity\n");
 							return -1;
 						end
 
 						
-					pxs = @view px[(npartcl+1):(npartcl+np_dike)];
-					px_dikess = @view px_dikes[(dike_start+1):(dike_start+np_dike)];
-					pys = @view py[(npartcl+1):(npartcl+np_dike)];
-					py_dikess = @view py_dikes[(dike_start+1):(dike_start+np_dike)];
+					pxs = @view px[(npartcl+1):(npartcl+np_dyke)];
+					px_dykess = @view px_dykes[(dyke_start+1):(dyke_start+np_dyke)];
+					pys = @view py[(npartcl+1):(npartcl+np_dyke)];
+					py_dykess = @view py_dykes[(dyke_start+1):(dyke_start+np_dyke)];
 						
 
-						copyto!(pxs, px_dikess)
-						copyto!(pys, py_dikess)
+						copyto!(pxs, px_dykess)
+						copyto!(pys, py_dykess)
 					
 
-						npartcl += np_dike
+						npartcl += np_dyke
 
 						gridSize1D = (nmarker + blockSize1D - 1) ÷ blockSize1D
 
@@ -488,20 +488,20 @@ function main()
 						@cuda blocks = gridSize1D threads = blockSize1D advect_particles_intrusion(
 							mx,
 							my,
-							dike_a[idike],
-							dike_b[idike],
-							dike_x[idike],
-							dike_y[idike],
-							dike_t[idike],
+							dyke_a[idyke],
+							dyke_b[idyke],
+							dyke_x[idyke],
+							dyke_y[idyke],
+							dyke_t[idyke],
 							nu,
 							G,
-							ndikes[it],
+							ndykes[it],
 							nmarker,
 						)
 
 						synchronize()
 
-						nmarker += marker_edges[idike + 1] - marker_edges[idike]
+						nmarker += marker_edges[idyke + 1] - marker_edges[idyke]
 
 					end
 				end
@@ -639,8 +639,8 @@ function main()
 					@printf("%s writing results to disk  | ", bar2)
 					filename = "data/julia_grid." * string(it) * ".h5"
 
-					small_mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl, max_nmarker, px, py, mx ,my, h_px_dikes,pcnt, mfl);
-					#mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl, max_nmarker, px, py, mx ,my, h_px_dikes,pcnt, mfl);
+					small_mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl, max_nmarker, px, py, mx ,my, h_px_dykes,pcnt, mfl);
+					#mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl, max_nmarker, px, py, mx ,my, h_px_dykes,pcnt, mfl);
 					#=
 					fid = h5open(filename, "w")
 

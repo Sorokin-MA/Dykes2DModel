@@ -3,7 +3,7 @@ Base.@kwdef mutable struct GridParams
 	cumulutive_vol = Vector{Float64}()
 	cumulutive_time = Vector{Float64}()
 	critVol::Array{Float64,1} = Array{Float64,1}(undef,0);
-	ndikes::Array{Int32,1} = Array{Int32,1}(undef,0);
+	ndykes::Array{Int32,1} = Array{Int32,1}(undef,0);
 	particle_edges::Array{Int32,1} = Array{Int32,1}(undef,0);
 	marker_edges::Array{Int32,1} = Array{Int32,1}(undef, 0);
 	T::CuArray{Float64,1} = CuArray{Float64,1}(undef, 0);
@@ -20,8 +20,8 @@ Base.@kwdef mutable struct GridParams
 	pPh::CuArray{Int8} = CuArray{Int8}(undef, 0);		#???#Ph?
 
 
-	px_dikes::CuArray{Float64,1} = CuArray{Float64,1}(undef, 0);	#x of dykes particles
-	py_dikes::CuArray{Float64,1} = CuArray{Float64,1}(undef, 0);	#y of dykes particles
+	px_dykes::CuArray{Float64,1} = CuArray{Float64,1}(undef, 0);	#x of dykes particles
+	py_dykes::CuArray{Float64,1} = CuArray{Float64,1}(undef, 0);	#y of dykes particles
 
 
 	mx::CuArray{Float64,1} = CuArray{Float64,1}(undef, 0);		#x of marker
@@ -43,22 +43,22 @@ Base.@kwdef mutable struct GridParams
 	mfl::CuArray{Float64,1} = CuArray{Float64,1}(undef, 0);
 
 
-	#a and b of ellips for dikes
-	dike_a::Array{Float64,1} = Array{Float64,1}(undef, 0);
-	dike_b::Array{Float64,1} = Array{Float64,1}(undef, 0);
+	#a and b of ellips for dykes
+	dyke_a::Array{Float64,1} = Array{Float64,1}(undef, 0);
+	dyke_b::Array{Float64,1} = Array{Float64,1}(undef, 0);
 
 	#x and y coordinate of center
-	dike_x::Array{Float64,1} = Array{Float64,1}(undef, 0);
-	dike_y::Array{Float64,1} = Array{Float64,1}(undef, 0);
+	dyke_x::Array{Float64,1} = Array{Float64,1}(undef, 0);
+	dyke_y::Array{Float64,1} = Array{Float64,1}(undef, 0);
 
 	#???
-	dike_t::Array{Float64,1} = Array{Float64,1}(undef, 0);
+	dyke_t::Array{Float64,1} = Array{Float64,1}(undef, 0);
 
 	h_px = Array{Float64,1}(undef, 0);
 	h_py = Array{Float64,1}(undef, 0);
 
-	h_px_dikes = Array{Float64,1}(undef, 0);
-	h_py_dikes = Array{Float64,1}(undef, 0);
+	h_px_dykes = Array{Float64,1}(undef, 0);
+	h_py_dykes = Array{Float64,1}(undef, 0);
 
 	h_mx = Array{Float64,1}(undef, 0);
 	h_my = Array{Float64,1}(undef, 0);
@@ -104,7 +104,7 @@ Base.@kwdef mutable struct VarParams
 	nmarker::Int32 = 0				#number of markers
 	nSample::Int32 = 0				#size of a Sample, 1000
 
-	idike::Int32 = 0				#number of dikes
+	idyke::Int32 = 0				#number of dykes
 	npartcl0::Int32 = 0				#initial amount of particles
 
 	max_npartcl::Int32 = 0				#size of a Sample, 1000
@@ -121,12 +121,12 @@ Base.@kwdef mutable struct InitVarParams
 	Ly::Float64 = 20000				#Y size of researched area (m)
 	Lz::Float64 = 10000				#Y size of researched area (m)
 	narrow_fact::Float64 = 0.5		
-	dike_x_W::Float64 = 10000		#Thermal conductivity of rock/(density*specific heat capacity)
+	dyke_x_W::Float64 = 10000		#Thermal conductivity of rock/(density*specific heat capacity)
 
 	critVol::Array{Float64,1} = Array{Float64,1}(undef, 0)
 	critVolTime= Array{Float64,1}(undef, 0)
 	dz::Float64 = 10000				#Thermal conductivity of magma/(density*specific heat capacity)
-	dike_to_sill::Float64 = 13000	#Thermal conductivity of magma/(density*specific heat capacity)
+	dyke_to_sill::Float64 = 13000	#Thermal conductivity of magma/(density*specific heat capacity)
 	Lam_r::Float64 = 1.5 #Thermal conductivity of magma/(density*specific heat capacity)
 	Lam_m::Float64 = 1.2 #Thermal conductivity of magma/(density*specific heat capacity)
 	Cp::Float64 = 1350			#Thermal conductivity of magma/(density*specific heat capacity)
@@ -146,10 +146,10 @@ Base.@kwdef mutable struct InitVarParams
 	tsh::Float64 = 0.85			#Temperature on the top of area (°C)
 	gamma::Float64 = 0.1
 
-	dike_a_rng = Array{Float64,1}(undef, 0)
-	dike_y_rng = Array{Float64,1}(undef, 0)
-	dike_b_rng = Array{Float64,1}(undef, 0)
-	dike_t_rng = Array{Float64,1}(undef, 0)
+	dyke_a_rng = Array{Float64,1}(undef, 0)
+	dyke_y_rng = Array{Float64,1}(undef, 0)
+	dyke_b_rng = Array{Float64,1}(undef, 0)
+	dyke_t_rng = Array{Float64,1}(undef, 0)
 
 	#Numerics
 	seed::Int64 = 666				#seed

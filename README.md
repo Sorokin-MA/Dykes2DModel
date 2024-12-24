@@ -7,7 +7,7 @@
 
 </div>
 
-A project aimed at numerical modeling of the formation of dikes and silos. The code is based on the [code](https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/2021JB023008) of Ivan Utkin and takes into account the effect of plasticity.
+A project aimed at numerical modeling of the formation of dykes and silos. The code is based on the [code](https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/2021JB023008) of Ivan Utkin and takes into account the effect of plasticity.
 
 ## Quick start
 ```

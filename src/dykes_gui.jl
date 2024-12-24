@@ -117,8 +117,8 @@ function dykes_gui()
 			style=Dict("color" => "#000000", "textAlign" => "left"),
 		),
 		html_button("Generate", id="generate-but"),
-		html_button("Show dikes", id="show-dikes-but"),
-		html_div(id="dikes-graph"),
+		html_button("Show dykes", id="show-dykes-but"),
+		html_div(id="dykes-graph"),
 		html_h2(
 			"3. Start\\Stop.",
 			style=Dict("color" => "#000000", "textAlign" => "left"),
@@ -197,7 +197,7 @@ function dykes_gui()
 						simple_imput_desc("Ly", init_vp.Ly, descr_Ly),
 						simple_imput_desc("Lz", init_vp.Lz, descr_Lz),
 						simple_imput("calc_years", init_vp.calc_years),
-						simple_imput("dike_to_sill", init_vp.dike_to_sill),
+						simple_imput("dyke_to_sill", init_vp.dyke_to_sill),
 						simple_imput("narrow_fact", init_vp.narrow_fact),
 						simple_imput("Lam_r", init_vp.Lam_r),
 						simple_imput("Lam_m", init_vp.Lam_m),
@@ -272,11 +272,11 @@ function dykes_gui()
 	#callback for generate button
 	callback!(app, [Output("generate-but", "n_clicks")], [Input("generate-but", "n_clicks")], prevent_initial_call=true) do n_clicks
 		println("generate button clicked")
-		dikes_rand_param(init_vp)
+		dykes_rand_param(init_vp)
 		return [n_clicks + 1]
 	end
 
-	callback!(app, [Output("dikes-graph", "children")], [Input("show-dikes-but", "n_clicks")], prevent_initial_call=true) do n_clicks
+	callback!(app, [Output("dykes-graph", "children")], [Input("show-dykes-but", "n_clicks")], prevent_initial_call=true) do n_clicks
 			dpa = Array{Float64,1}(undef, 19)#array of double values from matlab script
 		ipa = Array{Int32,1}(undef, 12)#array of int values from matlab script
 
@@ -324,40 +324,40 @@ function dykes_gui()
 		read!(io, critVol)
 
 		#array 0 0 1 0 0 ... like, where 1 -instrusion
-		ndikes = Array{Int32,1}(undef, nt)#number of dykes intruded on n-th time step
-		read!(io, ndikes)
+		ndykes = Array{Int32,1}(undef, nt)#number of dykes intruded on n-th time step
+		read!(io, ndykes)
 
-		ndikes_all = 0
+		ndykes_all = 0
 
 		#count all dykes
 		for istep in 1:nt
-			ndikes_all = ndikes_all + ndikes[istep]
+			ndykes_all = ndykes_all + ndykes[istep]
 		end
 
 		#array which describes amount of particles in new dyke
-		particle_edges = Array{Int32,1}(undef, ndikes_all + 1)
+		particle_edges = Array{Int32,1}(undef, ndykes_all + 1)
 		read!(io, particle_edges)
 
-		marker_edges = Array{Int32,1}(undef, ndikes_all + 1)
+		marker_edges = Array{Int32,1}(undef, ndykes_all + 1)
 		read!(io, marker_edges)
 
 		close(io)
 
 		cap_frac = 3  #value to spcify how much particles we allow to inject in runtime
 		npartcl0 = npartcl #initial amount of particles
-		max_npartcl = convert(Int64, npartcl * cap_frac) + particle_edges[ndikes_all+1] #???#count max particles
+		max_npartcl = convert(Int64, npartcl * cap_frac) + particle_edges[ndykes_all+1] #???#count max particles
 		println(npartcl)
-		println(particle_edges[ndikes_all+1])
+		println(particle_edges[ndykes_all+1])
 		println("max_npartcl")
 		println(max_npartcl)
 		nmarker0 = nmarker
 
 
-		#	max_nmarker = nmarker + marker_edges[ndikes_all+1]
+		#	max_nmarker = nmarker + marker_edges[ndykes_all+1]
 
 
 
-		np_dikes = particle_edges[ndikes_all+1]#number of particles in each dike during intrusion
+		np_dykes = particle_edges[ndykes_all+1]#number of particles in each dyke during intrusion
 
 		fid = h5open(data_folder * "particles.h5", "r")
 
@@ -368,35 +368,35 @@ function dykes_gui()
 		h_py = read(fid, "py")
 
 
-		h_px_dikes = Array{Float64,1}(undef, np_dikes)
-		h_py_dikes = Array{Float64,1}(undef, np_dikes)
+		h_px_dykes = Array{Float64,1}(undef, np_dykes)
+		h_py_dykes = Array{Float64,1}(undef, np_dykes)
 
-		h_px_dikes = read(fid, "px_dikes")
-		h_py_dikes = read(fid, "py_dikes")
+		h_px_dykes = read(fid, "px_dykes")
+		h_py_dykes = read(fid, "py_dykes")
 
 		#PlotlyJS.scatter([1,2,3],[4,5,6])
 
 		close(fid)
 
 		#	PlotlyJS.plot([
-		#	test_fig = PlotlyJS.scatter(x=h_px_dikes, y=h_py_dikes, mode="markers", name="markers")
+		#	test_fig = PlotlyJS.scatter(x=h_px_dykes, y=h_py_dykes, mode="markers", name="markers")
 
-		d2d_limit =np_dikes
+		d2d_limit =np_dykes
 		d2d_limit_gap = 100
-		#ret_plot = Plots.scatter(markersize = 0.1, h_px_dikes[1:d2d_limit_gap:d2d_limit],h_py_dikes[1:d2d_limit_gap:d2d_limit], xlimit = [1, 20000], ylimit = [1, 20000])
+		#ret_plot = Plots.scatter(markersize = 0.1, h_px_dykes[1:d2d_limit_gap:d2d_limit],h_py_dykes[1:d2d_limit_gap:d2d_limit], xlimit = [1, 20000], ylimit = [1, 20000])
 
 		new_plot = Plot([
-			PlotlyJS.scatter(x = h_px_dikes[1:d2d_limit_gap:d2d_limit], y = h_py_dikes[1:d2d_limit_gap:d2d_limit], mode="markers", line_width=0.001)
+			PlotlyJS.scatter(x = h_px_dykes[1:d2d_limit_gap:d2d_limit], y = h_py_dykes[1:d2d_limit_gap:d2d_limit], mode="markers", line_width=0.001)
 				],Layout(title="Dash Data Visualization", xaxis_range=[1, 20000], yaxis_range=[1, 20000]))
 
 		#	layout = Layout(xaxis_range=[1, 20000], yaxis_range=[1, 20000])
 
-		return [html_div(id="dikes_figures_dikes", className="row", style=Dict("columnCount" => 2)) do
+		return [html_div(id="dykes_figures_dykes", className="row", style=Dict("columnCount" => 2)) do
 			#dcc_graph(id="T_graph",figure = Plot(PlotlyJS.heatmap(x = xs, y =ys, z=collect(eachcol(h_T)), title="T")))
 			
 			dcc_graph(id="dd_graph", figure = new_plot)
 
-			#dcc_graph(id="dikes_graph", figure = Plot(ret_plot))
+			#dcc_graph(id="dykes_graph", figure = Plot(ret_plot))
 		end]
 	end
 
@@ -419,16 +419,16 @@ function dykes_gui()
 			dmf = dmf_magma.(h_T) .* h_C + dmf_rock.(h_T) .* (1.0 .- h_C)
 
 			return [
-			html_div(id="dikes_figures_T", className="row" ) do
+			html_div(id="dykes_figures_T", className="row" ) do
 				dcc_graph(id="T_graph", figure = Plot(PlotlyJS.heatmap(x = xs, y =ys, z = collect(eachrow(reshape(h_T, (vp.nx, vp.ny)))), title="T")))
 			end,
-			html_div(id="dikes_figures_C", className="row") do
+			html_div(id="dykes_figures_C", className="row") do
 				dcc_graph(id="C_graph", figure = Plot(PlotlyJS.heatmap(x = xs, y =ys, z = collect(eachrow(reshape(h_C, (vp.nx, vp.ny)))), title="C")))
 			end,
-			html_div(id="dikes_figures_dmf", className="row") do
+			html_div(id="dykes_figures_dmf", className="row") do
 				dcc_graph(id="dmf_graph", figure = Plot(PlotlyJS.heatmap(x = xs, y =ys, z = collect(eachrow(reshape(dmf, (vp.nx, vp.ny)))), title="dmf")))
 			end,
-			html_div(id="dikes_figures_mf", className="row") do
+			html_div(id="dykes_figures_mf", className="row") do
 				dcc_graph(id="mf_graph", figure = Plot(PlotlyJS.heatmap(x = xs, y =ys, z = collect(eachrow(reshape(mf, (vp.nx, vp.ny)))), title="mf")))
 			end
 			]
@@ -473,7 +473,7 @@ function dykes_gui()
 
 			h_T = Array{Float64,1}(undef, vp.nx * vp.ny)#array of double values from matlab script
 			copyto!(h_T, gp.T)
-			return [html_div(id="dikes_figures_T", className="row",style=Dict("columnCount" => 3) ) do
+			return [html_div(id="dykes_figures_T", className="row",style=Dict("columnCount" => 3) ) do
 				#dcc_graph(id="T_graph",figure = Plot(PlotlyJS.heatmap(x = xs, y =ys, z=collect(eachcol(h_T)), title="T")))
 				dcc_graph(id="T_graph", figure = Plot(PlotlyJS.heatmap(x = xs, y =ys, z = collect(eachrow(reshape(h_T, (vp.nx, vp.ny)))), title="T")))
 			end]
@@ -486,7 +486,7 @@ function dykes_gui()
 			ys = 0:vp.dy:vp.Ly
 			h_C = Array{Float64,1}(undef, vp.nx * vp.ny)#array of double values from matlab script
 			copyto!(h_C, gp.C)
-			return [html_div(id="dikes_figures_C", className="row",style=Dict("columnCount" => 3)) do
+			return [html_div(id="dykes_figures_C", className="row",style=Dict("columnCount" => 3)) do
 				#NOTE: dash bug, see https://github.com/plotly/Dash.jl/issues/60
 				
 				#p = Plot(PlotlyJS.heatmap(x = xs, y =ys, z = collect(eachrow(h_C)), title="C"))
@@ -619,9 +619,9 @@ function dykes_gui()
 			return [init_vp.narrow_fact]
 		end
 
-		callback!(app, [Output("dike_to_sill", "value")], [Input("dike_to_sill", "value")]) do input_value
-			init_vp.dike_to_sill = input_value
-			return [init_vp.dike_to_sill]
+		callback!(app, [Output("dyke_to_sill", "value")], [Input("dyke_to_sill", "value")]) do input_value
+			init_vp.dyke_to_sill = input_value
+			return [init_vp.dyke_to_sill]
 		end
 
 		callback!(app, [Output("Lam_r", "value")], [Input("Lam_r", "value")]) do input_value
@@ -913,5 +913,5 @@ function dykes_gui()
 
 
 	run_server(app)
-	#run_server(app)
+	#run_server(app, "0.0.0.0", 8050)
 end

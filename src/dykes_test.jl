@@ -71,40 +71,40 @@ function main()
 	read!(io, critVol)
 
 	#array 0 0 1 0 0 ... like, where 1 -instrusion
-	ndikes = Array{Int32,1}(undef, nt)#number of dykes intruded on n-th time step
-	read!(io, ndikes)
+	ndykes = Array{Int32,1}(undef, nt)#number of dykes intruded on n-th time step
+	read!(io, ndykes)
 
-	ndikes_all = 0
+	ndykes_all = 0
 
 	#count all dykes
 	for istep in 1:nt
-		ndikes_all = ndikes_all + ndikes[istep]
+		ndykes_all = ndykes_all + ndykes[istep]
 	end
 
 	#array which describes amount of particles in new dyke
-	particle_edges = Array{Int32,1}(undef, ndikes_all + 1)
+	particle_edges = Array{Int32,1}(undef, ndykes_all + 1)
 	read!(io, particle_edges)
 
-	marker_edges = Array{Int32,1}(undef, ndikes_all + 1)
+	marker_edges = Array{Int32,1}(undef, ndykes_all + 1)
 	read!(io, marker_edges)
 
 	close(io)
 
 	cap_frac = 3  #value to spcify how much particles we allow to inject in runtime
 	npartcl0 = npartcl #initial amount of particles
-	max_npartcl = convert(Int64, npartcl * cap_frac) + particle_edges[ndikes_all+1] #???#count max particles
+	max_npartcl = convert(Int64, npartcl * cap_frac) + particle_edges[ndykes_all+1] #???#count max particles
 	println(npartcl)
-	println(particle_edges[ndikes_all+1])
+	println(particle_edges[ndykes_all+1])
 	println("max_npartcl")
 	println(max_npartcl)
 	nmarker0 = nmarker
 
 
-	#	max_nmarker = nmarker + marker_edges[ndikes_all+1]
+	#	max_nmarker = nmarker + marker_edges[ndykes_all+1]
 
 
 
-	np_dikes = particle_edges[ndikes_all+1]#number of particles in each dike during intrusion
+	np_dykes = particle_edges[ndykes_all+1]#number of particles in each dyke during intrusion
 
 	fid = h5open(data_folder * "particles.h5", "r")
 
@@ -115,19 +115,19 @@ function main()
 	h_py = read(fid, "py")
 
 
-	h_px_dikes = Array{Float64,1}(undef, np_dikes)
-	h_py_dikes = Array{Float64,1}(undef, np_dikes)
+	h_px_dykes = Array{Float64,1}(undef, np_dykes)
+	h_py_dykes = Array{Float64,1}(undef, np_dykes)
 
-	h_px_dikes = read(fid, "px_dikes")
-	h_py_dikes = read(fid, "py_dikes")
+	h_px_dykes = read(fid, "px_dykes")
+	h_py_dykes = read(fid, "py_dykes")
 
 	#PlotlyJS.scatter([1,2,3],[4,5,6])
 
 	close(fid)
 	#Plots.covellipse!([0,2], [2 1; 1 4], n_std=2, aspect_ratio=1, label="cov1")
-	d2d_limit =np_dikes 
+	d2d_limit =np_dykes 
 	d2d_limit_gap = 100
-	Plots.scatter(markersize = 0.1, h_px_dikes[1:d2d_limit_gap:d2d_limit],h_py_dikes[1:d2d_limit_gap:d2d_limit], xlimit = [1, 20000], ylimit = [1, 20000])
+	Plots.scatter(markersize = 0.1, h_px_dykes[1:d2d_limit_gap:d2d_limit],h_py_dykes[1:d2d_limit_gap:d2d_limit], xlimit = [1, 20000], ylimit = [1, 20000])
 
 
 
@@ -143,7 +143,7 @@ function main()
 		#Plots.covellipse([0,2], [2 1; 1 4], n_std=2, aspect_ratio=1, label="cov1")
 
 		#	PlotlyJS.plot([
-		# test_fig = PlotlyJS.scatter(x=h_px_dikes, y=h_py_dikes, mode="markers", name="markers")
+		# test_fig = PlotlyJS.scatter(x=h_px_dykes, y=h_py_dykes, mode="markers", name="markers")
 		#    PlotlyJS.plot([test_fig])
 		#	])
 end

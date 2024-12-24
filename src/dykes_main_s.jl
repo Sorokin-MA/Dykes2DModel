@@ -43,7 +43,7 @@ function main_test_gui(gp::GridParams, vp::VarParams, FLAG_init::Bool)
 			global time_of_loop = @elapsed begin
 				vp.is_eruption = false
 				eruption_counter = eruption_counter - 1
-				is_intrusion = (gp.ndikes[vp.it] > 0)
+				is_intrusion = (gp.ndykes[vp.it] > 0)
 				nerupt = 1
 
 				#checking eruption criteria and advect particles if eruption
@@ -74,7 +74,7 @@ function main_test_gui(gp::GridParams, vp::VarParams, FLAG_init::Bool)
 						log_to_buffer(@sprintf("%s erupting %07d cells   | ", bar2, maxVol))
 
 						filename = data_folder * "julia_grid." * string(vp.it) * ".before_eruption" * ".h5"
-						small_mailbox_out(filename, gp.T, gp.pT, gp.C, gp.mT, gp.staging, gp.L, vp.nx, vp.ny, vp.nxl, vp.nyl, vp.max_npartcl, vp.max_nmarker, gp.px, gp.py, gp.mx, gp.my, gp.h_px_dikes, gp.pcnt, gp.mfl, vp.dx, vp.dy, vp.Lx, vp.Ly)
+						small_mailbox_out(filename, gp.T, gp.pT, gp.C, gp.mT, gp.staging, gp.L, vp.nx, vp.ny, vp.nxl, vp.nyl, vp.max_npartcl, vp.max_nmarker, gp.px, gp.py, gp.mx, gp.my, gp.h_px_dykes, gp.pcnt, gp.mfl, vp.dx, vp.dy, vp.Lx, vp.Ly)
 
 						eruption_advection(gp, vp, maxVol, maxIdx, vp.it)
 
@@ -83,10 +83,10 @@ function main_test_gui(gp::GridParams, vp::VarParams, FLAG_init::Bool)
 				end
 
 
-				#processing intrusions of dikes
+				#processing intrusions of dykes
 				if (is_intrusion)
-					@printf("%s inserting %02d dikes	   | ", bar2, gp.ndikes[vp.it])
-					log_to_buffer(@sprintf("%s inserting %02d dikes	   | ", bar2, gp.ndikes[vp.it]))
+					@printf("%s inserting %02d dykes	   | ", bar2, gp.ndykes[vp.it])
+					log_to_buffer(@sprintf("%s inserting %02d dykes	   | ", bar2, gp.ndykes[vp.it]))
 					inserting_dykes(gp, vp, vp.it)
 				end
 
@@ -164,8 +164,8 @@ function main_test_gui(gp::GridParams, vp::VarParams, FLAG_init::Bool)
 						end
 
 						make_snapshot(vp, gp, filename)
-						#small_mailbox_out(filename, gp.T, gp.pT, gp.C, gp.mT, gp.staging, gp.L, vp.nx, vp.ny, vp.nxl, vp.nyl, vp.max_npartcl, vp.max_nmarker, gp.px, gp.py, gp.mx, gp.my, gp.h_px_dikes, gp.pcnt, gp.mfl, vp.dx, vp.dy, vp.Lx, vp.Ly)
-						#mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl, max_nmarker, px, py, mx ,my, h_px_dikes,pcnt, mfl);
+						#small_mailbox_out(filename, gp.T, gp.pT, gp.C, gp.mT, gp.staging, gp.L, vp.nx, vp.ny, vp.nxl, vp.nyl, vp.max_npartcl, vp.max_nmarker, gp.px, gp.py, gp.mx, gp.my, gp.h_px_dykes, gp.pcnt, gp.mfl, vp.dx, vp.dy, vp.Lx, vp.Ly)
+						#mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl, max_nmarker, px, py, mx ,my, h_px_dykes,pcnt, mfl);
 					end
 				end
 
@@ -184,7 +184,7 @@ function main_test_gui(gp::GridParams, vp::VarParams, FLAG_init::Bool)
 	@printf("%s writing results to disk  | ", bar2)
 	log_to_buffer(@sprintf("%s writing results to disk  | ", bar2))
 	filename = data_folder * "julia_grid." * string(vp.nt + 1) * ".h5"
-	#	small_mailbox_out(filename, gp.T, gp.pT, gp.C, gp.mT, gp.staging, gp.L, vp.nx, vp.ny, vp.nxl, vp.nyl, vp.max_npartcl, vp.max_nmarker, gp.px, gp.py, gp.mx, gp.my, gp.h_px_dikes, gp.pcnt, gp.mfl, vp.dx, vp.dy, vp.Lx, vp.Ly)
+	#	small_mailbox_out(filename, gp.T, gp.pT, gp.C, gp.mT, gp.staging, gp.L, vp.nx, vp.ny, vp.nxl, vp.nyl, vp.max_npartcl, vp.max_nmarker, gp.px, gp.py, gp.mx, gp.my, gp.h_px_dykes, gp.pcnt, gp.mfl, vp.dx, vp.dy, vp.Lx, vp.Ly)
 	make_snapshot(vp, gp, filename)
 
 	@printf("\nTotal time: %s", total_time)

@@ -47,7 +47,7 @@ function interp1(xpt, ypt, x; method="linear", extrapvalue=nothing)
 	return y
 end
 
-function dikes_rand()
+function dykes_rand()
 	Random.seed!(1111)
 
 	gpuid = 0 #gpu id
@@ -57,18 +57,18 @@ function dikes_rand()
 	Ly::Float64 = 20000 # y size of area, m %20000
 	Lx_Ly = Lx / Ly
 	narrow_fact = 0.5
-	dike_x_W = 10000 #m 
-	dike_x_Wn = dike_x_W * narrow_fact #m 
-	dike_a_rng = Vector{Int32}
-	dike_a_rng = [100, 1500] #m
-	dike_b_rng = [10, 20] #m
+	dyke_x_W = 10000 #m 
+	dyke_x_Wn = dyke_x_W * narrow_fact #m 
+	dyke_a_rng = Vector{Int32}
+	dyke_a_rng = [100, 1500] #m
+	dyke_b_rng = [10, 20] #m
 
-	dike_x_rng = [(Lx - dike_x_W) / 2, (Lx + dike_x_W) / 2]
-	dike_x_rng_n = [(Lx - dike_x_Wn) / 2, (Lx + dike_x_Wn) / 2]
+	dyke_x_rng = [(Lx - dyke_x_W) / 2, (Lx + dyke_x_W) / 2]
+	dyke_x_rng_n = [(Lx - dyke_x_Wn) / 2, (Lx + dyke_x_Wn) / 2]
 
-	dike_y_rng = [7000, 12000]#dikes y distribution
-	dike_t_rng = [0.95 * pi / 2, 1.05 * pi / 2]#dykes time distribution
-	dike_to_sill = 13000#boundary where dykes turn yourself to sill, m
+	dyke_y_rng = [7000, 12000]#dykes y distribution
+	dyke_t_rng = [0.95 * pi / 2, 1.05 * pi / 2]#dykes time distribution
+	dyke_to_sill = 13000#boundary where dykes turn yourself to sill, m
 	dz = 10000#z dimension? i guess, m
 
 	Lam_r = 1.5#thermal conductivity of rock, W/m/K
@@ -185,8 +185,8 @@ function dikes_rand()
 
 	#init
 	T = T_top .+ dTdy * (Ly .- y) / 1e3
-	indx = findall(x -> (x > dike_x_rng[1]) & (x < dike_x_rng[2]), xs)
-	indy = findall(y -> (y > dike_y_rng[1]) & (y < dike_y_rng[2]), ys)
+	indx = findall(x -> (x > dyke_x_rng[1]) & (x < dyke_x_rng[2]), xs)
+	indy = findall(y -> (y > dyke_y_rng[1]) & (y < dyke_y_rng[2]), ys)
 
 	#print T
 	C = zeros(nx, ny)
@@ -194,170 +194,170 @@ function dikes_rand()
 	#heatmap(xs, ys, transpose(T))
 
 	Q = 0
-	dike_a = Vector{Float64}(undef, 0)
-	dike_b = Vector{Float64}(undef, 0)
-	dike_x = Array{Float64}(undef, 0)
-	dike_y = Array{Float64}(undef, 0)
-	dike_t = Array{Float64}(undef, 0)
-	dike_v = []
+	dyke_a = Vector{Float64}(undef, 0)
+	dyke_b = Vector{Float64}(undef, 0)
+	dyke_x = Array{Float64}(undef, 0)
+	dyke_y = Array{Float64}(undef, 0)
+	dyke_t = Array{Float64}(undef, 0)
+	dyke_v = []
 	Vtot = q * nt_erupt * dt
 	Q_tsh = 0.5 * Vtot
 
 	while Q < Vtot
-		#dike_a = [dike_a dike_a_rng[1] + diff(dike_a_rng)*rand];
-		append!(dike_a, dike_a_rng[1] .+ diff(dike_a_rng, dims=1) .* rand_limited_2(0.5, 0.1))
-		#dike_b = [dike_b dike_b_rng[1] + diff(dike_b_rng)*rand];
-		append!(dike_b, dike_b_rng[1] .+ diff(dike_b_rng, dims=1) .* rand_limited_2(0.5, 0.1))
+		#dyke_a = [dyke_a dyke_a_rng[1] + diff(dyke_a_rng)*rand];
+		append!(dyke_a, dyke_a_rng[1] .+ diff(dyke_a_rng, dims=1) .* rand_limited_2(0.5, 0.1))
+		#dyke_b = [dyke_b dyke_b_rng[1] + diff(dyke_b_rng)*rand];
+		append!(dyke_b, dyke_b_rng[1] .+ diff(dyke_b_rng, dims=1) .* rand_limited_2(0.5, 0.1))
 		if Q < Q_tsh
-			#dike_x = [dike_x dike_x_rng[1] + diff(dike_x_rng)*rand];
-			append!(dike_x, dike_x_rng[1] .+ diff(dike_x_rng, dims=1) .* rand_limited_2(0.5, 0.1))
+			#dyke_x = [dyke_x dyke_x_rng[1] + diff(dyke_x_rng)*rand];
+			append!(dyke_x, dyke_x_rng[1] .+ diff(dyke_x_rng, dims=1) .* rand_limited_2(0.5, 0.1))
 		else
-			append!(dike_x, dike_x_rng_n[1] .+ diff(dike_x_rng_n, dims=1) .* rand_limited_2(0.5, 0.1))
+			append!(dyke_x, dyke_x_rng_n[1] .+ diff(dyke_x_rng_n, dims=1) .* rand_limited_2(0.5, 0.1))
 		end
-		dike_y = append!(dike_y, dike_y_rng[1] .+ diff(dike_y_rng, dims=1) .* rand_limited_2(0.5, 0.1))
-		dike_t = append!(dike_t, dike_t_rng[1] .+ diff(dike_t_rng, dims=1) .* rand_limited_2(0.5, 0.1))
-		dike_v = append!(dike_v, pi * last(dike_a) * last(dike_b))
-		Q = Q + last(dike_v)
+		dyke_y = append!(dyke_y, dyke_y_rng[1] .+ diff(dyke_y_rng, dims=1) .* rand_limited_2(0.5, 0.1))
+		dyke_t = append!(dyke_t, dyke_t_rng[1] .+ diff(dyke_t_rng, dims=1) .* rand_limited_2(0.5, 0.1))
+		dyke_v = append!(dyke_v, pi * last(dyke_a) * last(dyke_b))
+		Q = Q + last(dyke_v)
 	end
-	#println("dike_y = $dike_y")
+	#println("dyke_y = $dyke_y")
 
-	dike_v = vcat(0, cumsum(dike_v))
-	sz_dike_v = sizeof(dike_v)
-	println("dike_v size = $sz_dike_v")
-	dv = last(dike_v) / nt_erupt
+	dyke_v = vcat(0, cumsum(dyke_v))
+	sz_dyke_v = sizeof(dyke_v)
+	println("dyke_v size = $sz_dyke_v")
+	dv = last(dyke_v) / nt_erupt
 
-	#ndikes = diff(floor(interp1(dike_v,1:length(dike_v),0:dv:last(dike_v))), dim=2);
-	ndikes = Vector{Int32}(undef, 1)
-	ndikes = Int32.(diff(floor.(interp1(dike_v, 1:length(dike_v), 0:dv:last(dike_v))), dims=1))
+	#ndykes = diff(floor(interp1(dyke_v,1:length(dyke_v),0:dv:last(dyke_v))), dim=2);
+	ndykes = Vector{Int32}(undef, 1)
+	ndykes = Int32.(diff(floor.(interp1(dyke_v, 1:length(dyke_v), 0:dv:last(dyke_v))), dims=1))
 
 	println("Debug")
 
 
 	#println(typeof(nt))
-	@assert length(ndikes) == nt_erupt
-	ndikes[(length(ndikes)+1):nt] .= 0
-	@assert length(ndikes) == nt
-	dike_npartcl = zeros(Int32, sum(ndikes))
-	dike_nmarker = zeros(Int32, sum(ndikes))
-	#px_dike      = cell(sum(ndikes),1);
-	#py_dike      = cell(sum(ndikes),1);
-	#mx_dike      = cell(sum(ndikes),1);
-	#my_dike      = cell(sum(ndikes),1);
+	@assert length(ndykes) == nt_erupt
+	ndykes[(length(ndykes)+1):nt] .= 0
+	@assert length(ndykes) == nt
+	dyke_npartcl = zeros(Int32, sum(ndykes))
+	dyke_nmarker = zeros(Int32, sum(ndykes))
+	#px_dyke      = cell(sum(ndykes),1);
+	#py_dyke      = cell(sum(ndykes),1);
+	#mx_dyke      = cell(sum(ndykes),1);
+	#my_dyke      = cell(sum(ndykes),1);
 
-	px_dike = Vector{Any}(undef, sum(ndikes))
-	py_dike = Vector{Any}(undef, sum(ndikes))
-	mx_dike = Vector{Any}(undef, sum(ndikes))
-	my_dike = Vector{Any}(undef, sum(ndikes))
+	px_dyke = Vector{Any}(undef, sum(ndykes))
+	py_dyke = Vector{Any}(undef, sum(ndykes))
+	mx_dyke = Vector{Any}(undef, sum(ndykes))
+	my_dyke = Vector{Any}(undef, sum(ndykes))
 
-	dike_t_idxs = findall(x -> x >= dike_to_sill, dike_y)
-	dike_t[dike_t_idxs] = dike_t[dike_t_idxs] .+ pi / 2 #reverse dykes to sills
+	dyke_t_idxs = findall(x -> x >= dyke_to_sill, dyke_y)
+	dyke_t[dyke_t_idxs] = dyke_t[dyke_t_idxs] .+ pi / 2 #reverse dykes to sills
 
-	for idike = 1:sum(ndikes)
-		a = dike_a[idike]
-		b = dike_b[idike]
-		dikex0 = dike_x[idike]
-		dikey0 = dike_y[idike]
-		st = sin(dike_t[idike])
-		ct = cos(dike_t[idike])
+	for idyke = 1:sum(ndykes)
+		a = dyke_a[idyke]
+		b = dyke_b[idyke]
+		dykex0 = dyke_x[idyke]
+		dykey0 = dyke_y[idyke]
+		st = sin(dyke_t[idyke])
+		ct = cos(dyke_t[idyke])
 		#markers
-		dikexs = LinRange(-a, a, Int32(round(2 * a / dr)))
-		dikeys = LinRange(-b, b, Int32(round(2 * b / dr)))
-		if isempty(dikexs)
-			dikexs = 0
+		dykexs = LinRange(-a, a, Int32(round(2 * a / dr)))
+		dykeys = LinRange(-b, b, Int32(round(2 * b / dr)))
+		if isempty(dykexs)
+			dykexs = 0
 		end
-		if isempty(dikeys)
-			dikeys = 0
+		if isempty(dykeys)
+			dykeys = 0
 		end
-		dikex, dikey = meshgrid(dikexs, dikeys)
-		dikex = reshape(dikex, length(dikex), 1)
-		dikey = reshape(dikey, length(dikey), 1)
-		#    dikex          = dikex(:);
-		#    dikey          = dikey(:);
+		dykex, dykey = meshgrid(dykexs, dykeys)
+		dykex = reshape(dykex, length(dykex), 1)
+		dykey = reshape(dykey, length(dykey), 1)
+		#    dykex          = dykex(:);
+		#    dykey          = dykey(:);
 
-		#println(dikex)
-		outside = (dikex .^ 2 / a^2 + dikey .^ 2 / b^2) .> 1 + eps(Float64)
+		#println(dykex)
+		outside = (dykex .^ 2 / a^2 + dykey .^ 2 / b^2) .> 1 + eps(Float64)
 		#	println(outside)
-		#	println("dikex size = " * string(length(dikex)))
-		#	println("dikex size = " * string(size(dikex)))
-		dikex = dikex[.!outside]
-		#	println("dikex size = " * string(length(dikex)))
-		#	println("dikex size = " * string(size(dikex)))
-		dikey = dikey[.!outside]
-		px_dike[idike] = dikex0 .+ dikex .* ct - dikey .* st
-		py_dike[idike] = dikey0 .+ dikex .* st + dikey .* ct
-		dike_npartcl[idike] = length(px_dike[idike])
+		#	println("dykex size = " * string(length(dykex)))
+		#	println("dykex size = " * string(size(dykex)))
+		dykex = dykex[.!outside]
+		#	println("dykex size = " * string(length(dykex)))
+		#	println("dykex size = " * string(size(dykex)))
+		dykey = dykey[.!outside]
+		px_dyke[idyke] = dykex0 .+ dykex .* ct - dykey .* st
+		py_dyke[idyke] = dykey0 .+ dykex .* st + dykey .* ct
+		dyke_npartcl[idyke] = length(px_dyke[idyke])
 
 		# markers
 		if (a / dmr) > 1
-			dikemxs = LinRange(-a, a, Int32(round(2 * a / dmr)))
+			dykemxs = LinRange(-a, a, Int32(round(2 * a / dmr)))
 		else
-			dikemxs = LinRange(0, 0, 0)
+			dykemxs = LinRange(0, 0, 0)
 		end
 
 		if (b / dmr) > 1
-			dikemys = LinRange(-b, b, Int32(round(2 * b / dmr)))
+			dykemys = LinRange(-b, b, Int32(round(2 * b / dmr)))
 		else
-			dikemys = LinRange(-b, b, 0)
+			dykemys = LinRange(-b, b, 0)
 		end
 
-		if length(dikemxs) <= 1
-			dikemxs = LinRange(0, 0, 1)
+		if length(dykemxs) <= 1
+			dykemxs = LinRange(0, 0, 1)
 		end
-		if length(dikemys) <= 1
-			dikemys = LinRange(0, 0, 1)
-			#dikemys = [0]
+		if length(dykemys) <= 1
+			dykemys = LinRange(0, 0, 1)
+			#dykemys = [0]
 		end
 
-		dikemx, dikemy = meshgrid_2(dikemxs, dikemys)
-		dikemx = reshape(dikemx, length(dikemx), 1)
-		dikemy = reshape(dikemy, length(dikemy), 1)
-		#    dikemx          = dikemx(:);
-		#    dikemy          = dikemy(:);
-		#    outside         = (dikemx.^2/a^2 + dikemy.^2/b^2) > 1+eps(Float64);
-		outside = (dikemx .^ 2 / a^2 + dikemy .^ 2 / b^2) .> 1 + eps(Float64)
-		#    dikemx(outside) = [];
-		#    dikemy(outside) = [];
-		dikemx = dikemx[.!outside]
-		dikemy = dikemy[.!outside]
+		dykemx, dykemy = meshgrid_2(dykemxs, dykemys)
+		dykemx = reshape(dykemx, length(dykemx), 1)
+		dykemy = reshape(dykemy, length(dykemy), 1)
+		#    dykemx          = dykemx(:);
+		#    dykemy          = dykemy(:);
+		#    outside         = (dykemx.^2/a^2 + dykemy.^2/b^2) > 1+eps(Float64);
+		outside = (dykemx .^ 2 / a^2 + dykemy .^ 2 / b^2) .> 1 + eps(Float64)
+		#    dykemx(outside) = [];
+		#    dykemy(outside) = [];
+		dykemx = dykemx[.!outside]
+		dykemy = dykemy[.!outside]
 
-		mx_dike[idike] = dikex0 .+ dikemx .* ct .- dikemy .* st
-		my_dike[idike] = dikey0 .+ dikemx .* st .+ dikemy .* ct
-		dike_nmarker[idike] = length(mx_dike[idike])
+		mx_dyke[idyke] = dykex0 .+ dykemx .* ct .- dykemy .* st
+		my_dyke[idyke] = dykey0 .+ dykemx .* st .+ dykemy .* ct
+		dyke_nmarker[idyke] = length(mx_dyke[idyke])
 	end
 
 	println("Debug")
 
-	#px_dikes     = (px_dike);
-	#py_dikes     = (py_dike);
+	#px_dykes     = (px_dyke);
+	#py_dykes     = (py_dyke);
 
-	#px_dikes     = cell2mat(px_dike);
-	#py_dikes     = cell2mat(py_dike);
+	#px_dykes     = cell2mat(px_dyke);
+	#py_dykes     = cell2mat(py_dyke);
 
-	px_dikes_float = Vector{Float64}(undef, 1)
-	py_dikes_float = Vector{Float64}(undef, 1)
+	px_dykes_float = Vector{Float64}(undef, 1)
+	py_dykes_float = Vector{Float64}(undef, 1)
 
 	#=
-	for idike = 1:sum(ndikes)
-		px_dikes_float = vcat(px_dikes_float, px_dikes[idike]);
-		py_dikes_float = vcat(py_dikes_float, py_dikes[idike]);
+	for idyke = 1:sum(ndykes)
+		px_dykes_float = vcat(px_dykes_float, px_dykes[idyke]);
+		py_dykes_float = vcat(py_dykes_float, py_dykes[idyke]);
 	end
 	=#
 
 
-	#println("px_dike")
-	#println(size(px_dike))
+	#println("px_dyke")
+	#println(size(px_dyke))
 
 
-	px_dikes = vcat([px_dike[i] for i in 1:size(px_dike, 1)]...)
-	py_dikes = vcat([py_dike[i] for i in 1:size(py_dike, 1)]...)
+	px_dykes = vcat([px_dyke[i] for i in 1:size(px_dyke, 1)]...)
+	py_dykes = vcat([py_dyke[i] for i in 1:size(py_dyke, 1)]...)
 
-	#println("ndikes")
-	#println(sum(ndikes))
+	#println("ndykes")
+	#println(sum(ndykes))
 
-	#println("px_dikes")
-	#println(size(px_dikes))
-	#println("py_dikes")
-	#println(size(py_dikes))
+	#println("px_dykes")
+	#println(size(px_dykes))
+	#println("py_dykes")
+	#println(size(py_dykes))
 
 
 	#println("mx")
@@ -367,22 +367,22 @@ function dikes_rand()
 	#println("my")
 	#println(size(my))
 
-	#println("mx_dike")
-	#println(size(mx_dike))
+	#println("mx_dyke")
+	#println(size(mx_dyke))
 
-	mx = vcat(mx, vcat([mx_dike[i] for i in 1:size(mx_dike, 1)]...))
-	my = vcat(my, vcat([my_dike[i] for i in 1:size(my_dike, 1)]...))
+	mx = vcat(mx, vcat([mx_dyke[i] for i in 1:size(mx_dyke, 1)]...))
+	my = vcat(my, vcat([my_dyke[i] for i in 1:size(my_dyke, 1)]...))
 
-	#println(mx_dike)
+	#println(mx_dyke)
 	#=
-	for idike = 1:sum(ndikes)
-			mx = vcat(mx, mx_dike[idike]);
-			my = vcat(my, my_dike[idike]);
+	for idyke = 1:sum(ndykes)
+			mx = vcat(mx, mx_dyke[idyke]);
+			my = vcat(my, my_dyke[idyke]);
 	end
 	=#
 
-	#println("px_dikes len")
-	#println(size(px_dikes))
+	#println("px_dykes len")
+	#println(size(px_dykes))
 	#println("mx len")
 	#println(size(mx))
 	#println(typeof(mx))
@@ -392,9 +392,9 @@ function dikes_rand()
 
 	mT = T_top .+ dTdy / 1e3 .* (Ly .- my)
 
-	mT[(mx.>dike_x_rng[1]).&(mx.<dike_x_rng[2]).&(my.>dike_y_rng[1]).&(my.<dike_y_rng[2])] .= T_ch
-	partcl_edges = vcat([Int32(0)], accumulate(+, dike_npartcl))
-	marker_edges = vcat([Int32(0)], accumulate(+, dike_nmarker))
+	mT[(mx.>dyke_x_rng[1]).&(mx.<dyke_x_rng[2]).&(my.>dyke_y_rng[1]).&(my.<dyke_y_rng[2])] .= T_ch
+	partcl_edges = vcat([Int32(0)], accumulate(+, dyke_npartcl))
+	marker_edges = vcat([Int32(0)], accumulate(+, dyke_nmarker))
 
 	#println("npartcl")
 	#println(last(partcl_edges))
@@ -402,8 +402,8 @@ function dikes_rand()
 	#println("typeof(critVol)")
 	#println(typeof(critVol))
 
-	#println("typeof(ndikes)")
-	#println(typeof(ndikes))
+	#println("typeof(ndykes)")
+	#println(typeof(ndykes))
 	sim_dir = "..\\d2dm_data\\"
 
 	#save data
@@ -415,14 +415,14 @@ function dikes_rand()
 	println(typeof(pmlt), typeof(nx), typeof(ny), typeof(nl), typeof(nt), typeof(niter), typeof(nout), typeof(nsub), typeof(nerupt), typeof(npartcl), typeof(nmarker), typeof(Nsample))
 	write(fid, pmlt, nx, ny, nl, nt, niter, nout, nsub, nerupt, npartcl, nmarker, Nsample)
 	write(fid, critVol)
-	write(fid, ndikes)
+	write(fid, ndykes)
 	write(fid, partcl_edges)
 	write(fid, marker_edges)
 	close(fid)
 
-	dikes_file_name = sim_dir * "dikes.bin"
-	fid = open(dikes_file_name, "w")
-	write(fid, dike_a, dike_b, dike_x, dike_y, dike_t)
+	dykes_file_name = sim_dir * "dykes.bin"
+	fid = open(dykes_file_name, "w")
+	write(fid, dyke_a, dyke_b, dyke_x, dyke_y, dyke_t)
 	close(fid)
 
 	fname = @sprintf "%sgrid.%s.h5" sim_dir "0"^ndigits
@@ -447,8 +447,8 @@ function dikes_rand()
 	#fid["py"] = py
 	write(px_dataset, px)
 	write(py_dataset, py)
-	fid["px_dikes"] = px_dikes
-	fid["py_dikes"] = py_dikes
+	fid["px_dykes"] = px_dykes
+	fid["py_dykes"] = py_dykes
 	close(fid)
 
 	fname = sim_dir * "markers.h5"
@@ -464,7 +464,7 @@ function dikes_rand()
 	println("success!!!")
 end
 
-function dikes_rand_param(init_vp)
+function dykes_rand_param(init_vp)
 	log_to_buffer("Generating data!\n")
 
 	Random.seed!(init_vp.seed)
@@ -475,18 +475,18 @@ function dikes_rand_param(init_vp)
 	Ly::Float64 = init_vp.Ly # y size of area, m %20000
 	Lx_Ly = Lx / Ly
 	narrow_fact = init_vp.narrow_fact
-	dike_x_W = init_vp.dike_x_W #m
-	dike_x_Wn = dike_x_W * narrow_fact #m 
-	dike_a_rng = Vector{Int32}
-	dike_a_rng = [100, 1500] #m
-	dike_b_rng = [10, 20] #m
+	dyke_x_W = init_vp.dyke_x_W #m
+	dyke_x_Wn = dyke_x_W * narrow_fact #m 
+	dyke_a_rng = Vector{Int32}
+	dyke_a_rng = [100, 1500] #m
+	dyke_b_rng = [10, 20] #m
 
-	dike_x_rng = [(Lx - dike_x_W) / 2, (Lx + dike_x_W) / 2]
-	dike_x_rng_n = [(Lx - dike_x_Wn) / 2, (Lx + dike_x_Wn) / 2]
+	dyke_x_rng = [(Lx - dyke_x_W) / 2, (Lx + dyke_x_W) / 2]
+	dyke_x_rng_n = [(Lx - dyke_x_Wn) / 2, (Lx + dyke_x_Wn) / 2]
 
-	dike_y_rng = [7000, 12000]#dikes y distribution
-	dike_t_rng = [0.95 * pi / 2, 1.05 * pi / 2]#dykes time distribution
-	dike_to_sill = 13000#boundary where dykes turn yourself to sill, m
+	dyke_y_rng = [7000, 12000]#dykes y distribution
+	dyke_t_rng = [0.95 * pi / 2, 1.05 * pi / 2]#dykes time distribution
+	dyke_to_sill = 13000#boundary where dykes turn yourself to sill, m
 	dz = init_vp.Lz #z dimension? i guess, m
 
 	Lam_r = init_vp.Lam_r  #thermal conductivity of rock, W/m/K
@@ -619,141 +619,141 @@ function dikes_rand_param(init_vp)
 
 	#init
 	T = T_top .+ dTdy * (Ly .- y) / 1e3
-	indx = findall(x -> (x > dike_x_rng[1]) & (x < dike_x_rng[2]), xs)
-	indy = findall(y -> (y > dike_y_rng[1]) & (y < dike_y_rng[2]), ys)
+	indx = findall(x -> (x > dyke_x_rng[1]) & (x < dyke_x_rng[2]), xs)
+	indy = findall(y -> (y > dyke_y_rng[1]) & (y < dyke_y_rng[2]), ys)
 
 	#print T
 	C = zeros(nx, ny)
 
 	Q = 0
-	dike_a = Vector{Float64}(undef, 0)
-	dike_b = Vector{Float64}(undef, 0)
-	dike_x = Array{Float64}(undef, 0)
-	dike_y = Array{Float64}(undef, 0)
-	dike_t = Array{Float64}(undef, 0)
-	dike_v = []
+	dyke_a = Vector{Float64}(undef, 0)
+	dyke_b = Vector{Float64}(undef, 0)
+	dyke_x = Array{Float64}(undef, 0)
+	dyke_y = Array{Float64}(undef, 0)
+	dyke_t = Array{Float64}(undef, 0)
+	dyke_v = []
 	Vtot = q * nt_erupt * dt
 	Q_tsh = 0.5 * Vtot
 
 	log_to_buffer("Generating dykes...\n")
 	while Q < Vtot
-		#dike_a = [dike_a dike_a_rng[1] + diff(dike_a_rng)*rand];
-		append!(dike_a, dike_a_rng[1] .+ diff(dike_a_rng, dims=1) .* rand_limited_2(0.5, 0.1))
-		#dike_b = [dike_b dike_b_rng[1] + diff(dike_b_rng)*rand];
-		append!(dike_b, dike_b_rng[1] .+ diff(dike_b_rng, dims=1) .* rand_limited_2(0.5, 0.1))
+		#dyke_a = [dyke_a dyke_a_rng[1] + diff(dyke_a_rng)*rand];
+		append!(dyke_a, dyke_a_rng[1] .+ diff(dyke_a_rng, dims=1) .* rand_limited_2(0.5, 0.1))
+		#dyke_b = [dyke_b dyke_b_rng[1] + diff(dyke_b_rng)*rand];
+		append!(dyke_b, dyke_b_rng[1] .+ diff(dyke_b_rng, dims=1) .* rand_limited_2(0.5, 0.1))
 		if Q < Q_tsh
-			#dike_x = [dike_x dike_x_rng[1] + diff(dike_x_rng)*rand];
-			append!(dike_x, dike_x_rng[1] .+ diff(dike_x_rng, dims=1) .* rand_limited_2(0.5, 0.1))
+			#dyke_x = [dyke_x dyke_x_rng[1] + diff(dyke_x_rng)*rand];
+			append!(dyke_x, dyke_x_rng[1] .+ diff(dyke_x_rng, dims=1) .* rand_limited_2(0.5, 0.1))
 		else
-			append!(dike_x, dike_x_rng_n[1] .+ diff(dike_x_rng_n, dims=1) .* rand_limited_2(0.5, 0.1))
+			append!(dyke_x, dyke_x_rng_n[1] .+ diff(dyke_x_rng_n, dims=1) .* rand_limited_2(0.5, 0.1))
 		end
-		dike_y = append!(dike_y, dike_y_rng[1] .+ diff(dike_y_rng, dims=1) .* rand_limited_2(0.5, 0.1))
-		dike_t = append!(dike_t, dike_t_rng[1] .+ diff(dike_t_rng, dims=1) .* rand_limited_2(0.5, 0.1))
-		dike_v = append!(dike_v, pi * last(dike_a) * last(dike_b))
-		Q = Q + last(dike_v)
+		dyke_y = append!(dyke_y, dyke_y_rng[1] .+ diff(dyke_y_rng, dims=1) .* rand_limited_2(0.5, 0.1))
+		dyke_t = append!(dyke_t, dyke_t_rng[1] .+ diff(dyke_t_rng, dims=1) .* rand_limited_2(0.5, 0.1))
+		dyke_v = append!(dyke_v, pi * last(dyke_a) * last(dyke_b))
+		Q = Q + last(dyke_v)
 	end
 
-	dike_v = vcat(0, cumsum(dike_v))
-	sz_dike_v = sizeof(dike_v)
-	println("dike_v size = $sz_dike_v")
-	log_to_buffer(@sprintf("Number of dykes - %d\n", sz_dike_v))
-	dv = last(dike_v) / nt_erupt
+	dyke_v = vcat(0, cumsum(dyke_v))
+	sz_dyke_v = sizeof(dyke_v)
+	println("dyke_v size = $sz_dyke_v")
+	log_to_buffer(@sprintf("Number of dykes - %d\n", sz_dyke_v))
+	dv = last(dyke_v) / nt_erupt
 
-	ndikes = Vector{Int32}(undef, 1)
-	ndikes = Int32.(diff(floor.(interp1(dike_v, 1:length(dike_v), 0:dv:last(dike_v))), dims=1))
+	ndykes = Vector{Int32}(undef, 1)
+	ndykes = Int32.(diff(floor.(interp1(dyke_v, 1:length(dyke_v), 0:dv:last(dyke_v))), dims=1))
 
-	@assert length(ndikes) == nt_erupt
-	ndikes[(length(ndikes)+1):nt] .= 0
-	@assert length(ndikes) == nt
-	dike_npartcl = zeros(Int32, sum(ndikes))
-	dike_nmarker = zeros(Int32, sum(ndikes))
+	@assert length(ndykes) == nt_erupt
+	ndykes[(length(ndykes)+1):nt] .= 0
+	@assert length(ndykes) == nt
+	dyke_npartcl = zeros(Int32, sum(ndykes))
+	dyke_nmarker = zeros(Int32, sum(ndykes))
 
-	px_dike = Vector{Any}(undef, sum(ndikes))
-	py_dike = Vector{Any}(undef, sum(ndikes))
-	mx_dike = Vector{Any}(undef, sum(ndikes))
-	my_dike = Vector{Any}(undef, sum(ndikes))
+	px_dyke = Vector{Any}(undef, sum(ndykes))
+	py_dyke = Vector{Any}(undef, sum(ndykes))
+	mx_dyke = Vector{Any}(undef, sum(ndykes))
+	my_dyke = Vector{Any}(undef, sum(ndykes))
 
-	dike_t_idxs = findall(x -> x >= dike_to_sill, dike_y)
-	dike_t[dike_t_idxs] = dike_t[dike_t_idxs] .+ pi / 2 #reverse dykes to sills
+	dyke_t_idxs = findall(x -> x >= dyke_to_sill, dyke_y)
+	dyke_t[dyke_t_idxs] = dyke_t[dyke_t_idxs] .+ pi / 2 #reverse dykes to sills
 
 	log_to_buffer("Generating particles and markers...\n")
-	for idike = 1:sum(ndikes)
-		a = dike_a[idike]
-		b = dike_b[idike]
-		dikex0 = dike_x[idike]
-		dikey0 = dike_y[idike]
-		st = sin(dike_t[idike])
-		ct = cos(dike_t[idike])
+	for idyke = 1:sum(ndykes)
+		a = dyke_a[idyke]
+		b = dyke_b[idyke]
+		dykex0 = dyke_x[idyke]
+		dykey0 = dyke_y[idyke]
+		st = sin(dyke_t[idyke])
+		ct = cos(dyke_t[idyke])
 		#markers
-		dikexs = LinRange(-a, a, Int32(round(2 * a / dr)))
-		dikeys = LinRange(-b, b, Int32(round(2 * b / dr)))
-		if isempty(dikexs)
-			dikexs = 0
+		dykexs = LinRange(-a, a, Int32(round(2 * a / dr)))
+		dykeys = LinRange(-b, b, Int32(round(2 * b / dr)))
+		if isempty(dykexs)
+			dykexs = 0
 		end
-		if isempty(dikeys)
-			dikeys = 0
+		if isempty(dykeys)
+			dykeys = 0
 		end
-		dikex, dikey = meshgrid(dikexs, dikeys)
-		dikex = reshape(dikex, length(dikex), 1)
-		dikey = reshape(dikey, length(dikey), 1)
+		dykex, dykey = meshgrid(dykexs, dykeys)
+		dykex = reshape(dykex, length(dykex), 1)
+		dykey = reshape(dykey, length(dykey), 1)
 
-		outside = (dikex .^ 2 / a^2 + dikey .^ 2 / b^2) .> 1 + eps(Float64)
+		outside = (dykex .^ 2 / a^2 + dykey .^ 2 / b^2) .> 1 + eps(Float64)
 
-		dikex = dikex[.!outside]
+		dykex = dykex[.!outside]
 
-		dikey = dikey[.!outside]
-		px_dike[idike] = dikex0 .+ dikex .* ct - dikey .* st
-		py_dike[idike] = dikey0 .+ dikex .* st + dikey .* ct
-		dike_npartcl[idike] = length(px_dike[idike])
+		dykey = dykey[.!outside]
+		px_dyke[idyke] = dykex0 .+ dykex .* ct - dykey .* st
+		py_dyke[idyke] = dykey0 .+ dykex .* st + dykey .* ct
+		dyke_npartcl[idyke] = length(px_dyke[idyke])
 
 		# markers
 		if (a / dmr) > 1
-			dikemxs = LinRange(-a, a, Int32(round(2 * a / dmr)))
+			dykemxs = LinRange(-a, a, Int32(round(2 * a / dmr)))
 		else
-			dikemxs = LinRange(0, 0, 0)
+			dykemxs = LinRange(0, 0, 0)
 		end
 
 		if (b / dmr) > 1
-			dikemys = LinRange(-b, b, Int32(round(2 * b / dmr)))
+			dykemys = LinRange(-b, b, Int32(round(2 * b / dmr)))
 		else
-			dikemys = LinRange(-b, b, 0)
+			dykemys = LinRange(-b, b, 0)
 		end
 
-		if length(dikemxs) <= 1
-			dikemxs = LinRange(0, 0, 1)
+		if length(dykemxs) <= 1
+			dykemxs = LinRange(0, 0, 1)
 		end
-		if length(dikemys) <= 1
-			dikemys = LinRange(0, 0, 1)
+		if length(dykemys) <= 1
+			dykemys = LinRange(0, 0, 1)
 		end
 
-		dikemx, dikemy = meshgrid_2(dikemxs, dikemys)
-		dikemx = reshape(dikemx, length(dikemx), 1)
-		dikemy = reshape(dikemy, length(dikemy), 1)
+		dykemx, dykemy = meshgrid_2(dykemxs, dykemys)
+		dykemx = reshape(dykemx, length(dykemx), 1)
+		dykemy = reshape(dykemy, length(dykemy), 1)
 
-		outside = (dikemx .^ 2 / a^2 + dikemy .^ 2 / b^2) .> 1 + eps(Float64)
+		outside = (dykemx .^ 2 / a^2 + dykemy .^ 2 / b^2) .> 1 + eps(Float64)
 
-		dikemx = dikemx[.!outside]
-		dikemy = dikemy[.!outside]
+		dykemx = dykemx[.!outside]
+		dykemy = dykemy[.!outside]
 
-		mx_dike[idike] = dikex0 .+ dikemx .* ct .- dikemy .* st
-		my_dike[idike] = dikey0 .+ dikemx .* st .+ dikemy .* ct
-		dike_nmarker[idike] = length(mx_dike[idike])
+		mx_dyke[idyke] = dykex0 .+ dykemx .* ct .- dykemy .* st
+		my_dyke[idyke] = dykey0 .+ dykemx .* st .+ dykemy .* ct
+		dyke_nmarker[idyke] = length(mx_dyke[idyke])
 	end
 
-	px_dikes_float = Vector{Float64}(undef, 1)
-	py_dikes_float = Vector{Float64}(undef, 1)
+	px_dykes_float = Vector{Float64}(undef, 1)
+	py_dykes_float = Vector{Float64}(undef, 1)
 
-	px_dikes = vcat([px_dike[i] for i in 1:size(px_dike, 1)]...)
-	py_dikes = vcat([py_dike[i] for i in 1:size(py_dike, 1)]...)
+	px_dykes = vcat([px_dyke[i] for i in 1:size(px_dyke, 1)]...)
+	py_dykes = vcat([py_dyke[i] for i in 1:size(py_dyke, 1)]...)
 
-	mx = vcat(mx, vcat([mx_dike[i] for i in 1:size(mx_dike, 1)]...))
-	my = vcat(my, vcat([my_dike[i] for i in 1:size(my_dike, 1)]...))
+	mx = vcat(mx, vcat([mx_dyke[i] for i in 1:size(mx_dyke, 1)]...))
+	my = vcat(my, vcat([my_dyke[i] for i in 1:size(my_dyke, 1)]...))
 
 	mT = T_top .+ dTdy / 1e3 .* (Ly .- my)
 
-	mT[(mx.>dike_x_rng[1]).&(mx.<dike_x_rng[2]).&(my.>dike_y_rng[1]).&(my.<dike_y_rng[2])] .= T_ch
-	partcl_edges = vcat([Int32(0)], accumulate(+, dike_npartcl))
-	marker_edges = vcat([Int32(0)], accumulate(+, dike_nmarker))
+	mT[(mx.>dyke_x_rng[1]).&(mx.<dyke_x_rng[2]).&(my.>dyke_y_rng[1]).&(my.<dyke_y_rng[2])] .= T_ch
+	partcl_edges = vcat([Int32(0)], accumulate(+, dyke_npartcl))
+	marker_edges = vcat([Int32(0)], accumulate(+, dyke_nmarker))
 
 	sim_dir = "..\\d2dm_data\\"
 
@@ -771,14 +771,14 @@ function dikes_rand_param(init_vp)
 	println(typeof(pmlt), typeof(nx), typeof(ny), typeof(nl), typeof(nt), typeof(niter), typeof(nout), typeof(nsub), typeof(nerupt), typeof(npartcl), typeof(nmarker), typeof(Nsample))
 	write(fid, pmlt, nx, ny, nl, nt, niter, nout, nsub, nerupt, npartcl, nmarker, Nsample)
 	write(fid, critVol)
-	write(fid, ndikes)
+	write(fid, ndykes)
 	write(fid, partcl_edges)
 	write(fid, marker_edges)
 	close(fid)
 
-	dikes_file_name = sim_dir * "dikes.bin"
-	fid = open(dikes_file_name, "w")
-	write(fid, dike_a, dike_b, dike_x, dike_y, dike_t)
+	dykes_file_name = sim_dir * "dykes.bin"
+	fid = open(dykes_file_name, "w")
+	write(fid, dyke_a, dyke_b, dyke_x, dyke_y, dyke_t)
 	close(fid)
 
 	fname = @sprintf "%sgrid.%s.h5" sim_dir "0"^ndigits
@@ -800,8 +800,8 @@ function dikes_rand_param(init_vp)
 
 	write(px_dataset, px)
 	write(py_dataset, py)
-	fid["px_dikes"] = px_dikes
-	fid["py_dikes"] = py_dikes
+	fid["px_dykes"] = px_dykes
+	fid["py_dykes"] = py_dykes
 	close(fid)
 
 	fname = sim_dir * "markers.h5"

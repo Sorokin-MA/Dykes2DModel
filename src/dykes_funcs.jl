@@ -309,11 +309,11 @@ function displacements(st, ct, p, s1, s3, f, x, y, nu, G)
 end
 
 """
-	advect_particles_intrusion(px, py, a, b, x, y, theta, nu, G, ndikes, npartcl)
+	advect_particles_intrusion(px, py, a, b, x, y, theta, nu, G, ndykes, npartcl)
 
 Functions which calculate advection when particles intruded
 """
-function advect_particles_intrusion(px, py, a, b, x, y, theta, nu, G, ndikes, npartcl)
+function advect_particles_intrusion(px, py, a, b, x, y, theta, nu, G, ndykes, npartcl)
 	ip = (blockIdx().x - 1) * blockDim().x + threadIdx().x
 
 	if ip > npartcl
@@ -824,11 +824,11 @@ end
 
 """
 
-	small_mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl,max_nmarker, px,py,mx,my,h_px_dikes,pcnt, mfl)
+	small_mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl,max_nmarker, px,py,mx,my,h_px_dykes,pcnt, mfl)
 
 write some variables in 'filename' in h5 format
 """
-function small_mailbox_out(filename, T, pT, C, mT, staging, L, nx, ny, nxl, nyl, max_npartcl, max_nmarker, px, py, mx, my, h_px_dikes, pcnt, mfl, dx, dy, Lx, Ly)
+function small_mailbox_out(filename, T, pT, C, mT, staging, L, nx, ny, nxl, nyl, max_npartcl, max_nmarker, px, py, mx, my, h_px_dykes, pcnt, mfl, dx, dy, Lx, Ly)
 	@time begin
 		#@printf("%s writing results to disk  | ", bar2)
 		#filename = "grid." * string(it) * ".h5"
@@ -899,11 +899,11 @@ end
 
 """
 
-	mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl,max_nmarker, px,py,mx,my,h_px_dikes,pcnt, mfl)
+	mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl,max_nmarker, px,py,mx,my,h_px_dykes,pcnt, mfl)
 
 write all variables in 'filename' in h5 format
 """
-function mailbox_out(filename, T, pT, C, mT, staging, L, nx, ny, nxl, nyl, max_npartcl, max_nmarker, px, py, mx, my, h_px_dikes, pcnt, mfl)
+function mailbox_out(filename, T, pT, C, mT, staging, L, nx, ny, nxl, nyl, max_npartcl, max_nmarker, px, py, mx, my, h_px_dykes, pcnt, mfl)
 	@time begin
 		bar1 = "├──"
 		bar2 = "\t ├──"
@@ -952,7 +952,7 @@ function mailbox_out(filename, T, pT, C, mT, staging, L, nx, ny, nxl, nyl, max_n
 		write(fid, "py", h_py)
 		write(fid, "mx", h_mx)
 		write(fid, "my", h_my)
-		write(fid, "px_dikes", h_px_dikes)
+		write(fid, "px_dykes", h_px_dykes)
 		write(fid, "mfl", h_mfl)
 		#write(fid, "L", h_L)
 
@@ -1010,7 +1010,7 @@ end
 # 		write(fid, "py", h_py)
 # 		write(fid, "mx", h_mx)
 # 		write(fid, "my", h_my)
-# 		write(fid, "px_dikes", h_px_dikes)
+# 		write(fid, "px_dykes", h_px_dykes)
 # 		write(fid, "mfl", h_mfl)
 # 		#write(fid, "L", h_L)
 #
@@ -1091,35 +1091,35 @@ function read_params(gp::GridParams, vp::VarParams)
 	read!(io, gp.critVol)
 
 	#array 0 0 1 0 0 ... like, where 1 -instrusion
-	gp.ndikes = Array{Int32,1}(undef, vp.nt)#number of dykes intruded on n-th time step
-	read!(io, gp.ndikes)
+	gp.ndykes = Array{Int32,1}(undef, vp.nt)#number of dykes intruded on n-th time step
+	read!(io, gp.ndykes)
 
-	ndikes_all = 0
+	ndykes_all = 0
 
 	#count all dykes
 	for istep in 1:vp.nt
-		ndikes_all = ndikes_all + gp.ndikes[istep]
+		ndykes_all = ndykes_all + gp.ndykes[istep]
 	end
 
 	#array which describes amount of particles in new dyke
-	gp.particle_edges = Array{Int32,1}(undef, ndikes_all + 1)
+	gp.particle_edges = Array{Int32,1}(undef, ndykes_all + 1)
 	read!(io, gp.particle_edges)
 
-	gp.marker_edges = Array{Int32,1}(undef, ndikes_all + 1)
+	gp.marker_edges = Array{Int32,1}(undef, ndykes_all + 1)
 	read!(io, gp.marker_edges)
 
 	close(io)
 
 	cap_frac = 3  #value to spcify how much particles we allow to inject in runtime
 	vp.npartcl0 = vp.npartcl #initial amount of particles
-	vp.max_npartcl = convert(Int64, vp.npartcl * cap_frac) + gp.particle_edges[ndikes_all+1] #???#count max particles
+	vp.max_npartcl = convert(Int64, vp.npartcl * cap_frac) + gp.particle_edges[ndykes_all+1] #???#count max particles
 	println(vp.npartcl)
-	println(gp.particle_edges[ndikes_all+1])
+	println(gp.particle_edges[ndykes_all+1])
 	println("max_npartcl")
 	println(vp.max_npartcl)
 	nmarker0 = vp.nmarker
 
-	vp.max_nmarker = vp.nmarker + gp.marker_edges[ndikes_all+1]
+	vp.max_nmarker = vp.nmarker + gp.marker_edges[ndykes_all+1]
 
 
 	#blockSize(16, 32);
@@ -1142,10 +1142,10 @@ function read_params(gp::GridParams, vp::VarParams)
 	gp.pT = CuArray{Float64}(undef, vp.max_npartcl)#Temperature of particle
 	gp.pPh = CuArray{Int8}(undef, vp.max_npartcl)#???#Ph?
 
-	np_dikes = gp.particle_edges[ndikes_all+1]#number of particles in each dike during intrusion
+	np_dykes = gp.particle_edges[ndykes_all+1]#number of particles in each dyke during intrusion
 
-	gp.px_dikes = CuArray{Float64,1}(undef, np_dikes)#x of dykes particles
-	gp.py_dikes = CuArray{Float64,1}(undef, np_dikes)#y of dykes particles
+	gp.px_dykes = CuArray{Float64,1}(undef, np_dykes)#x of dykes particles
+	gp.py_dykes = CuArray{Float64,1}(undef, np_dykes)#y of dykes particles
 
 	gp.mx = CuArray{Float64,1}(undef, vp.max_nmarker)#x of marker
 	gp.my = CuArray{Float64,1}(undef, vp.max_nmarker)#y of marker
@@ -1173,24 +1173,24 @@ function read_params(gp::GridParams, vp::VarParams)
 	gp.mfl = CuArray{Float64,1}(undef, nxl * nyl)
 
 
-	#a and b of ellips for dikes
-	gp.dike_a = Array{Float64,1}(undef, ndikes_all)
-	gp.dike_b = Array{Float64,1}(undef, ndikes_all)
+	#a and b of ellips for dykes
+	gp.dyke_a = Array{Float64,1}(undef, ndykes_all)
+	gp.dyke_b = Array{Float64,1}(undef, ndykes_all)
 
 	#x and y coordinate of center
-	gp.dike_x = Array{Float64,1}(undef, ndikes_all)
-	gp.dike_y = Array{Float64,1}(undef, ndikes_all)
+	gp.dyke_x = Array{Float64,1}(undef, ndykes_all)
+	gp.dyke_y = Array{Float64,1}(undef, ndykes_all)
 
 	#???
-	gp.dike_t = Array{Float64,1}(undef, ndikes_all)
+	gp.dyke_t = Array{Float64,1}(undef, ndykes_all)
 
 	#NOTE:Dykes data upload takes time
-	io = open(data_folder * "dikes.bin", "r")
-	read!(io, gp.dike_a)
-	read!(io, gp.dike_b)
-	read!(io, gp.dike_x)
-	read!(io, gp.dike_y)
-	read!(io, gp.dike_t)
+	io = open(data_folder * "dykes.bin", "r")
+	read!(io, gp.dyke_a)
+	read!(io, gp.dyke_b)
+	read!(io, gp.dyke_x)
+	read!(io, gp.dyke_y)
+	read!(io, gp.dyke_t)
 
 	close(io)
 
@@ -1206,14 +1206,14 @@ function read_params(gp::GridParams, vp::VarParams)
 	copyto!(gp.py, gp.h_py)
 
 	#???
-	gp.h_px_dikes = Array{Float64,1}(undef, np_dikes)
-	gp.h_py_dikes = Array{Float64,1}(undef, np_dikes)
+	gp.h_px_dykes = Array{Float64,1}(undef, np_dykes)
+	gp.h_py_dykes = Array{Float64,1}(undef, np_dykes)
 
-	gp.h_px_dikes = read(fid, "px_dikes")
-	gp.h_py_dikes = read(fid, "py_dikes")
+	gp.h_px_dykes = read(fid, "px_dykes")
+	gp.h_py_dykes = read(fid, "py_dykes")
 
-	copyto!(gp.px_dikes, gp.h_px_dikes)
-	copyto!(gp.py_dikes, gp.h_py_dikes)
+	copyto!(gp.px_dykes, gp.h_px_dykes)
+	copyto!(gp.py_dykes, gp.h_py_dykes)
 
 	close(fid)
 
@@ -1420,9 +1420,9 @@ end
 
 function inserting_dykes(gp::GridParams, vp::VarParams, it)
 	@time begin
-		for i = 1:gp.ndikes[it]
-			vp.idike = vp.idike + 1
-			idike = vp.idike
+		for i = 1:gp.ndykes[it]
+			vp.idyke = vp.idyke + 1
+			idyke = vp.idyke
 
 			blockSize1D = 512
 			gridSize1D = (vp.npartcl + blockSize1D - 1) ÷ blockSize1D
@@ -1430,38 +1430,38 @@ function inserting_dykes(gp::GridParams, vp::VarParams, it)
 			@cuda blocks = gridSize1D threads = blockSize1D advect_particles_intrusion(
 				gp.px,
 				gp.py,
-				gp.dike_a[idike],
-				gp.dike_b[idike],
-				gp.dike_x[idike],
-				gp.dike_y[idike],
-				gp.dike_t[idike],
+				gp.dyke_a[idyke],
+				gp.dyke_b[idyke],
+				gp.dyke_x[idyke],
+				gp.dyke_y[idyke],
+				gp.dyke_t[idyke],
 				vp.nu,
 				vp.G,
-				gp.ndikes[it],
+				gp.ndykes[it],
 				vp.npartcl
 			)
 
-			dike_start = gp.particle_edges[idike]
-			dike_end = gp.particle_edges[idike+1]
-			np_dike = dike_end - dike_start
+			dyke_start = gp.particle_edges[idyke]
+			dyke_end = gp.particle_edges[idyke+1]
+			np_dyke = dyke_end - dyke_start
 
-			if (vp.npartcl + np_dike > vp.max_npartcl)
+			if (vp.npartcl + np_dyke > vp.max_npartcl)
 				@printf("ERROR: number of particles exceeds maximum value, increase capacity\n")
 				return -1
 			end
 
 
-			pxs = @view gp.px[(vp.npartcl+1):(vp.npartcl+np_dike)]
-			px_dikess = @view gp.px_dikes[(dike_start+1):(dike_start+np_dike)]
-			pys = @view gp.py[(vp.npartcl+1):(vp.npartcl+np_dike)]
-			py_dikess = @view gp.py_dikes[(dike_start+1):(dike_start+np_dike)]
+			pxs = @view gp.px[(vp.npartcl+1):(vp.npartcl+np_dyke)]
+			px_dykess = @view gp.px_dykes[(dyke_start+1):(dyke_start+np_dyke)]
+			pys = @view gp.py[(vp.npartcl+1):(vp.npartcl+np_dyke)]
+			py_dykess = @view gp.py_dykes[(dyke_start+1):(dyke_start+np_dyke)]
 
 
-			copyto!(pxs, px_dikess)
-			copyto!(pys, py_dikess)
+			copyto!(pxs, px_dykess)
+			copyto!(pys, py_dykess)
 
 
-			vp.npartcl += np_dike
+			vp.npartcl += np_dyke
 
 			gridSize1D = (vp.nmarker + blockSize1D - 1) ÷ blockSize1D
 
@@ -1470,20 +1470,20 @@ function inserting_dykes(gp::GridParams, vp::VarParams, it)
 				@cuda blocks = gridSize1D threads = blockSize1D advect_particles_intrusion(
 					gp.mx,
 					gp.my,
-					gp.dike_a[idike],
-					gp.dike_b[idike],
-					gp.dike_x[idike],
-					gp.dike_y[idike],
-					gp.dike_t[idike],
+					gp.dyke_a[idyke],
+					gp.dyke_b[idyke],
+					gp.dyke_x[idyke],
+					gp.dyke_y[idyke],
+					gp.dyke_t[idyke],
 					vp.nu,
 					vp.G,
-					gp.ndikes[it],
+					gp.ndykes[it],
 					vp.nmarker,
 				)
 
 				synchronize()
 
-				vp.nmarker += gp.marker_edges[idike+1] - gp.marker_edges[idike]
+				vp.nmarker += gp.marker_edges[idyke+1] - gp.marker_edges[idyke]
 			end
 		end
 	end

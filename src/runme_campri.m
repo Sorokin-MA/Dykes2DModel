@@ -35,17 +35,17 @@ Lx          = 20000; % x size of area, m %20000
 Ly          = 20000; % y size of area, m %20000
 Lx_Ly       = Lx/Ly; % Lx/Ly
 narrow_fact = 1;
-dike_x_W    = 10000; %m where is x point
-dike_x_Wn    = dike_x_W*narrow_fact; %m 
-dike_a_rng  = [100 1500]; %m length
-dike_b_rng  = [10 20]; %m width
+dyke_x_W    = 10000; %m where is x point
+dyke_x_Wn    = dyke_x_W*narrow_fact; %m 
+dyke_a_rng  = [100 1500]; %m length
+dyke_b_rng  = [10 20]; %m width
 
-dike_x_rng  = [ (Lx-dike_x_W)/2 (Lx+dike_x_W)/2] ;		%distribution for centre of dykes
-dike_x_rng_n  = [ (Lx-dike_x_Wn)/2 (Lx+dike_x_Wn)/2];
+dyke_x_rng  = [ (Lx-dyke_x_W)/2 (Lx+dyke_x_W)/2] ;		%distribution for centre of dykes
+dyke_x_rng_n  = [ (Lx-dyke_x_Wn)/2 (Lx+dyke_x_Wn)/2];
 
-dike_y_rng  = [5000 13000];				%dikes y distribution
-dike_t_rng  = [0.95*pi/2 1.05*pi/2];	%dykes time distribution
-dike_to_sill = 6000;					%boundary where dykes turn yourself to sill, сверху, m
+dyke_y_rng  = [5000 13000];				%dykes y distribution
+dyke_t_rng  = [0.95*pi/2 1.05*pi/2];	%dykes time distribution
+dyke_to_sill = 6000;					%boundary where dykes turn yourself to sill, сверху, m
 dz           = 10000;					%z dimension? i guess, m
 
 Lam_r       = 1.5;						%thermal conductivity of rock, W/m/K
@@ -98,7 +98,7 @@ Nsample     = 1000; % size of a sample
 distr       = -alpha .* log(rand(1,Nsample, 'like', alpha)); % == expinv(u, mu)
 rn          = (distr-min(distr))/(max(distr)-min(distr));
 critVol     = 10.^(9+3*rn)        /dz/(1-gamma); %km^3
-%dike_x_rng  = [0.32 0.67]*Lx;
+%dyke_x_rng  = [0.32 0.67]*Lx;
 
 critVol = ones(1, 1000);
 %critVol_hist = [39.8, 14.9, 14.3, 13, 12, 12.8, 11.8, 11, 11.5, 11, 10.6, 9.6, 9.3, 5.1, 4.9, 4.5, 4.3, 4.2, 4.2, 4.2, 4.1, 3.9, 0.5];
@@ -155,107 +155,107 @@ ndigits     = floor(log10(nt))+1;
 
 % init
 T           = T_top + dTdy*(Ly-y)/1e3;
-indx=find(xs > dike_x_rng(1) & xs < dike_x_rng(2));
-indy=find(ys >dike_y_rng(1)  &  ys <dike_y_rng(2));
+indx=find(xs > dyke_x_rng(1) & xs < dyke_x_rng(2));
+indy=find(ys >dyke_y_rng(1)  &  ys <dyke_y_rng(2));
 
 %T(indx,indy)=T_ch;
 pcolor(x,y,T),shading flat,axis image;c= colorbar,drawnow
 
 C           = zeros(nx,ny);
-% generate dikes
+% generate dykes
 Q      = 0;
-dike_a = [];
-dike_b = [];
-dike_x = [];
-dike_y = [];
-dike_t = [];
-dike_v = [];
+dyke_a = [];
+dyke_b = [];
+dyke_x = [];
+dyke_y = [];
+dyke_t = [];
+dyke_v = [];
 Vtot=q*nt_erupt*dt;
 Q_tsh       = 0.5*Vtot;
 while Q < Vtot
-    dike_a = [dike_a dike_a_rng(1) + diff(dike_a_rng)*rand];
-    dike_b = [dike_b dike_b_rng(1) + diff(dike_b_rng)*rand];
+    dyke_a = [dyke_a dyke_a_rng(1) + diff(dyke_a_rng)*rand];
+    dyke_b = [dyke_b dyke_b_rng(1) + diff(dyke_b_rng)*rand];
     if Q < Q_tsh
-        dike_x = [dike_x dike_x_rng(1) + diff(dike_x_rng)*rand];
+        dyke_x = [dyke_x dyke_x_rng(1) + diff(dyke_x_rng)*rand];
     else
-        dike_x = [dike_x dike_x_rng_n(1) + diff(dike_x_rng_n)*rand];
+        dyke_x = [dyke_x dyke_x_rng_n(1) + diff(dyke_x_rng_n)*rand];
     end
-    dike_y = [dike_y dike_y_rng(1) + diff(dike_y_rng)*rand];
-    dike_t = [dike_t dike_t_rng(1) + diff(dike_t_rng)*rand];
-    dike_v = [dike_v pi*dike_a(end)*dike_b(end)];
-    Q      = Q + dike_v(end);
+    dyke_y = [dyke_y dyke_y_rng(1) + diff(dyke_y_rng)*rand];
+    dyke_t = [dyke_t dyke_t_rng(1) + diff(dyke_t_rng)*rand];
+    dyke_v = [dyke_v pi*dyke_a(end)*dyke_b(end)];
+    Q      = Q + dyke_v(end);
 end
-dike_v = [0 cumsum(dike_v)];
-dv     = dike_v(end)/nt_erupt;
-ndikes = diff(floor(interp1(dike_v,1:numel(dike_v),0:dv:dike_v(end))));
-assert(numel(ndikes) == nt_erupt);
-ndikes(numel(ndikes)+1:nt) = 0;
-assert(numel(ndikes) == nt);
-dike_npartcl = zeros(1,sum(ndikes));
-dike_nmarker = zeros(1,sum(ndikes));
-px_dike      = cell(sum(ndikes),1);
-py_dike      = cell(sum(ndikes),1);
-mx_dike      = cell(sum(ndikes),1);
-my_dike      = cell(sum(ndikes),1);
-dike_t(dike_y>=dike_to_sill) = dike_t(dike_y>=dike_to_sill) + pi/2; %reverse dykes to sills
-for idike = 1:sum(ndikes)
-    a              = dike_a(idike);
-    b              = dike_b(idike);
-    dikex0         = dike_x(idike);
-    dikey0         = dike_y(idike);
-    st             = sin(dike_t(idike));
-    ct             = cos(dike_t(idike));
+dyke_v = [0 cumsum(dyke_v)];
+dv     = dyke_v(end)/nt_erupt;
+ndykes = diff(floor(interp1(dyke_v,1:numel(dyke_v),0:dv:dyke_v(end))));
+assert(numel(ndykes) == nt_erupt);
+ndykes(numel(ndykes)+1:nt) = 0;
+assert(numel(ndykes) == nt);
+dyke_npartcl = zeros(1,sum(ndykes));
+dyke_nmarker = zeros(1,sum(ndykes));
+px_dyke      = cell(sum(ndykes),1);
+py_dyke      = cell(sum(ndykes),1);
+mx_dyke      = cell(sum(ndykes),1);
+my_dyke      = cell(sum(ndykes),1);
+dyke_t(dyke_y>=dyke_to_sill) = dyke_t(dyke_y>=dyke_to_sill) + pi/2; %reverse dykes to sills
+for idyke = 1:sum(ndykes)
+    a              = dyke_a(idyke);
+    b              = dyke_b(idyke);
+    dykex0         = dyke_x(idyke);
+    dykey0         = dyke_y(idyke);
+    st             = sin(dyke_t(idyke));
+    ct             = cos(dyke_t(idyke));
     % markers
-    dikexs         = linspace(-a,a,round(2*a/dr));
-    dikeys         = linspace(-b,b,round(2*b/dr));
-    if isempty(dikexs);dikexs = 0;end
-    if isempty(dikeys);dikeys = 0;end
-    [dikex,dikey]  = ndgrid(dikexs,dikeys);
-    dikex          = dikex(:);
-    dikey          = dikey(:);
-    outside        = (dikex.^2/a^2 + dikey.^2/b^2) > 1+eps;
-    dikex(outside) = [];
-    dikey(outside) = [];
-    px_dike{idike} = dikex0 + dikex*ct - dikey*st;
-    py_dike{idike} = dikey0 + dikex*st + dikey*ct;
-    dike_npartcl(idike) = numel(px_dike{idike});
+    dykexs         = linspace(-a,a,round(2*a/dr));
+    dykeys         = linspace(-b,b,round(2*b/dr));
+    if isempty(dykexs);dykexs = 0;end
+    if isempty(dykeys);dykeys = 0;end
+    [dykex,dykey]  = ndgrid(dykexs,dykeys);
+    dykex          = dykex(:);
+    dykey          = dykey(:);
+    outside        = (dykex.^2/a^2 + dykey.^2/b^2) > 1+eps;
+    dykex(outside) = [];
+    dykey(outside) = [];
+    px_dyke{idyke} = dykex0 + dykex*ct - dykey*st;
+    py_dyke{idyke} = dykey0 + dykex*st + dykey*ct;
+    dyke_npartcl(idyke) = numel(px_dyke{idyke});
     % markers
-    dikemxs         = linspace(-a,a,round(2*a/dmr));
-    dikemys         = linspace(-b,b,round(2*b/dmr));
-    if numel(dikemxs)<=1;dikemxs = 0;end
-    if numel(dikemys)<=1;dikemys = 0;end
-    [dikemx,dikemy]  = ndgrid(dikemxs,dikemys);
-    dikemx          = dikemx(:);
-    dikemy          = dikemy(:);
-    outside         = (dikemx.^2/a^2 + dikemy.^2/b^2) > 1+eps;
-    dikemx(outside) = [];
-    dikemy(outside) = [];
-    mx_dike{idike}  = dikex0 + dikemx*ct - dikemy*st;
-    my_dike{idike}  = dikey0 + dikemx*st + dikemy*ct;
-    dike_nmarker(idike) = numel(mx_dike{idike});
+    dykemxs         = linspace(-a,a,round(2*a/dmr));
+    dykemys         = linspace(-b,b,round(2*b/dmr));
+    if numel(dykemxs)<=1;dykemxs = 0;end
+    if numel(dykemys)<=1;dykemys = 0;end
+    [dykemx,dykemy]  = ndgrid(dykemxs,dykemys);
+    dykemx          = dykemx(:);
+    dykemy          = dykemy(:);
+    outside         = (dykemx.^2/a^2 + dykemy.^2/b^2) > 1+eps;
+    dykemx(outside) = [];
+    dykemy(outside) = [];
+    mx_dyke{idyke}  = dykex0 + dykemx*ct - dykemy*st;
+    my_dyke{idyke}  = dykey0 + dykemx*st + dykemy*ct;
+    dyke_nmarker(idyke) = numel(mx_dyke{idyke});
 end
-px_dikes     = cell2mat(px_dike);
-py_dikes     = cell2mat(py_dike);
-mx           = [mx;cell2mat(mx_dike)];
-my           = [my;cell2mat(my_dike)];
+px_dykes     = cell2mat(px_dyke);
+py_dykes     = cell2mat(py_dyke);
+mx           = [mx;cell2mat(mx_dyke)];
+my           = [my;cell2mat(my_dyke)];
 mT           = T_top + dTdy/1e3*(Ly-my);
-mT(mx > dike_x_rng(1) & mx < dike_x_rng(2) & my > dike_y_rng(1)  & my <dike_y_rng(2))=T_ch;
+mT(mx > dyke_x_rng(1) & mx < dyke_x_rng(2) & my > dyke_y_rng(1)  & my <dyke_y_rng(2))=T_ch;
 
 
-partcl_edges = [0 cumsum(dike_npartcl)];
-marker_edges = [0 cumsum(dike_nmarker)];
+partcl_edges = [0 cumsum(dyke_npartcl)];
+marker_edges = [0 cumsum(dyke_nmarker)];
 
 % save data
 fid        = fopen([sim_dir '/pa.bin'],'w');
 fwrite(fid,[Lx Ly lam_r_rhoCp lam_m_rhoCp L_Cp T_top T_bot T_magma tsh gamma Ly_eruption nu G dt_diff dx dy eiter pic_amount],'double');
 fwrite(fid,[pmlt nx ny nl nt niter nout nsub nerupt npartcl nmarker Nsample],'int32');
 fwrite(fid,critVol,'double');
-fwrite(fid,ndikes,'int32');
+fwrite(fid,ndykes,'int32');
 fwrite(fid,partcl_edges,'int32');
 fwrite(fid,marker_edges,'int32');
 fclose(fid);
-fid        = fopen([sim_dir '/dikes.bin'],'w');
-fwrite(fid,[dike_a dike_b dike_x dike_y dike_t],'double');
+fid        = fopen([sim_dir '/dykes.bin'],'w');
+fwrite(fid,[dyke_a dyke_b dyke_x dyke_y dyke_t],'double');
 fclose(fid);
 fname = sprintf('%s/grid.%0*d.h5', sim_dir,ndigits,0);
 h5create(fname,'/T',size(T),'ChunkSize',size(T),'Deflate',5);
@@ -267,10 +267,10 @@ h5create(fname, '/px',size(px),'ChunkSize',size(px),'Deflate',5);
 h5create(fname, '/py',size(py),'ChunkSize',size(py),'Deflate',5);
 h5write(fname,'/px',px);
 h5write(fname,'/py',py);
-h5create(fname, '/px_dikes',size(px_dikes),'ChunkSize',size(px_dikes),'Deflate',5);
-h5create(fname, '/py_dikes',size(py_dikes),'ChunkSize',size(py_dikes),'Deflate',5);
-h5write(fname,'/px_dikes',px_dikes);
-h5write(fname,'/py_dikes',py_dikes);
+h5create(fname, '/px_dykes',size(px_dykes),'ChunkSize',size(px_dykes),'Deflate',5);
+h5create(fname, '/py_dykes',size(py_dykes),'ChunkSize',size(py_dykes),'Deflate',5);
+h5write(fname,'/px_dykes',px_dykes);
+h5write(fname,'/py_dykes',py_dykes);
 fname = [sim_dir '/markers.h5'];
 h5create(fname, '/0/mx',size(mx),'ChunkSize',size(mx),'Deflate',5);
 h5create(fname, '/0/my',size(my),'ChunkSize',size(my),'Deflate',5);
