@@ -115,7 +115,7 @@ end
 
 #coefficient which involved in heat equasion
 function dmf_rock(T)
-	return only.(Interpolations.gradient.(Ref(itp), T))
+	return only.(Interpolations.gradient.(Ref(cuitp), T))
 end
 
 #melt fraction of magma
