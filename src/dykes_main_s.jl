@@ -19,6 +19,10 @@ function main_test_gui(gp::GridParams, vp::VarParams, FLAG_init::Bool)
 
 		read_params(gp, vp)
 
+		vp.it = 1
+		global str_time_spend = 0
+		global str_time_left = 0
+
 		#println(gp)
 		#println(vp)
 		#initialisation of T and Ph variables
@@ -39,7 +43,9 @@ function main_test_gui(gp::GridParams, vp::VarParams, FLAG_init::Bool)
 			log_to_buffer(@sprintf("%s it = %d", bar1, vp.it))
 
 			global str_time_spend = str_time_spend + time_of_loop
-			global str_time_left = Time(0)+Second(Int64(floor((str_time_spend/Float64(vp.it))*(Float64(vp.nt - vp.it)))))
+			#global str_time_left = Time(0)+Second(Int64(floor((str_time_spend/Float64(vp.it))*(Float64(vp.nt - vp.it)))))
+			global str_time_left = Time(0) +Second(Int64(floor(str_time_spend / (Float64(vp.it)/Float64(vp.nt)) - str_time_spend) ))
+
 
 			global time_of_loop = @elapsed begin
 				vp.is_eruption = false
@@ -195,6 +201,6 @@ function main_test_gui(gp::GridParams, vp::VarParams, FLAG_init::Bool)
 	write(fid, vp.iSample)
 	write(fid, gp.eruptionSteps)
 	close(fid)
-	FLAG_init = true;
+	global G_FLAG_INIT = true;
 	return 0
 end
