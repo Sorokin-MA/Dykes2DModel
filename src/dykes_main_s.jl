@@ -1,5 +1,6 @@
 #main jl file made with structs
 include("dykes_init.jl")
+include("dykes_funcs.jl")
 
 function main_test_gui(gp::GridParams, vp::VarParams, FLAG_init::Bool)
 	local_buff::String = ""
@@ -194,5 +195,6 @@ function main_test_gui(gp::GridParams, vp::VarParams, FLAG_init::Bool)
 	write(fid, vp.iSample)
 	write(fid, gp.eruptionSteps)
 	close(fid)
+	FLAG_init = true;
 	return 0
 end
