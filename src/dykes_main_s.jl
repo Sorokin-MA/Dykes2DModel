@@ -19,7 +19,6 @@ function main_test_gui(gp::GridParams, vp::VarParams, FLAG_init::Bool)
 
 		read_params(gp, vp)
 
-		vp.it = 1
 		global str_time_spend = 0
 		global str_time_left = 0
 

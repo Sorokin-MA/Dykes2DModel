@@ -443,6 +443,11 @@ function dykes_gui()
 		global D2DM_STOPED = false;
 		global flag_break = false;
 
+		if(G_FLAG_INIT)
+			gp = GridParams()
+			vp = VarParams()
+		end
+
 		main_test_gui(gp, vp, G_FLAG_INIT)
 		return [false]
 	end
