@@ -71,10 +71,10 @@ function dykes_graph()
 					a]
 
 #=
-	campri_calc = Int32[10000, 20000, 25000, 26000]
-	println(typeof(campri_calc))
+	campi_calc = Int32[10000, 20000, 25000, 26000]
+	println(typeof(campi_calc))
 	file = open(data_folder*"eruptions.bin", "w")
-	write(file, campri_calc)
+	write(file, campi_calc)
 	close(file)
 =#
 
@@ -84,33 +84,33 @@ function dykes_graph()
 	println(fz/sizeof(Int32))
 	if(fz_int <= 1)
 		println("No eruptions!!!")
-        campri_calc_fake = Int32[10000, 20000, 25000, 26000]
-	    println(typeof(campri_calc_fake))
+        campi_calc_fake = Int32[10000, 20000, 25000, 26000]
+	    println(typeof(campi_calc_fake))
 	    file = open(data_folder*"eruptions.bin", "w")
-	    write(file, campri_calc_fake)
+	    write(file, campi_calc_fake)
 	close(file)
 		
 	end
-	campri_calc = Array{Int32,1}(undef, fz_int)#array of int values from matlab script
-	read!(data_folder*"eruptions.bin", campri_calc)
+	campi_calc = Array{Int32,1}(undef, fz_int)#array of int values from matlab script
+	read!(data_folder*"eruptions.bin", campi_calc)
 
-    campri_calc =@view campri_calc[2:end]
+    campi_calc =@view campi_calc[2:end]
 
-	println(campri_calc)
+	println(campi_calc)
 	tyear = 365 * 24 * 3600		#seconds in year
 	tfin = (tfin/tyear)/1.e3
-	campri_calc = -(1 .- campri_calc./nt) .* (tfin)
-	println(campri_calc)
-	display(campri_calc)
-	campri_real = -vcat(39.8, 14.9, 14.3, 13, 12, 12.8, 11.8, 11, 11.5, 11, 10.6, 9.6, 9.3, 5.1, 4.9, 4.5, 4.3, 4.2, 4.2, 4.2, 4.1, 3.9, 0.5);
+	campi_calc = -(1 .- campi_calc./nt) .* (tfin)
+	println(campi_calc)
+	display(campi_calc)
+	campi_real = -vcat(39.8, 14.9, 14.3, 13, 12, 12.8, 11.8, 11, 11.5, 11, 10.6, 9.6, 9.3, 5.1, 4.9, 4.5, 4.3, 4.2, 4.2, 4.2, 4.1, 3.9, 0.5);
 
-	p = Plots.scatter(campri_real, zeros(length(campri_real)), markersize=7, 
+	p = Plots.scatter(campi_real, zeros(length(campi_real)), markersize=7, 
         markershape=:circle, color = :red, legend=true, 
-			 framestyle=:origin, yaxis=false, grid=false, aspect_ratio=1.0, label="real campri", xlimits=(min(minimum(campri_real),minimum(campri_calc))-10, 0))
+			 framestyle=:origin, yaxis=false, grid=false, aspect_ratio=1.0, label="real campi", xlimits=(min(minimum(campi_real),minimum(campi_calc))-10, 0))
 
-	p = Plots.scatter!(campri_calc, zeros(length(campri_calc)), markersize=4, 
+	p = Plots.scatter!(campi_calc, zeros(length(campi_calc)), markersize=4, 
         markershape=:circle, color = :blue, legend=true, 
-        framestyle=:origin, yaxis=false, grid=false, aspect_ratio=1.0, label="calc campri", markeralpha = 0.5)
+        framestyle=:origin, yaxis=false, grid=false, aspect_ratio=1.0, label="calc campi", markeralpha = 0.5)
 
 	T = reshape(T,(length(xs), length(ys)))
 	C = reshape(C,(length(xs), length(ys)))

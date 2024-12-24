@@ -508,17 +508,17 @@ function dykes_gui()
 	#update progress bar
 	callback!(app, [Output("eruptions-timeline", "children")], [Input("interval-component", "n_intervals")]) do n_intervals
 		
-		campri_calc = -(vp.nt .- gp.eruptionSteps)./vp.nt.*init_vp.calc_years/1000;
-		campri_real = -vcat(init_vp.critVolTime);
-		campri_now = [-(vp.nt - vp.it)/vp.nt*init_vp.calc_years/1000];
-		#campri_cumulut = -(vp.nt .- gp.cumulutive_time)./vp.nt.*init_vp.calc_years/1000;
+		campi_calc = -(vp.nt .- gp.eruptionSteps)./vp.nt.*init_vp.calc_years/1000;
+		campi_real = -vcat(init_vp.critVolTime);
+		campi_now = [-(vp.nt - vp.it)/vp.nt*init_vp.calc_years/1000];
+		#campi_cumulut = -(vp.nt .- gp.cumulutive_time)./vp.nt.*init_vp.calc_years/1000;
 
-		campri_cal_graph  = PlotlyJS.scatter(x=campri_calc, y= zeros(length(campri_calc)), mode="markers", name="campri_calc", showlegend=true, marker_size=14)
-		campri_real_graph = PlotlyJS.scatter(x=campri_real, y= zeros(length(campri_real)), mode="markers", name="campri_real", showlegend=true, marker_size=10)
-		campri_now_graph = PlotlyJS.scatter(x=campri_now, y= zeros(length(campri_now)), mode="markers", name="now", showlegend=true, marker_size=10)
-		#campri_cumulut_graph = PlotlyJS.scatter(x=campri_cumulut, y=gp.cumulutive_vol, mode="lines", name="cumulative volume")
-#		#campri_next_eruption = PlotlyJS.scatter(x=campri_cumulut, y=(gp.critVol[vp.iSample]/ 1.e9) * 1.e4 * vp.gamma, mode="lines", name="next eruption")
-		data = [campri_cal_graph, campri_real_graph, campri_now_graph]
+		campi_cal_graph  = PlotlyJS.scatter(x=campi_calc, y= zeros(length(campi_calc)), mode="markers", name="campi_calc", showlegend=true, marker_size=14)
+		campi_real_graph = PlotlyJS.scatter(x=campi_real, y= zeros(length(campi_real)), mode="markers", name="campi_real", showlegend=true, marker_size=10)
+		campi_now_graph = PlotlyJS.scatter(x=campi_now, y= zeros(length(campi_now)), mode="markers", name="now", showlegend=true, marker_size=10)
+		#campi_cumulut_graph = PlotlyJS.scatter(x=campi_cumulut, y=gp.cumulutive_vol, mode="lines", name="cumulative volume")
+#		#campi_next_eruption = PlotlyJS.scatter(x=campi_cumulut, y=(gp.critVol[vp.iSample]/ 1.e9) * 1.e4 * vp.gamma, mode="lines", name="next eruption")
+		data = [campi_cal_graph, campi_real_graph, campi_now_graph]
 
 		layout = Layout(title="Eruptions graph",
 						xaxis=attr(title="time, (ka)", showgrid=false),
@@ -534,18 +534,18 @@ function dykes_gui()
 	#update progress bar
 	callback!(app, [Output("cumul-timeline", "children")], [Input("interval-component", "n_intervals")]) do n_intervals
 		
-		#campri_cumulut = [-(vp.nt .- gp.cumulutive_time)./vp.nt.*init_vp.calc_years/1000];
-		campri_calc = -(vp.nt .- gp.eruptionSteps)./vp.nt.*init_vp.calc_years/1000;
-		campri_cumulut = -(vp.nt .- gp.cumulutive_time)./vp.nt.*init_vp.calc_years/1000;
+		#campi_cumulut = [-(vp.nt .- gp.cumulutive_time)./vp.nt.*init_vp.calc_years/1000];
+		campi_calc = -(vp.nt .- gp.eruptionSteps)./vp.nt.*init_vp.calc_years/1000;
+		campi_cumulut = -(vp.nt .- gp.cumulutive_time)./vp.nt.*init_vp.calc_years/1000;
 
-		campri_cumulut_graph = PlotlyJS.scatter(x=campri_cumulut, y=gp.cumulutive_vol, mode="lines", name="cumulative volume")
-		campri_next_eruption= PlotlyJS.scatter(x=campri_cumulut, y=gp.cumulutive_erupt, mode="lines", name="next eruption volume")
-		campri_cal_graph  = PlotlyJS.scatter(x=campri_calc, y= zeros(length(campri_calc)), mode="markers", name="campri_calc", showlegend=true, marker_size=14)
-#		campri_next_eruption = PlotlyJS.scatter(x=campri_cumulut, y=(gp.critVol[vp.iSample]/ 1.e9) * 1.e4 * vp.gamma, mode="lines", name="next eruption")
+		campi_cumulut_graph = PlotlyJS.scatter(x=campi_cumulut, y=gp.cumulutive_vol, mode="lines", name="cumulative volume")
+		campi_next_eruption= PlotlyJS.scatter(x=campi_cumulut, y=gp.cumulutive_erupt, mode="lines", name="next eruption volume")
+		campi_cal_graph  = PlotlyJS.scatter(x=campi_calc, y= zeros(length(campi_calc)), mode="markers", name="campi_calc", showlegend=true, marker_size=14)
+#		campi_next_eruption = PlotlyJS.scatter(x=campi_cumulut, y=(gp.critVol[vp.iSample]/ 1.e9) * 1.e4 * vp.gamma, mode="lines", name="next eruption")
 
-#		campri_cumulut_graph = PlotlyJS.scatter(x=gp.cumulutive_time, y=gp.cumulutive_vol, mode="lines", name="cumulative volume")
-#		campri_next_eruption = PlotlyJS.scatter(x=gp.cumulutive_time, y=(gp.critVol[vp.iSample]/ 1.e9) * 1.e4 * vp.gamma, mode="lines", name="next eruption")
-		data = [campri_next_eruption, campri_cal_graph, campri_cumulut_graph]
+#		campi_cumulut_graph = PlotlyJS.scatter(x=gp.cumulutive_time, y=gp.cumulutive_vol, mode="lines", name="cumulative volume")
+#		campi_next_eruption = PlotlyJS.scatter(x=gp.cumulutive_time, y=(gp.critVol[vp.iSample]/ 1.e9) * 1.e4 * vp.gamma, mode="lines", name="next eruption")
+		data = [campi_next_eruption, campi_cal_graph, campi_cumulut_graph]
 
 		layout = Layout(title="Cumulutive volume graph",
 						xaxis=attr(title="time, (ka)"),
@@ -562,13 +562,13 @@ function dykes_gui()
 	# #cumulut
 	# callback!(app, [Output("cumul-timeline", "children")], [Input("interval-component", "n_intervals")]) do n_intervals
 	# 	
-	# 	campri_calc = -(vp.nt .- gp.eruptionSteps)./vp.nt.*init_vp.calc_years/1000;
-	# 	campri_real = -vcat(init_vp.critVolTime);
-	# 	campri_now = [-(vp.nt - vp.it)/vp.nt*init_vp.calc_years/1000];
+	# 	campi_calc = -(vp.nt .- gp.eruptionSteps)./vp.nt.*init_vp.calc_years/1000;
+	# 	campi_real = -vcat(init_vp.critVolTime);
+	# 	campi_now = [-(vp.nt - vp.it)/vp.nt*init_vp.calc_years/1000];
 	#
-	# 	campri_cal_graph  = PlotlyJS.scatter(x=campri_calc, y= zeros(length(campri_calc)), mode="markers", name="campri_calc", showlegend=true, marker_size=14)
-	# 	campri_real_graph = PlotlyJS.scatter(x=campri_real, y= zeros(length(campri_real)), mode="markers", name="campri_real", showlegend=true, marker_size=10)
-	# 	campri_now_graph = PlotlyJS.scatter(x=campri_now, y= zeros(length(campri_now)), mode="markers", name="now", showlegend=true, marker_size=10)
+	# 	campi_cal_graph  = PlotlyJS.scatter(x=campi_calc, y= zeros(length(campi_calc)), mode="markers", name="campi_calc", showlegend=true, marker_size=14)
+	# 	campi_real_graph = PlotlyJS.scatter(x=campi_real, y= zeros(length(campi_real)), mode="markers", name="campi_real", showlegend=true, marker_size=10)
+	# 	campi_now_graph = PlotlyJS.scatter(x=campi_now, y= zeros(length(campi_now)), mode="markers", name="now", showlegend=true, marker_size=10)
 	#
 	# 	layout = Layout(title="Eruptions graph",
 	# 					xaxis=attr(title="time, (ka)", showgrid=false, zeroline=false),
