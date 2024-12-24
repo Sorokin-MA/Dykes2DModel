@@ -584,7 +584,7 @@ function dykes_gui()
 
 	#time left label callback
 	callback!(app, [Output("time_left_label", "value"),Output("percent_done_label", "value")], [Input("interval-component", "n_intervals")]) do n_intervals
-		return ["Time left: "*string(str_time_left), "Done: "*string(@sprintf("%03s", ((Float64(vp.it)-1)/Float64(vp.nt))*100))*"%"]
+		return ["Time left: "*string(str_time_left), "Done: "*string(@sprintf("%03s", ((Float64(vp.it)-1)/Float64(vp.nt-1))*100))*"%"]
 	end
 
 	#refresh buffer every n_intrervals seconds

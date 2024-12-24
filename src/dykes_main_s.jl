@@ -39,7 +39,7 @@ function main_test_gui(gp::GridParams, vp::VarParams, FLAG_init::Bool)
 			log_to_buffer(@sprintf("%s it = %d", bar1, vp.it))
 
 			global str_time_spend = str_time_spend + time_of_loop
-			global str_time_left = Time(0)+Second(Int64(floor(str_time_spend/(Float64(vp.it)/Float64(vp.nt)))))
+			global str_time_left = Time(0)+Second(Int64(floor((str_time_spend/Float64(vp.it))*(Float64(vp.nt - vp.it)))))
 
 			global time_of_loop = @elapsed begin
 				vp.is_eruption = false
@@ -180,7 +180,7 @@ function main_test_gui(gp::GridParams, vp::VarParams, FLAG_init::Bool)
 	end
 
 	#to make percents right
-	vp.it = vp.it + 1;
+	#vp.it = vp.it + 1;
 
 	@printf("%s writing results to disk  | ", bar2)
 	log_to_buffer(@sprintf("%s writing results to disk  | ", bar2))
