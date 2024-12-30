@@ -693,14 +693,14 @@ Function related with lables to
 - `ny`: y-axis grid resolution, [1]
 """
 function ccl(mf, L, tsh, nx, ny)
-	blockSize2D = (16, 32)
+	blockSize2D = (28, 32)
 	gridSize2D = ((nx + blockSize2D[1] - 1) ÷ blockSize2D[1], (ny + blockSize2D[2] - 1) ÷ blockSize2D[2])
 
 	#add lables to the points where ms > tsh
 	CUDA.@sync begin
 		@cuda blocks = gridSize2D threads = blockSize2D assignUniqueLables(mf, L, tsh, nx, ny)
 	end
-	blockSize1D = 32
+	blockSize1D = 896
 	gridSize1D = (ny + blockSize1D - 1) ÷ blockSize1D
 
 	#merge labels in components horisotally
@@ -963,65 +963,6 @@ function mailbox_out(filename, T, pT, C, mT, staging, L, nx, ny, nxl, nyl, max_n
 	end
 end
 
-# function make_snapshot(filename, VarParams, GridParams)
-# 	@time begin
-# 		#@printf("%s writing results to disk  | ", bar2)
-# 		#filename = "grid." * string(it) * ".h5"
-#
-# 		if isfile(filename)
-# 			rm(filename)
-# 		end
-#
-# 		fid = h5open(filename, "w")
-# 		#h5write(filename, "T", T)
-# 		#h5write(filename, "C", C)
-#
-# 		h_pcnt = Array{Int32,1}(undef, nx * ny)#array of double values from matlab script
-# 		h_T = Array{Float64,1}(undef, nx * ny)#array of double values from matlab script
-# 		h_C = Array{Float64,1}(undef, nx * ny)#array of double values from matlab script
-# 		h_pT = Array{Float64,1}(undef, max_npartcl)#array of double values from matlab script
-# 		h_mT = Array{Float64,1}(undef, max_nmarker)#array of double values from matlab script
-# 		h_L = Array{Int32,1}(undef, nxl * nyl)#array of double values from matlab script
-# 		h_px = Array{Float64,1}(undef, max_npartcl)#array of double values from matlab script
-# 		h_py = Array{Float64,1}(undef, max_npartcl)#array of double values from matlab script
-# 		h_mx = Array{Float64,1}(undef, max_nmarker)#array of double values from matlab script
-# 		h_my = Array{Float64,1}(undef, max_nmarker)#array of double values from matlab script
-# 		h_mfl = Array{Float64,1}(undef, nxl * nyl)#array of double values from matlab script
-#
-# 		copyto!(h_pcnt, pcnt)
-# 		copyto!(h_T, T)
-# 		copyto!(h_pT, pT)
-# 		copyto!(h_mT, mT)
-# 		copyto!(h_C, C)
-#
-# 		copyto!(h_px, px)
-# 		copyto!(h_py, py)
-# 		copyto!(h_mx, mx)
-# 		copyto!(h_my, my)
-# 		copyto!(h_mfl, mfl)
-#
-# 		write(fid, "pcnt", h_pcnt)
-# 		write(fid, "T", h_T)
-# 		write(fid, "pT", h_pT)
-# 		write(fid, "mT", h_mT)
-# 		write(fid, "C", h_C)
-#
-# 		write(fid, "px", h_px)
-# 		write(fid, "py", h_py)
-# 		write(fid, "mx", h_mx)
-# 		write(fid, "my", h_my)
-# 		write(fid, "px_dykes", h_px_dykes)
-# 		write(fid, "mfl", h_mfl)
-# 		#write(fid, "L", h_L)
-#
-# 		copyto!(h_L, L)
-# 		write(fid, "L", h_L)
-#
-# 		close(fid)
-# 	end
-# end
-
-
 
 function rand_limited(u, d)
 	ans::Float64 = -1
@@ -1032,13 +973,15 @@ function rand_limited(u, d)
 	return ans
 end
 
-function rand_limited_2(u, d)
+function rand_limited_2(u, d, dyke_type::Int64)
 	ans::Float64 = -1
 	while ((ans <= 0) || (ans >= 1))
-		ans = rand(Normal(u, d), 1)[1]
-		#ans = rand(Uniform(), 1)[1]
+		if(dyke_type == 1)
+			ans = rand(Normal(u, d), 1)[1]
+		elseif(dyke_type == 2)
+			ans = rand(Uniform(), 1)[1]
+		end
 	end
-
 	return ans
 end
 
@@ -1122,11 +1065,11 @@ function read_params(gp::GridParams, vp::VarParams)
 	vp.max_nmarker = vp.nmarker + gp.marker_edges[ndykes_all+1]
 
 
-	#blockSize(16, 32);
+	#blockSize(28, 32);
 	#gridSize((nx + blockSize.x - 1) / blockSize.x, (ny + blockSize.y - 1) / blockSize.y);
 
 
-	blockSize = (16, 32)
+	blockSize = (28, 32)
 	gridSize = (Int64(floor((vp.nx + blockSize[1] - 1) / blockSize[1])), Int64(floor((vp.ny + blockSize[2] - 1) / blockSize[2])))
 
 	gp.T = CuArray{Float64,1}(undef, vp.nx * vp.ny)
@@ -1303,7 +1246,7 @@ function check_melt_fracton(gp::GridParams, vp::VarParams)
 		nxl = vp.nxl
 		nyl = vp.nyl
 
-		blockSizel = (16, 32)
+		blockSizel = (28, 32)
 		gridSizel = (
 			(vp.nxl + blockSizel[1] - 1) ÷ blockSizel[1],
 			(vp.nyl + blockSizel[2] - 1) ÷ blockSizel[2],
@@ -1394,7 +1337,7 @@ function eruption_advection(gp::GridParams, vp::VarParams, maxVol, maxIdx, it)
 
 		copyto!(cell_idx, cell_idx_host)
 
-		local blockSize1D = 512
+		local blockSize1D = 896
 		local gridSize1D = (vp.npartcl + blockSize1D - 1) ÷ blockSize1D
 
 		#advect particles
@@ -1424,7 +1367,7 @@ function inserting_dykes(gp::GridParams, vp::VarParams, it)
 			vp.idyke = vp.idyke + 1
 			idyke = vp.idyke
 
-			blockSize1D = 512
+			blockSize1D = 896
 			gridSize1D = (vp.npartcl + blockSize1D - 1) ÷ blockSize1D
 
 			@cuda blocks = gridSize1D threads = blockSize1D advect_particles_intrusion(
@@ -1495,10 +1438,10 @@ function p2g_interpolation(gp::GridParams, vp::VarParams)
 		fill!(gp.C, 0)
 		fill!(gp.wts, 0)
 
-		blockSize1D = 512
+		blockSize1D = 896
 		gridSize1D = (vp.npartcl + blockSize1D - 1) ÷ blockSize1D
 
-		blockSize = (16, 32)
+		blockSize = (28, 32)
 		gridSize = (Int64(floor((vp.nx + blockSize[1] - 1) / blockSize[1])), Int64(floor((vp.ny + blockSize[2] - 1) / blockSize[2])))
 
 		@cuda blocks = gridSize1D threads = blockSize1D p2g_project!(gp.T, gp.C, gp.wts, gp.px, gp.py, gp.pT, gp.pPh, vp.dx, vp.dy, vp.nx, vp.ny, vp.npartcl, vp.npartcl0)
@@ -1512,10 +1455,10 @@ end
 
 function particles_injection(gp::GridParams, vp::VarParams)
 	@time begin
-		blockSize1D = 512
+		blockSize1D = 896
 		gridSize1D = (vp.npartcl + blockSize1D - 1) ÷ blockSize1D
 
-		blockSize = (16, 32)
+		blockSize = (28, 32)
 		gridSize = (Int64(floor((vp.nx + blockSize[1] - 1) / blockSize[1])), Int64(floor((vp.ny + blockSize[2] - 1) / blockSize[2])))
 
 		#@printf("%s particle injection	   | ", bar2)

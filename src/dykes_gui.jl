@@ -26,7 +26,7 @@ end
 
 
 function log_to_buffer(input_string)
-	global buf= input_string*buf
+	#global buf= input_string*buf
 end
 
 #parse csv file
@@ -79,7 +79,7 @@ function dykes_gui()
 	vp = VarParams()			#scalar params
 	init_vp = InitVarParams()	#params for generate random
 
-	num_columns = 6 #number of columns in params part
+	num_columns = 5 #number of columns in params part
 
 	#init default eruption history
 	init_vp.critVol = global_EruptionVolumesVec
@@ -126,6 +126,7 @@ function dykes_gui()
 		#buttons
 		html_button("Start", id="start-but", disabled = false),
 		html_button("Stop", id="stop-but", disabled = false),
+		html_button("Refresh", id="refresh-but", disabled = false),
 		html_div(
 			children=[
 				dcc_input(id="time_left_label", value="Time left",  debounce=true)
@@ -142,8 +143,8 @@ function dykes_gui()
 			#dcc_graph(id="eruptions-timeline-graph")
 		end,
 		html_div(id="cumul-timeline", className="row",style=Dict("columnCount" => 1) ) do
-			#dcc_graph(id="T_graph",figure = Plot(PlotlyJS.heatmap(x = xs, y =ys, z=collect(eachcol(h_T)), title="T")))
-			#dcc_graph(id="eruptions-timeline-graph")
+		end,
+		html_div(id="next-cumul-timeline", className="row",style=Dict("columnCount" => 1) ) do
 		end,
 		html_h2(
 			"Log",
@@ -157,7 +158,7 @@ function dykes_gui()
 				readOnly=true, rows=15
 			),
 			dcc_interval(id="interval-component",
-				interval=1*1000, # in milliseconds
+				interval=1*5000, # in milliseconds
 				n_intervals=1)
 		]),
 		html_h2(
@@ -214,7 +215,10 @@ function dykes_gui()
 						simple_imput("E", init_vp.E),
 						simple_imput("nu", init_vp.nu),
 						simple_imput("tsh", init_vp.tsh),
-						simple_imput("gamma", init_vp.gamma)
+						simple_imput("gamma", init_vp.gamma),
+						simple_imput("dyke_nu", init_vp.dyke_nu),
+						simple_imput("dyke_dev", init_vp.dyke_dev),
+						simple_imput("dyke_type", init_vp.dyke_type)
 					end
 				end]
 			end
@@ -272,6 +276,7 @@ function dykes_gui()
 	#callback for generate button
 	callback!(app, [Output("generate-but", "n_clicks")], [Input("generate-but", "n_clicks")], prevent_initial_call=true) do n_clicks
 		println("generate button clicked")
+		println(init_vp.critVol)
 		dykes_rand_param(init_vp)
 		return [n_clicks + 1]
 	end
@@ -448,7 +453,12 @@ function dykes_gui()
 			vp = VarParams()
 		end
 
-		main_test_gui(gp, vp, G_FLAG_INIT)
+		main_test_gui(gp, vp, init_vp, G_FLAG_INIT)
+		return [false]
+	end
+
+	callback!(app, [Output("refresh-but", "disabled")], [Input("refresh-but", "n_clicks")], prevent_initial_call=true) do n_clicks
+		global G_FLAG_INIT = true
 		return [false]
 	end
 
@@ -518,9 +528,9 @@ function dykes_gui()
 		campi_now = [-(vp.nt - vp.it)/vp.nt*init_vp.calc_years/1000];
 		#campi_cumulut = -(vp.nt .- gp.cumulutive_time)./vp.nt.*init_vp.calc_years/1000;
 
-		campi_cal_graph  = PlotlyJS.scatter(x=campi_calc, y= zeros(length(campi_calc)), mode="markers", name="campi_calc", showlegend=true, marker_size=14)
-		campi_real_graph = PlotlyJS.scatter(x=campi_real, y= zeros(length(campi_real)), mode="markers", name="campi_real", showlegend=true, marker_size=10)
-		campi_now_graph = PlotlyJS.scatter(x=campi_now, y= zeros(length(campi_now)), mode="markers", name="now", showlegend=true, marker_size=10)
+		campi_cal_graph  = PlotlyJS.scatter(x=campi_calc, y= zeros(length(campi_calc)), marker_color="rgba(0, 0, 255, 1)", mode="markers", color = 1, name="campi_calc", showlegend=true, marker_size=14)
+		campi_real_graph = PlotlyJS.scatter(x=campi_real, y= zeros(length(campi_real)), marker_color="rgba(255, 0, 0, 1)", mode="markers", color = 2, name="campi_real", showlegend=true, marker_size=10)
+		campi_now_graph = PlotlyJS.scatter(x=campi_now, y= zeros(length(campi_now)), marker_color="rgba(0, 255, 0, 1)", mode="markers", color = 3, name="now", showlegend=true, marker_size=10)
 		#campi_cumulut_graph = PlotlyJS.scatter(x=campi_cumulut, y=gp.cumulutive_vol, mode="lines", name="cumulative volume")
 #		#campi_next_eruption = PlotlyJS.scatter(x=campi_cumulut, y=(gp.critVol[vp.iSample]/ 1.e9) * 1.e4 * vp.gamma, mode="lines", name="next eruption")
 		data = [campi_cal_graph, campi_real_graph, campi_now_graph]
@@ -543,16 +553,42 @@ function dykes_gui()
 		campi_calc = -(vp.nt .- gp.eruptionSteps)./vp.nt.*init_vp.calc_years/1000;
 		campi_cumulut = -(vp.nt .- gp.cumulutive_time)./vp.nt.*init_vp.calc_years/1000;
 
-		campi_cumulut_graph = PlotlyJS.scatter(x=campi_cumulut, y=gp.cumulutive_vol, mode="lines", name="cumulative volume")
-		campi_next_eruption= PlotlyJS.scatter(x=campi_cumulut, y=gp.cumulutive_erupt, mode="lines", name="next eruption volume")
-		campi_cal_graph  = PlotlyJS.scatter(x=campi_calc, y= zeros(length(campi_calc)), mode="markers", name="campi_calc", showlegend=true, marker_size=14)
-#		campi_next_eruption = PlotlyJS.scatter(x=campi_cumulut, y=(gp.critVol[vp.iSample]/ 1.e9) * 1.e4 * vp.gamma, mode="lines", name="next eruption")
+		#show num cumulutive volume
+		campi_cumulut_graph = PlotlyJS.scatter(x=campi_cumulut, y=gp.cumulutive_calc, mode="lines", color = 1, name="cumulative volume calc", marker_color="rgba(0, 0, 255, 1)")
+		#show real cumulutive volume
+		campi_next_eruption = PlotlyJS.scatter(x=campi_cumulut, y=gp.cumulutive_real, mode="lines", color = 2, name="cumulutive volume real", marker_color="rgba(255, 0, 0, 1)")
+		#points of eruptions
+		campi_cal_graph  = PlotlyJS.scatter(x=campi_calc, y= zeros(length(campi_calc)), mode="markers", name="campi_calc", showlegend=true, marker_size=14, marker_color="rgba(0, 0, 255, 1)")
 
-#		campi_cumulut_graph = PlotlyJS.scatter(x=gp.cumulutive_time, y=gp.cumulutive_vol, mode="lines", name="cumulative volume")
-#		campi_next_eruption = PlotlyJS.scatter(x=gp.cumulutive_time, y=(gp.critVol[vp.iSample]/ 1.e9) * 1.e4 * vp.gamma, mode="lines", name="next eruption")
 		data = [campi_next_eruption, campi_cal_graph, campi_cumulut_graph]
 
 		layout = Layout(title="Cumulutive volume graph",
+						xaxis=attr(title="time, (ka)"),
+						yaxis=attr(title="volume, (km^3)", showgrid=false ))
+
+		p = PlotlyJS.plot(data, layout)
+
+		return [html_div(className="row") do
+			dcc_graph(id="eruptions-timeline-graph", figure = p)
+		end]
+	end
+
+	callback!(app, [Output("next-cumul-timeline", "children")], [Input("interval-component", "n_intervals")]) do n_intervals
+		
+		#campi_cumulut = [-(vp.nt .- gp.cumulutive_time)./vp.nt.*init_vp.calc_years/1000];
+		campi_calc = -(vp.nt .- gp.eruptionSteps)./vp.nt.*init_vp.calc_years/1000;
+		campi_cumulut = -(vp.nt .- gp.cumulutive_time)./vp.nt.*init_vp.calc_years/1000;
+
+		campi_cumulut_graph = PlotlyJS.scatter(x=campi_cumulut, y=gp.next_cumulutive_vol, mode="lines", name="current max volume", marker_color="rgba(0, 0, 255, 1)")
+		campi_next_eruption= PlotlyJS.scatter(x=campi_cumulut, y=gp.next_cumulutive_erupt, mode="lines", name="next eruption volume", marker_color="rgba(255, 0, 0, 1)")
+		campi_cal_graph  = PlotlyJS.scatter(x=campi_calc, y= zeros(length(campi_calc)), mode="markers", name="calculated eruptions", marker_color="rgba(0, 0, 255, 1)", showlegend=true, marker_size=14)
+#		campi_next_eruption = PlotlyJS.scatter(x=campi_cumulut, y=(gp.critVol[vp.iSample]/ 1.e9) * 1.e4 * vp.gamma, mode="lines", name="next eruption")
+
+#		campi_cumulut_graph = PlotlyJS.scatter(x=gp.cumulutive_time, y=gp.cumulutive_vol, mode="lines", name="current volume")
+#		campi_next_eruption = PlotlyJS.scatter(x=gp.cumulutive_time, y=(gp.critVol[vp.iSample]/ 1.e9) * 1.e4 * vp.gamma, mode="lines", name="next eruption")
+		data = [campi_next_eruption, campi_cal_graph, campi_cumulut_graph]
+
+		layout = Layout(title="Next volume graph",
 						xaxis=attr(title="time, (ka)"),
 						yaxis=attr(title="volume, (km^3)", showgrid=false ))
 
@@ -595,7 +631,7 @@ function dykes_gui()
 	#refresh buffer every n_intrervals seconds
 	callback!(app, [Output("log_buffer", "value")], [Input("interval-component", "n_intervals")]) do n_intervals
 		#println("debug time_interval")
-		return [buf]
+		return ["No buffer"]
 	end
 
 	begin
@@ -709,6 +745,20 @@ function dykes_gui()
 			return [init_vp.gamma]
 		end
 
+		callback!(app, [Output("dyke_nu", "value")], [Input("dyke_nu", "value")]) do input_value
+			init_vp.dyke_nu = input_value
+			return [init_vp.dyke_nu]
+		end
+
+		callback!(app, [Output("dyke_dev", "value")], [Input("dyke_dev", "value")]) do input_value
+			init_vp.dyke_dev = input_value
+			return [init_vp.dyke_dev]
+		end
+
+		callback!(app, [Output("dyke_type", "value")], [Input("dyke_type", "value")]) do input_value
+			init_vp.dyke_type = input_value
+			return [init_vp.dyke_type]
+		end
 
 	end
 
@@ -802,6 +852,10 @@ function dykes_gui()
 			println(getfield(init_vp,n))
 			setfield!(init_vp, n, read(fid, string(n)))
 		end
+
+
+		init_vp.critVol = global_EruptionVolumesVec
+		init_vp.critVolTime = global_EruptionTimesVec
 
 		println("config loaded from" * filename)
 		log_to_buffer("config loaded from " *  filename)

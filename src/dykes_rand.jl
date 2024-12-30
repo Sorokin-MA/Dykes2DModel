@@ -484,10 +484,10 @@ function dykes_rand_param(init_vp)
 	dyke_x_rng = [(Lx - dyke_x_W) / 2, (Lx + dyke_x_W) / 2]
 	dyke_x_rng_n = [(Lx - dyke_x_Wn) / 2, (Lx + dyke_x_Wn) / 2]
 
-	dyke_y_rng = [7000, 12000]#dykes y distribution
-	dyke_t_rng = [0.95 * pi / 2, 1.05 * pi / 2]#dykes time distribution
-	dyke_to_sill = 13000#boundary where dykes turn yourself to sill, m
-	dz = init_vp.Lz #z dimension? i guess, m
+	dyke_y_rng = [7000, 13000]					#dykes y distribution
+	dyke_t_rng = [0.95 * pi / 2, 1.05 * pi / 2]	#dykes time distribution
+	dyke_to_sill = init_vp.dyke_to_sill			#boundary where dykes turn yourself to sill, m
+	dz = init_vp.Lz								#z dimension? i guess, m
 
 	Lam_r = init_vp.Lam_r  #thermal conductivity of rock, W/m/K
 	Lam_m = init_vp.Lam_m  #thermal conductivity of magma, W/m/K
@@ -506,6 +506,7 @@ function dykes_rand_param(init_vp)
 
 	#Qv = (0.00411 * 1.e9 / tyear)*(78000.0/(tfin/tyear))#m^3/s
 
+	println(init_vp.dyke_type)
 
 	Ly_eruption::Float64 = init_vp.Ly_eruption # m
 	lam_r_rhoCp::Float64 = Lam_r / (rho * Cp) # m^2/s
@@ -638,17 +639,17 @@ function dykes_rand_param(init_vp)
 	log_to_buffer("Generating dykes...\n")
 	while Q < Vtot
 		#dyke_a = [dyke_a dyke_a_rng[1] + diff(dyke_a_rng)*rand];
-		append!(dyke_a, dyke_a_rng[1] .+ diff(dyke_a_rng, dims=1) .* rand_limited_2(0.5, 0.1))
+		append!(dyke_a, dyke_a_rng[1] .+ diff(dyke_a_rng, dims=1) .* rand_limited_2(init_vp.dyke_nu, init_vp.dyke_dev, init_vp.dyke_type))
 		#dyke_b = [dyke_b dyke_b_rng[1] + diff(dyke_b_rng)*rand];
-		append!(dyke_b, dyke_b_rng[1] .+ diff(dyke_b_rng, dims=1) .* rand_limited_2(0.5, 0.1))
+		append!(dyke_b, dyke_b_rng[1] .+ diff(dyke_b_rng, dims=1) .* rand_limited_2(init_vp.dyke_nu, init_vp.dyke_dev, init_vp.dyke_type))
 		if Q < Q_tsh
 			#dyke_x = [dyke_x dyke_x_rng[1] + diff(dyke_x_rng)*rand];
-			append!(dyke_x, dyke_x_rng[1] .+ diff(dyke_x_rng, dims=1) .* rand_limited_2(0.5, 0.1))
+			append!(dyke_x, dyke_x_rng[1] .+ diff(dyke_x_rng, dims=1) .* rand_limited_2(init_vp.dyke_nu, init_vp.dyke_dev, init_vp.dyke_type))
 		else
-			append!(dyke_x, dyke_x_rng_n[1] .+ diff(dyke_x_rng_n, dims=1) .* rand_limited_2(0.5, 0.1))
+			append!(dyke_x, dyke_x_rng_n[1] .+ diff(dyke_x_rng_n, dims=1) .* rand_limited_2(init_vp.dyke_nu, init_vp.dyke_dev, init_vp.dyke_type))
 		end
-		dyke_y = append!(dyke_y, dyke_y_rng[1] .+ diff(dyke_y_rng, dims=1) .* rand_limited_2(0.5, 0.1))
-		dyke_t = append!(dyke_t, dyke_t_rng[1] .+ diff(dyke_t_rng, dims=1) .* rand_limited_2(0.5, 0.1))
+		dyke_y = append!(dyke_y, dyke_y_rng[1] .+ diff(dyke_y_rng, dims=1) .* rand_limited_2(init_vp.dyke_nu, init_vp.dyke_dev, init_vp.dyke_type))
+		dyke_t = append!(dyke_t, dyke_t_rng[1] .+ diff(dyke_t_rng, dims=1) .* rand_limited_2(init_vp.dyke_nu, init_vp.dyke_dev, init_vp.dyke_type))
 		dyke_v = append!(dyke_v, pi * last(dyke_a) * last(dyke_b))
 		Q = Q + last(dyke_v)
 	end

@@ -1,6 +1,10 @@
 Base.@kwdef mutable struct GridParams
-	cumulutive_erupt = Vector{Float64}()
-	cumulutive_vol = Vector{Float64}()
+	cumulutive_calc = Vector{Float64}()
+	cumulutive_real = Vector{Float64}()
+
+	next_cumulutive_erupt = Vector{Float64}()
+	next_cumulutive_vol = Vector{Float64}()
+
 	cumulutive_time = Vector{Float64}()
 	critVol::Array{Float64,1} = Array{Float64,1}(undef,0);
 	ndykes::Array{Int32,1} = Array{Int32,1}(undef,0);
@@ -85,9 +89,13 @@ Base.@kwdef mutable struct VarParams
 	d::Float64 = 0.0			#???#time step
 	dx::Float64 = 0.0		#X dimension step
 	dy::Float64 = 0.0		#Y dimension step
-	dt::Float64 = 0.0		#Y dimension step
+	dt::Float64 = 0.0
 	eiter::Float64 = 0.0			#???#epsilon
 	pic_amount::Float64 = 0.0	#???#0.05
+	sum_erupted_calc::Float64 = 0.0	
+	sum_erupted_real::Float64 = 0.0	
+
+	iSample_real::Int64= 1	
 
 	pmlt::Int32 = 0			#???#unused
 	nx::Int32 = 0					#Resolution for X dimension
@@ -113,6 +121,8 @@ Base.@kwdef mutable struct VarParams
 	is_eruption::Bool = false
 	iSample::Int32 = 1
 	it::Int64 = 1
+
+	calc_years::Float64= 400e3			#Temperature on the top of area (°C)
 end
 
 Base.@kwdef mutable struct InitVarParams
@@ -150,6 +160,10 @@ Base.@kwdef mutable struct InitVarParams
 	dyke_y_rng = Array{Float64,1}(undef, 0)
 	dyke_b_rng = Array{Float64,1}(undef, 0)
 	dyke_t_rng = Array{Float64,1}(undef, 0)
+	
+	dyke_nu::Float64 = 0.5
+	dyke_dev::Float64 = 0.1 
+	dyke_type::Int64 = 1
 
 	#Numerics
 	seed::Int64 = 666				#seed
