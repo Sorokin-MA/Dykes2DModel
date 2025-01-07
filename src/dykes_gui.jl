@@ -165,7 +165,6 @@ function dykes_gui()
 			"4. Snapshots.",
 			style=Dict("color" => "#000000", "textAlign" => "left"),
 		),
-		html_button("Show current state", id="show-cur-but", disabled = false),
 		html_div(className="info", style=Dict("columnCount" => num_columns)) do
 			html_button("Make snapshot", id="save-snapshot-but", disabled = false),
 			html_button("Load snapshot", id="load-snapshot-but", disabled = false)
@@ -178,11 +177,17 @@ function dykes_gui()
 				],
 			)
 		end,
+			html_button("Show current T", id="show-cur-T-but", disabled = false),
+			html_button("Show current C", id="show-cur-C-but", disabled = false),
+			html_button("Show current mf", id="show-cur-mf-but", disabled = false),
+			html_button("Show current dmf", id="show-cur-dmf-but", disabled = false),
+			html_button("Show current chambers", id="show-cur-chambers-but", disabled = false),
 		html_div(style=Dict("columnCount" => 2)) do
 			html_div(id="T-graph"),
 			html_div(id="C-graph"),
 			html_div(id="dmf-graph"),
-			html_div(id="mf-graph")
+			html_div(id="mf-graph"),
+			html_div(id="chambers-graph")
 		end
 	end
 
@@ -282,7 +287,7 @@ function dykes_gui()
 	end
 
 	callback!(app, [Output("dykes-graph", "children")], [Input("show-dykes-but", "n_clicks")], prevent_initial_call=true) do n_clicks
-			dpa = Array{Float64,1}(undef, 19)#array of double values from matlab script
+		dpa = Array{Float64,1}(undef, 19)#array of double values from matlab script
 		ipa = Array{Int32,1}(undef, 12)#array of int values from matlab script
 
 		io = open(data_folder * "pa.bin", "r")
@@ -406,7 +411,52 @@ function dykes_gui()
 	end
 
 	#callback for generate button
-	callback!(app, [Output("T-graph", "children"), Output("C-graph", "children"), Output("dmf-graph", "children"), Output("mf-graph", "children")], [Input("show-cur-but", "n_clicks")], prevent_initial_call=true) do n_clicks
+	callback!(app, [Output("T-graph", "children")], [Input("show-cur-T-but", "n_clicks")], prevent_initial_call=true) do n_clicks
+			println("show-cur-T-but clicked")
+			if(vp.dx == 0.0)
+				return nothing
+			end
+			xs = 0:vp.dx:vp.Lx
+			ys = 0:vp.dy:vp.Ly
+
+			h_T = Array{Float64,1}(undef, vp.nx * vp.ny)#array of double values from matlab script
+			copyto!(h_T, gp.T)
+
+			title_string = "T, (time, " * string(-(vp.nt - vp.it)/vp.nt*init_vp.calc_years/1000) * " ka)"
+			layout_inner = Layout(title=title_string)
+			p = Plot(PlotlyJS.heatmap(x = xs, y = ys, z = collect(eachrow(reshape(h_T, (vp.nx, vp.ny))))), layout_inner)
+
+			return [
+				html_div(id="dykes_figures_T", className="row" ) do
+					dcc_graph(id="T_graph", figure = p)
+				end
+			]
+	end
+
+	callback!(app, [Output("C-graph", "children")], [Input("show-cur-C-but", "n_clicks")], prevent_initial_call=true) do n_clicks
+			println("show-cur-C-but clicked")
+			if(vp.dx == 0.0)
+				return nothing
+			end
+			xs = 0:vp.dx:vp.Lx
+			ys = 0:vp.dy:vp.Ly
+
+			h_C = Array{Float64,1}(undef, vp.nx * vp.ny)#array of double values from matlab script
+			copyto!(h_C, gp.C)
+
+			title_string = "C, (time, " * string(-(vp.nt - vp.it)/vp.nt*init_vp.calc_years/1000) * " ka)"
+			layout_inner = Layout(title=title_string)
+
+			p = Plot(PlotlyJS.heatmap(x = xs, y =ys, z = collect(eachrow(reshape(h_C, (vp.nx, vp.ny))))), layout_inner)
+			return [
+			html_div(id="dykes_figures_C", className="row") do
+				dcc_graph(id="C_graph", figure = p)
+			end
+			]
+	end
+
+	callback!(app, [Output("mf-graph", "children")], [Input("show-cur-mf-but", "n_clicks")], prevent_initial_call=true) do n_clicks
+			println("show-cur-mf-but clicked")
 			if(vp.dx == 0.0)
 				return nothing
 			end
@@ -421,20 +471,68 @@ function dykes_gui()
 
 
 			mf = mf_magma.(h_T) .* h_C + mf_rock.(h_T) .* (1.0 .- h_C)
-			dmf = dmf_magma.(h_T) .* h_C + dmf_rock.(h_T) .* (1.0 .- h_C)
+
+			title_string = "Melt fraction (mf), (time, " * string(-(vp.nt - vp.it)/vp.nt*init_vp.calc_years/1000) * " ka)"
+			layout_inner = Layout(title=title_string)
+
+			p = Plot(PlotlyJS.heatmap(x = xs, y =ys, z = collect(eachrow(reshape(mf, (vp.nx, vp.ny))))), layout_inner)
 
 			return [
-			html_div(id="dykes_figures_T", className="row" ) do
-				dcc_graph(id="T_graph", figure = Plot(PlotlyJS.heatmap(x = xs, y =ys, z = collect(eachrow(reshape(h_T, (vp.nx, vp.ny)))), title="T")))
-			end,
-			html_div(id="dykes_figures_C", className="row") do
-				dcc_graph(id="C_graph", figure = Plot(PlotlyJS.heatmap(x = xs, y =ys, z = collect(eachrow(reshape(h_C, (vp.nx, vp.ny)))), title="C")))
-			end,
-			html_div(id="dykes_figures_dmf", className="row") do
-				dcc_graph(id="dmf_graph", figure = Plot(PlotlyJS.heatmap(x = xs, y =ys, z = collect(eachrow(reshape(dmf, (vp.nx, vp.ny)))), title="dmf")))
-			end,
-			html_div(id="dykes_figures_mf", className="row") do
-				dcc_graph(id="mf_graph", figure = Plot(PlotlyJS.heatmap(x = xs, y =ys, z = collect(eachrow(reshape(mf, (vp.nx, vp.ny)))), title="mf")))
+				html_div(id="dykes_figures_mf", className="row") do
+					dcc_graph(id="mf_graph", figure = p)
+				end
+			]
+	end
+
+	callback!(app, [Output("dmf-graph", "children")], [Input("show-cur-dmf-but", "n_clicks")], prevent_initial_call=true) do n_clicks
+			println("show-cur-dmf-but clicked")
+			if(vp.dx == 0.0)
+				return nothing
+			end
+			xs = 0:vp.dx:vp.Lx
+			ys = 0:vp.dy:vp.Ly
+
+			dmf = CuArray{Float64,1}(undef, vp.nx * vp.ny)
+			h_dmf = Array{Float64,1}(undef, vp.nx * vp.ny)
+
+			#h_T = Array{Float64,1}(undef, vp.nx * vp.ny)#array of double values from matlab script
+			#copyto!(h_T, gp.T)
+
+			#h_C = Array{Float64,1}(undef, vp.nx * vp.ny)#array of double values from matlab script
+			#copyto!(h_C, gp.C)
+
+			dmf = dmf_magma.(gp.T) .* h_C + dmf_rock.(gp.T) .* (1.0 .- gp.C)
+			copyto!(h_dmf, dmf)
+
+			title_string = "Derivative of melt fraction (dmf), (time, " * string(-(vp.nt - vp.it)/vp.nt*init_vp.calc_years/1000) * " ka)"
+			layout_inner = Layout(title = title_string)
+
+			p = Plot(PlotlyJS.heatmap(x = xs, y =ys, z = collect(eachrow(reshape(dmf, (vp.nx, vp.ny))))), layout_inner)
+
+			return [
+				html_div(id="dykes_figures_dmf", className="row") do
+					dcc_graph(id="dmf_graph", figure = p)
+				end
+			]
+	end
+
+	callback!(app, [Output("chambers-graph", "children")], [Input("show-cur-chambers-but", "n_clicks")], prevent_initial_call=true) do n_clicks
+			println("show-cur-chambers-but clicked")
+			if(vp.dx == 0.0)
+				return nothing
+			end
+
+			xs = 0:vp.dx*vp.nl:vp.Lx
+			ys = 0:vp.dy*vp.nl:vp.Ly
+
+			title_string = "Unique labeled chambers, (time, " * string(-(vp.nt - vp.it)/vp.nt*init_vp.calc_years/1000) * " ka)"
+			layout_inner = Layout(title = title_string)
+
+			p = Plot(PlotlyJS.heatmap(x = xs, y =ys, z = collect(eachrow(reshape(gp.L_host, (vp.nxl, vp.nyl))))), layout_inner)
+
+			return [
+			html_div(id="dykes_figures_chambers", className="row") do
+				dcc_graph(id="chambers_graph", figure = p)
 			end
 			]
 	end
@@ -909,11 +1007,9 @@ function dykes_gui()
 					nn::Array{d2d_cu_type,1} = Array{d2d_cu_type,1}(undef, size(getfield(gp,n))[1]);
 					copyto!(nn, getfield(gp,n))
 
-					#println(getfield(gp,n))
 					write(fid, string(n), nn)
 					println("sucess!!")
 				else
-					#println(getfield(gp,n))
 					write(fid, string(n), getfield(gp,n))
 				end
 			end

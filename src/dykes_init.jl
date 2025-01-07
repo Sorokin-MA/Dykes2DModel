@@ -29,7 +29,7 @@ if(isdir(data_folder) == false)
 	mkdir(data_folder)
 end
 
-FLAG_make_snapshot::Bool = false;
+FLAG_make_snapshot::Bool = true;
 
 start_flag::Bool = false;
 flag_break::Bool = false;
