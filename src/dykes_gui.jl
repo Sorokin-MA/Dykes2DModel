@@ -524,9 +524,26 @@ function dykes_gui()
 
 			xs = 0:vp.dx*vp.nl:vp.Lx
 			ys = 0:vp.dy*vp.nl:vp.Ly
+			xss = collect(xs)
+			yss = collect(ys)
 
 			title_string = "Unique labeled chambers, (time, " * string(-(vp.nt - vp.it)/vp.nt*init_vp.calc_years/1000) * " ka)"
 			layout_inner = Layout(title = title_string)
+			#data = DataFrame(x=hcat(xss for j = 1:length(xss)),y=vcat(yss for j = 1:length(yss)),color=collect(eachrow(reshape(gp.L_host, (vp.nxl, vp.nyl)))))
+
+			println(unique(gp.L_host))
+
+			a = 0
+			for x in unique(gp.L_host)
+				replace!(gp.L_host, x=>a)
+				a = a + 1
+			end
+
+			#data = DataFrame(x=(hcat(xss) for j = 1:((size(yss))[1])),y=(vcat(yss) for j = 1:((size(xss))[1])), color=gp.L_host)
+			#data = DataFrame(x=(hcat(xss) for j = 1:size(xss)),y=(vcat(yss) for j = 1:size(yss)),color=collect(eachrow(reshape(gp.L_host, (vp.nxl, vp.nyl)))))
+
+			#foreach(println, names(data))
+			#println(data)
 
 			p = Plot(PlotlyJS.heatmap(x = xs, y =ys, z = collect(eachrow(reshape(gp.L_host, (vp.nxl, vp.nyl))))), layout_inner)
 
@@ -1057,6 +1074,10 @@ function dykes_gui()
 				#println(getfield(gp,n))
 			end
 		end
+
+		#vp.tsh = 0.99
+		#global G_FLAG_INIT = false
+		#vp.it = vp.nt
 	
 		println("snapshot loaded from " * filename)
 		log_to_buffer("snapshot loaded from " *  filename)
