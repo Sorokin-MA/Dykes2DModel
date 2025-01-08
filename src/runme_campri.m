@@ -4,7 +4,7 @@ rng(seed);
 % program config
 % cur_dir    =pwd;
 
-sim_dir    = '.';												%directory name where will be compilled files
+sim_dir    = '.';	%directory name where will be compilled files
 sim_name   = 'magma_chamber_eruption_rh_rh_particles_generation';
 sim_files   = 'magma_chamber_eruption_rh_rh_particles_generation.*';
 sim_driver = mfilename('fullpath');
