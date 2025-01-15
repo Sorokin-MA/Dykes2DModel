@@ -1,6 +1,5 @@
 using CoordRefSystems
 using Unitful
-using LinearAlgebra
 
 function meshgrid(x, y)
 	X = [i for i in x, j in 1:length(y)]
@@ -65,9 +64,9 @@ function update_S!(point_x, point_y, m, Pcr, eta, rc, Po, x_move, y_move, turn)
         Syy = -1/2*(((2*Rho.^2+1+Rho.^4).*Srr+(-Rho.^4+2*Rho.^2-1).*Stt).*cos(2*alpha)+(-2*Rho.^2-1-Rho.^4).*Srr+(-Rho.^4+2*Rho.^2-1).*Stt+(-2*Rho.^4*sin(2*alpha)+2*sin(2*alpha)).*Srt)./(-2*Rho.^2*cos(2*alpha)+Rho.^4+1);
 		Sxy = 1/2*((2+2*Rho.^4).*Srt.*cos(2*alpha)+(-sin(2*alpha)+Rho.^4*sin(2*alpha)).*Srr+(sin(2*alpha)-Rho.^4*sin(2*alpha)).*Stt-4*Srt.*Rho.^2)./(-2*Rho.^2*cos(2*alpha)+Rho.^4+1)
 	else
-	    Sxx = 1;
-	    Syy = 1;
-	    Sxy = 1;
+	    Sxx = -1;
+	    Syy = -1;
+	    Sxy = -1;
 	end
 
 	return Sxx, Syy, Sxy
@@ -123,7 +122,7 @@ end
 
 #TODO
 #boilerplate
-function d2dm_cart_to_polar(x::Vector,y::Vector)
+function d2dm_cart_to_polar(x,y)
 	tmp = y./x
 	r, phi = sqrt.(x.^2 .+ y.^2), atan.(tmp)
 	for i in eachindex(phi)
@@ -133,16 +132,6 @@ function d2dm_cart_to_polar(x::Vector,y::Vector)
 	end
 	return r, phi
 end
-
-function d2dm_cart_to_polar(x::Float64,y::Float64)
-	tmp = y/x
-	r, phi = sqrt(x^2 .+ y^2), atan(tmp)
-		if (x<0)
-			phi += pi
-		end
-	return r, phi
-end
-
 
 function get_points!(dyke_param)
 	upsilon = 0:(2*pi)/12:2*pi
@@ -226,12 +215,8 @@ function calc_cent_of_next_dyke(dyke_param, Sxx, Syy, Sxy, XX, YY)
 	#From nearest point
 	println(x_lf)
 	println(y_lf)
-	#small_dif_x = XX[x_lf] - XX[x_lf-1]
-	#small_dif_y = XX[x_lf] - XX[x_lf-1]
-	
-	
-	small_dif_x = 0
-	small_dif_y = 0
+	small_dif_x = XX[x_lf] - XX[x_lf-1]
+	small_dif_y = XX[x_lf] - XX[x_lf-1]
 
 
 	Sxx_local = d2dm_blerp(XX[x_lf], XX[x_lf+1], YY[y_lf], YY[y_lf+1], Sxx[x_lf, y_lf], Sxx[x_lf, y_lf+1], Sxx[x_lf+1, y_lf], Sxx[x_lf+1, y_lf+1], cent_x + small_dif_x, cent_y + small_dif_y)
@@ -243,16 +228,8 @@ function calc_cent_of_next_dyke(dyke_param, Sxx, Syy, Sxy, XX, YY)
 	println("Answer:")
 	println(Sxx_local)
 
-	Sxy_local = d2dm_blerp(XX[x_lf], XX[x_lf+1], YY[y_lf], YY[y_lf+1], Sxy[x_lf, y_lf], Sxy[x_lf, y_lf+1], Sxy[x_lf+1, y_lf], Sxy[x_lf+1, y_lf+1], cent_x + small_dif_x, cent_y + small_dif_y)
-	Syy_local = d2dm_blerp(XX[x_lf], XX[x_lf+1], YY[y_lf], YY[y_lf+1], Syy[x_lf, y_lf], Syy[x_lf, y_lf+1], Syy[x_lf+1, y_lf], Syy[x_lf+1, y_lf+1], cent_x + small_dif_x, cent_y + small_dif_y)
-	mat_local = [Sxx_local Sxy_local; Sxy_local Syy_local]
-	l_vecs = eigvecs(mat_local)
-	l_vals = eigvals(mat_local)
-	println(l_vecs)
-	println(l_vals)
 
-
-	return xpoints[indx], ypoints[indx], next_point_phi, xpoints, ypoints, l_vecs
+	return xpoints[indx], ypoints[indx], next_point_phi, xpoints, ypoints
 end
 
 function d2dm_pres_test()
@@ -285,35 +262,22 @@ function d2dm_pres_test()
 	dyke_param = DykeParam(x = 0, y = -2, a = 4, b = 0.5, phi = 0.3)
 	xpoints::Vector{Float64} = Vector{Float64}(undef, 1)
 	ypoints::Vector{Float64} = Vector{Float64}(undef, 1)
-	l_vecs = 0
-	next_point_x = 0
-	next_point_y = 0
 
-	for i in 1:4
+	for i in 1:1
 		@time insert_dyke!(Sxx, Syy, Sxy, dyke_param, XX, YY)
 
-		next_point_x, next_point_y, next_point_phi, xpoints, ypoints, l_vecs = calc_cent_of_next_dyke(dyke_param, Sxx, Syy, Sxy, XX, YY);
+		next_point_x, next_point_y, next_point_phi, xpoints, ypoints = calc_cent_of_next_dyke(dyke_param, Sxx, Syy, Sxy, XX, YY);
 		println("Dyke #$i inserted!")
-		_, phi_tmp =d2dm_cart_to_polar(l_vecs[3], l_vecs[4]) 
-		dyke_param = DykeParam(x = next_point_x, y = next_point_y, phi = phi_tmp)
+		dyke_param = DykeParam(x = next_point_x, y = next_point_y, phi = next_point_phi)
 	end
 
-	P_plot = Plots.heatmap(x = XX', y = YY', Sxx', layout = (3,3))
+	P_plot = Plots.heatmap(x = XX', y = YY', Sxx', layout = (2,2))
 	Plots.heatmap!(P_plot, x = XX', y = YY', Syy', subplot = 2)
 	Plots.heatmap!(P_plot, x = XX', y = YY', Sxy', subplot = 3)
 
 	#println(typeof(tmp_x))
 	#Plots.scatter!(P_plot, tmp_x, tmp_y, subplot = 4, xlimit = [-5,5], ylimit = [-4,4])
 	Plots.scatter!(P_plot, xpoints, ypoints, subplot = 4, markersize = 1,xlimit = [-5,5], ylimit = [-4,4], legend = false)
-	println(typeof(l_vecs))
-	println(l_vecs)
-	println(typeof(l_vecs[1]))
-	Plots.quiver!(P_plot, [next_point_x, next_point_x], [next_point_y, next_point_y], quiver = ([l_vecs[1] l_vecs[2]], [l_vecs[3], l_vecs[4]]), subplot = 4, xlimit = [-5,5], ylimit = [-4,4], legend = false)
-	#Plots.quiver!(P_plot, [next_point_x, next_point_x], [next_point_y, next_point_y], quiver = (l_vecs), subplot = 4, xlimit = [-5,5], ylimit = [-4,4], legend = false)
-
-
-	#mat_local = [Sxx_local Sxy_local; Sxy_local Syy_local]
-	#l_vecs = eigvecs(mat_local)
 
 	Plots.savefig(P_plot, "fig.png")
 	
