@@ -16,161 +16,19 @@ Base.@kwdef mutable struct DykeParam
 	P_in::Float64 = 1;
 end
 
-function update_S!(point_x, point_y, m, Pcr, eta, rc, Po, x_move, y_move, turn)
-	#move to coordinate system where ellips in (0,0)
-	point_x = point_x - x_move;
-	point_y = point_y - y_move;
-
-	rho, upsilon = d2dm_cart_to_polar(point_x, point_y)
-
-	#move to coordinate system where ellips aligned with x,y
-	upsilon = upsilon + turn;
-
-	Z_real = rho*exp.(1im*upsilon);
-
-	#FIXME why 1/2? 
-	R = 1/2
-	
-	#Reverse Zhoukovski
-	if(real(Z_real) >= 0)
-	     Zr_rev_z = Z_real + sqrt(Z_real^2 - m);
-	else
-	     Zr_rev_z = Z_real - sqrt(Z_real^2 - m);
-	end
-
-	X=real(Zr_rev_z);
-	Y=imag(Zr_rev_z);
-	
-	Rho = rho;
-	alpha = upsilon;
-
-	rho, upsilon = d2dm_cart_to_polar(X, Y)
-
-	#equasions solved in coordinate system before Zhoukovski transformation
-	if(rho>=1)
-	    Srr =  (eta*rho^2*Pcr*m^3*cos(2*upsilon)*log(1/(rho^32))+eta*rho^2*Pcr*m^4*log(1/(rc^8))+eta*Pcr*m^4*log(rho^8*rc^8)+eta*rho^6*Pcr*log(rc^8)+eta*m^2*rho^4*Po*log(1/(rho^32))+eta*m^2*rho^4*Pcr*log(rho^32)+eta*m*rho^6*Po*cos(2*upsilon)*log(rho^32)+eta*m^2*rho^2*Pcr*log(1/(rc^8))+eta*rho^2*Po*m^4*log(rc^8)+eta*rho^8*Pcr*log(1/rc^8*rho^8)+eta*rho^8*Po*log(1/rho^8*rc^8)+8*eta*Po*m^4+24*eta*m^2*rho^2*Pcr+16*eta*m^2*rho^4*Po-16*eta*m^2*rho^4*Pcr-8*eta*rho^6*Pcr*m^2+8*eta*rho^6*Po*m^2-8*eta*Pcr*m^4-24*eta*m^2*rho^2*Po+eta*rho^6*Pcr*m^2*log(rc^8)+8*eta*rho^2*Pcr*m^4-8*eta*rho^2*Po*m^4+8*eta*rho^2*Pcr*m^3*cos(2*upsilon)-8*eta*m^3*Pcr*cos(2*upsilon)+8*eta*m^3*Po*cos(2*upsilon)+eta*Po*m^4*log(1/(rho^8*rc^8))+eta*rho^6*Po*log(1/(rc^8))+24*eta*m*rho^4*Po*cos(2*upsilon)-8*eta*m^2*rho^2*Po*cos(4*upsilon)+8*eta*m^2*rho^4*Po*cos(4*upsilon)-24*eta*m*rho^6*Po*cos(2*upsilon)+8*eta*m^2*rho^2*Pcr*cos(4*upsilon)-8*eta*m^2*rho^4*Pcr*cos(4*upsilon)-8*eta*rho^2*Po*m^3*cos(2*upsilon)+eta*m^2*rho^4*Pcr*log(rho^16)*cos(4*upsilon)+eta*m^2*rho^4*Po*log(1/(rho^16))*cos(4*upsilon)-24*eta*m*rho^4*Pcr*cos(2*upsilon)+eta*rho^2*Po*m^3*cos(2*upsilon)*log(rho^32)+24*eta*m*rho^6*Pcr*cos(2*upsilon)+eta*m^2*rho^2*Po*log(rc^8)+eta*rho^6*Po*m^2*log(1/(rc^8))+eta*m*rho^6*Pcr*cos(2*upsilon)*log(1/(rho^32)))/(m^2*rho^4*cos(4*upsilon)*log(rc^16)+m^2*rho^4*log(rc^32)+rho^6*m*cos(2*upsilon)*log(1/(rc^32))+rho^2*m^3*cos(2*upsilon)*log(1/(rc^32))+rho^8*log(rc^8)+m^4*log(rc^8));
-	    Stt = (eta*Pcr*m^4*log(rho^8*rc^8)+eta*m^2*rho^4*Po*log(1/(rho^32))+eta*m^2*rho^4*Pcr*log(rho^32)+eta*m^2*rho^2*Pcr*log(rc^8)+eta*rho^6*Po*m^2*log(rc^8)+eta*rho^2*Pcr*m^4*log(rc^8)+eta*m^2*rho^2*Po*log(1/(rc^8))+eta*rho^8*Pcr*log(1/rc^8*rho^8)+eta*rho^8*Po*log(1/rho^8*rc^8)+16*eta*Po*m^4-24*eta*m^2*rho^2*Pcr+16*eta*m^2*rho^4*Po-16*eta*m^2*rho^4*Pcr+8*eta*rho^6*Pcr*m^2-8*eta*rho^6*Po*m^2-16*eta*Pcr*m^4+24*eta*m^2*rho^2*Po-8*eta*rho^2*Pcr*m^4+8*eta*rho^2*Po*m^4+56*eta*rho^2*Pcr*m^3*cos(2*upsilon)+8*eta*m^3*Pcr*cos(2*upsilon)-8*eta*m^3*Po*cos(2*upsilon)+eta*Po*m^4*log(1/(rho^8*rc^8))-24*eta*m*rho^4*Po*cos(2*upsilon)+8*eta*m^2*rho^2*Po*cos(4*upsilon)+8*eta*m^2*rho^4*Po*cos(4*upsilon)+24*eta*m*rho^6*Po*cos(2*upsilon)-8*eta*m^2*rho^2*Pcr*cos(4*upsilon)-8*eta*m^2*rho^4*Pcr*cos(4*upsilon)-56*eta*rho^2*Po*m^3*cos(2*upsilon)+eta*m^2*rho^4*Pcr*log(rho^16)*cos(4*upsilon)+eta*m^2*rho^4*Po*log(1/(rho^16))*cos(4*upsilon)+24*eta*m*rho^4*Pcr*cos(2*upsilon)-24*eta*m*rho^6*Pcr*cos(2*upsilon)+eta*rho^6*Pcr*log(1/(rc^8))+eta*rho^6*Pcr*m^2*log(1/(rc^8))+eta*rho^2*Po*m^3*cos(2*upsilon)*log(rho^32*rc^32)+eta*rho^6*Po*log(rc^8)+eta*rho^2*Po*m^4*log(1/(rc^8))+eta*m*rho^6*Po*cos(2*upsilon)*log(1/rc^32*rho^32)+8*eta*rho^8*Pcr-8*eta*rho^8*Po+eta*m*rho^6*Pcr*cos(2*upsilon)*log(1/rho^32*rc^32)+eta*rho^2*Pcr*m^3*cos(2*upsilon)*log(1/(rho^32*rc^32)))/(m^2*rho^4*cos(4*upsilon)*log(rc^16)+m^2*rho^4*log(rc^32)+rho^6*m*cos(2*upsilon)*log(1/(rc^32))+rho^2*m^3*cos(2*upsilon)*log(1/(rc^32))+rho^8*log(rc^8)+m^4*log(rc^8));
-	    Srt = eta*m*sin(2*upsilon)*(-2*rho^6*Pcr*log(rc)+2*rho^2*log(rc)*Po*m^2-2*rho^4*log(rc)*Po*m^2+2*rho^4*Pcr*log(rc)*m^2+2*m*Pcr*rho^2*cos(2*upsilon)-2*m*Po*rho^2*cos(2*upsilon)-2*rho^4*Pcr*m^2+2*rho^6*log(rc)*Po+2*rho^4*Po*m^2-2*m*rho^4*Pcr*cos(2*upsilon)-m^2*Pcr+m^2*Po-3*rho^2*Po*m^2+3*rho^4*Po-3*rho^4*Pcr+3*rho^2*Pcr*m^2-3*rho^6*Po+3*rho^6*Pcr+2*m*rho^4*Po*cos(2*upsilon)+2*rho^4*Pcr*log(rc)-2*rho^2*Pcr*log(rc)*m^2-2*rho^4*log(rc)*Po)/log(rc)/(4*m^2*rho^4*cos(2*upsilon)^2+2*m^2*rho^4-4*rho^6*m*cos(2*upsilon)-4*rho^2*m^3*cos(2*upsilon)+rho^8+m^4);
-
-	    Sxx = 1/2*(((-2*Rho.^2+1+Rho.^4).*Srr+(-2*Rho.^2-1-Rho.^4).*Stt).*cos(2*alpha)+(-2*Rho.^2+1+Rho.^4).*Srr+(2*Rho.^2+1+Rho.^4).*Stt+(-2*Rho.^4*sin(2*alpha)+2*sin(2*alpha)).*Srt)./(-2*Rho.^2*cos(2*alpha)+Rho.^4+1);
-        Syy = -1/2*(((2*Rho.^2+1+Rho.^4).*Srr+(-Rho.^4+2*Rho.^2-1).*Stt).*cos(2*alpha)+(-2*Rho.^2-1-Rho.^4).*Srr+(-Rho.^4+2*Rho.^2-1).*Stt+(-2*Rho.^4*sin(2*alpha)+2*sin(2*alpha)).*Srt)./(-2*Rho.^2*cos(2*alpha)+Rho.^4+1);
-		Sxy = 1/2*((2+2*Rho.^4).*Srt.*cos(2*alpha)+(-sin(2*alpha)+Rho.^4*sin(2*alpha)).*Srr+(sin(2*alpha)-Rho.^4*sin(2*alpha)).*Stt-4*Srt.*Rho.^2)./(-2*Rho.^2*cos(2*alpha)+Rho.^4+1)
-	else
-	    Sxx = 1;
-	    Syy = 1;
-	    Sxy = 1;
-	end
-
-	return Sxx, Syy, Sxy
-end
-
-
-function insert_dyke!(Sxx, Syy, Sxy, dyke_param::DykeParam, XX, YY)
-	#println(typeof(P))
-	#TODO
-	#0. Init fields
-	#1. Calculate ro, phi fields
-	#2. Calculate Srr, Stt, Srt
-	#3. Calculate Sxx, Syy, Sxy
-	#4. Calculate Eugen
-	
-	#0. Init
-	#blockSize = (28, 32)
-	#gridSize = (Int64(floor((nx + blockSize[1] - 1) / blockSize[1])), Int64(floor((ny + blockSize[2] - 1) / blockSize[2])))
-	#@cuda blocks = gridSize[1], gridSize[2] threads = blockSize[1], blockSize[2] 
-	
-	m::Float64 = (dyke_param.a - dyke_param.b)/(dyke_param.a + dyke_param.b); #Variable in Joukovskiy equasion
-	nu::Float64 = 0.3; #poussion coefficient
-	eta::Float64 = (1-2*nu)/(1-nu)/2;
-	rc::Float64 = 20; # rho_*
-	Pcr::Float64 = dyke_param.P_in; # Fluid pressure on cavity
-	Po::Float64 = 3; # Fluid pressure on external boundary
-
-	
-	X_rec, Y_rec = meshgrid(XX, YY)
-
-	Sxx_tmp::Float64 = 0;
-	Syy_tmp::Float64 = 0;
-	Sxy_tmp::Float64 = 0;
-
-	#3.
-	for i in eachindex(XX)
-		for j in eachindex(YY)
-			Sxx_tmp, Syy_tmp, Sxy_tmp = update_S!(X_rec[i,j], Y_rec[i,j], m, Pcr, eta, rc, Po, dyke_param.x, dyke_param.y, dyke_param.phi)
-			Sxx[i,j] += Sxx_tmp;
-			Syy[i,j] += Syy_tmp;
-			Sxy[i,j] += Sxy_tmp;
-		end
-	end
-
-
-	#4.
-
-end
-
-function update_S_gpu!(point_x, point_y, m, Pcr, eta, rc, Po, x_move, y_move, turn, Sxx, Syy, Sxy)
-	#move to coordinate system where ellips in (0,0)
-	point_x = point_x - x_move;
-	point_y = point_y - y_move;
-
-	rho, upsilon = d2dm_cart_to_polar(point_x, point_y)
-
-	#move to coordinate system where ellips aligned with x,y
-	upsilon = upsilon + turn;
-
-	Z_real = rho*exp.(1im*upsilon);
-
-	#FIXME why 1/2? 
-	R = 1/2
-	
-	#Reverse Zhoukovski
-	if(real(Z_real) >= 0)
-	     Zr_rev_z = Z_real + sqrt(Z_real^2 - m);
-	else
-	     Zr_rev_z = Z_real - sqrt(Z_real^2 - m);
-	end
-
-	X=real(Zr_rev_z);
-	Y=imag(Zr_rev_z);
-	
-	Rho = rho;
-	alpha = upsilon;
-
-	rho, upsilon = d2dm_cart_to_polar(X, Y)
-
-	#equasions solved in coordinate system before Zhoukovski transformation
-	if(rho>=1)
-	    Srr =  (eta*rho^2*Pcr*m^3*cos(2*upsilon)*log(1/(rho^32))+eta*rho^2*Pcr*m^4*log(1/(rc^8))+eta*Pcr*m^4*log(rho^8*rc^8)+eta*rho^6*Pcr*log(rc^8)+eta*m^2*rho^4*Po*log(1/(rho^32))+eta*m^2*rho^4*Pcr*log(rho^32)+eta*m*rho^6*Po*cos(2*upsilon)*log(rho^32)+eta*m^2*rho^2*Pcr*log(1/(rc^8))+eta*rho^2*Po*m^4*log(rc^8)+eta*rho^8*Pcr*log(1/rc^8*rho^8)+eta*rho^8*Po*log(1/rho^8*rc^8)+8*eta*Po*m^4+24*eta*m^2*rho^2*Pcr+16*eta*m^2*rho^4*Po-16*eta*m^2*rho^4*Pcr-8*eta*rho^6*Pcr*m^2+8*eta*rho^6*Po*m^2-8*eta*Pcr*m^4-24*eta*m^2*rho^2*Po+eta*rho^6*Pcr*m^2*log(rc^8)+8*eta*rho^2*Pcr*m^4-8*eta*rho^2*Po*m^4+8*eta*rho^2*Pcr*m^3*cos(2*upsilon)-8*eta*m^3*Pcr*cos(2*upsilon)+8*eta*m^3*Po*cos(2*upsilon)+eta*Po*m^4*log(1/(rho^8*rc^8))+eta*rho^6*Po*log(1/(rc^8))+24*eta*m*rho^4*Po*cos(2*upsilon)-8*eta*m^2*rho^2*Po*cos(4*upsilon)+8*eta*m^2*rho^4*Po*cos(4*upsilon)-24*eta*m*rho^6*Po*cos(2*upsilon)+8*eta*m^2*rho^2*Pcr*cos(4*upsilon)-8*eta*m^2*rho^4*Pcr*cos(4*upsilon)-8*eta*rho^2*Po*m^3*cos(2*upsilon)+eta*m^2*rho^4*Pcr*log(rho^16)*cos(4*upsilon)+eta*m^2*rho^4*Po*log(1/(rho^16))*cos(4*upsilon)-24*eta*m*rho^4*Pcr*cos(2*upsilon)+eta*rho^2*Po*m^3*cos(2*upsilon)*log(rho^32)+24*eta*m*rho^6*Pcr*cos(2*upsilon)+eta*m^2*rho^2*Po*log(rc^8)+eta*rho^6*Po*m^2*log(1/(rc^8))+eta*m*rho^6*Pcr*cos(2*upsilon)*log(1/(rho^32)))/(m^2*rho^4*cos(4*upsilon)*log(rc^16)+m^2*rho^4*log(rc^32)+rho^6*m*cos(2*upsilon)*log(1/(rc^32))+rho^2*m^3*cos(2*upsilon)*log(1/(rc^32))+rho^8*log(rc^8)+m^4*log(rc^8));
-	    Stt = (eta*Pcr*m^4*log(rho^8*rc^8)+eta*m^2*rho^4*Po*log(1/(rho^32))+eta*m^2*rho^4*Pcr*log(rho^32)+eta*m^2*rho^2*Pcr*log(rc^8)+eta*rho^6*Po*m^2*log(rc^8)+eta*rho^2*Pcr*m^4*log(rc^8)+eta*m^2*rho^2*Po*log(1/(rc^8))+eta*rho^8*Pcr*log(1/rc^8*rho^8)+eta*rho^8*Po*log(1/rho^8*rc^8)+16*eta*Po*m^4-24*eta*m^2*rho^2*Pcr+16*eta*m^2*rho^4*Po-16*eta*m^2*rho^4*Pcr+8*eta*rho^6*Pcr*m^2-8*eta*rho^6*Po*m^2-16*eta*Pcr*m^4+24*eta*m^2*rho^2*Po-8*eta*rho^2*Pcr*m^4+8*eta*rho^2*Po*m^4+56*eta*rho^2*Pcr*m^3*cos(2*upsilon)+8*eta*m^3*Pcr*cos(2*upsilon)-8*eta*m^3*Po*cos(2*upsilon)+eta*Po*m^4*log(1/(rho^8*rc^8))-24*eta*m*rho^4*Po*cos(2*upsilon)+8*eta*m^2*rho^2*Po*cos(4*upsilon)+8*eta*m^2*rho^4*Po*cos(4*upsilon)+24*eta*m*rho^6*Po*cos(2*upsilon)-8*eta*m^2*rho^2*Pcr*cos(4*upsilon)-8*eta*m^2*rho^4*Pcr*cos(4*upsilon)-56*eta*rho^2*Po*m^3*cos(2*upsilon)+eta*m^2*rho^4*Pcr*log(rho^16)*cos(4*upsilon)+eta*m^2*rho^4*Po*log(1/(rho^16))*cos(4*upsilon)+24*eta*m*rho^4*Pcr*cos(2*upsilon)-24*eta*m*rho^6*Pcr*cos(2*upsilon)+eta*rho^6*Pcr*log(1/(rc^8))+eta*rho^6*Pcr*m^2*log(1/(rc^8))+eta*rho^2*Po*m^3*cos(2*upsilon)*log(rho^32*rc^32)+eta*rho^6*Po*log(rc^8)+eta*rho^2*Po*m^4*log(1/(rc^8))+eta*m*rho^6*Po*cos(2*upsilon)*log(1/rc^32*rho^32)+8*eta*rho^8*Pcr-8*eta*rho^8*Po+eta*m*rho^6*Pcr*cos(2*upsilon)*log(1/rho^32*rc^32)+eta*rho^2*Pcr*m^3*cos(2*upsilon)*log(1/(rho^32*rc^32)))/(m^2*rho^4*cos(4*upsilon)*log(rc^16)+m^2*rho^4*log(rc^32)+rho^6*m*cos(2*upsilon)*log(1/(rc^32))+rho^2*m^3*cos(2*upsilon)*log(1/(rc^32))+rho^8*log(rc^8)+m^4*log(rc^8));
-	    Srt = eta*m*sin(2*upsilon)*(-2*rho^6*Pcr*log(rc)+2*rho^2*log(rc)*Po*m^2-2*rho^4*log(rc)*Po*m^2+2*rho^4*Pcr*log(rc)*m^2+2*m*Pcr*rho^2*cos(2*upsilon)-2*m*Po*rho^2*cos(2*upsilon)-2*rho^4*Pcr*m^2+2*rho^6*log(rc)*Po+2*rho^4*Po*m^2-2*m*rho^4*Pcr*cos(2*upsilon)-m^2*Pcr+m^2*Po-3*rho^2*Po*m^2+3*rho^4*Po-3*rho^4*Pcr+3*rho^2*Pcr*m^2-3*rho^6*Po+3*rho^6*Pcr+2*m*rho^4*Po*cos(2*upsilon)+2*rho^4*Pcr*log(rc)-2*rho^2*Pcr*log(rc)*m^2-2*rho^4*log(rc)*Po)/log(rc)/(4*m^2*rho^4*cos(2*upsilon)^2+2*m^2*rho^4-4*rho^6*m*cos(2*upsilon)-4*rho^2*m^3*cos(2*upsilon)+rho^8+m^4);
-
-		Sxx[] = 1/2*(((-2*Rho.^2+1+Rho.^4).*Srr+(-2*Rho.^2-1-Rho.^4).*Stt).*cos(2*alpha)+(-2*Rho.^2+1+Rho.^4).*Srr+(2*Rho.^2+1+Rho.^4).*Stt+(-2*Rho.^4*sin(2*alpha)+2*sin(2*alpha)).*Srt)./(-2*Rho.^2*cos(2*alpha)+Rho.^4+1);
-		Syy[] = -1/2*(((2*Rho.^2+1+Rho.^4).*Srr+(-Rho.^4+2*Rho.^2-1).*Stt).*cos(2*alpha)+(-2*Rho.^2-1-Rho.^4).*Srr+(-Rho.^4+2*Rho.^2-1).*Stt+(-2*Rho.^4*sin(2*alpha)+2*sin(2*alpha)).*Srt)./(-2*Rho.^2*cos(2*alpha)+Rho.^4+1);
-		Sxy[] = 1/2*((2+2*Rho.^4).*Srt.*cos(2*alpha)+(-sin(2*alpha)+Rho.^4*sin(2*alpha)).*Srr+(sin(2*alpha)-Rho.^4*sin(2*alpha)).*Stt-4*Srt.*Rho.^2)./(-2*Rho.^2*cos(2*alpha)+Rho.^4+1)
-	else
-		Sxx[] = 1;
-		Syy[] = 1;
-		Sxy[] = 1;
-	end
-
-end
-
-
-
 
 function insert_dyke_gpu!(Sxx, Syy, Sxy, XX, YY, nx, ny,
 		dyke_param_a::Float64, dyke_param_b::Float64, dyke_param_P_in::Float64,
-		dyke_param_x::Float64, dyke_param_y::Float64, dyke_param_phi::Float64, dx::Float64, dy::Float64)
+		dyke_param_x::Float64, dyke_param_y::Float64, dyke_param_phi::Float64)
 
 	ix = (blockIdx().x - 1) * blockDim().x + threadIdx().x
-	iy = (blockIdx().y - 1) * blockDim().y + threadIdx().y - 1
+	iy = (blockIdx().y - 1) * blockDim().y + threadIdx().y
 
 	if((ix > nx) || (iy > ny))
 		return nothing
 	end
 
-
-	cur_index = ix + nx * iy
+	cur_index = ix + nx * (iy-1)
 
 	m::Float64 = (dyke_param_a - dyke_param_b)/(dyke_param_a + dyke_param_b); #Variable in Joukovskiy equasion
 	nu::Float64 = 0.3; #poussion coefficient
@@ -180,21 +38,9 @@ function insert_dyke_gpu!(Sxx, Syy, Sxy, XX, YY, nx, ny,
 	Po::Float64 = 3; # Fluid pressure on external boundary
 
 	
-	#X_rec, Y_rec = meshgrid(XX, YY)
-
-
-	# update_S_gpu!(dx * ix, dy * iy, 
-	# 			  m, Pcr, eta, rc, Po, 
-	# 			  dyke_param_x, dyke_param_y, dyke_param_phi, 
-	# 			  Ref(cudaconvert(Sxx[ix + nx * iy])), cudaconvert(Ref(Syy[ix + nx * iy])), cudaconvert(Ref(Sxy[ix + nx * iy])))
-	
-	#point_x = dx * (ix-1) - dyke_param_x;
-	#point_y = dy * iy - dyke_param_y;
-
 	point_x = XX[ix] - dyke_param_x;
-	point_y = YY[iy+1] - dyke_param_y;
+	point_y = YY[iy] - dyke_param_y;
 
-	#println(point_x)
 
 	rho, upsilon = d2dm_cart_to_polar(point_x, point_y)
 
@@ -223,17 +69,24 @@ function insert_dyke_gpu!(Sxx, Syy, Sxy, XX, YY, nx, ny,
 
 	#equasions solved in coordinate system before Zhoukovski transformation
 	if(rho>=1)
-	    Srr =  (eta*rho^2*Pcr*m^3*cos(2*upsilon)*log(1/(rho^32))+eta*rho^2*Pcr*m^4*log(1/(rc^8))+eta*Pcr*m^4*log(rho^8*rc^8)+eta*rho^6*Pcr*log(rc^8)+eta*m^2*rho^4*Po*log(1/(rho^32))+eta*m^2*rho^4*Pcr*log(rho^32)+eta*m*rho^6*Po*cos(2*upsilon)*log(rho^32)+eta*m^2*rho^2*Pcr*log(1/(rc^8))+eta*rho^2*Po*m^4*log(rc^8)+eta*rho^8*Pcr*log(1/rc^8*rho^8)+eta*rho^8*Po*log(1/rho^8*rc^8)+8*eta*Po*m^4+24*eta*m^2*rho^2*Pcr+16*eta*m^2*rho^4*Po-16*eta*m^2*rho^4*Pcr-8*eta*rho^6*Pcr*m^2+8*eta*rho^6*Po*m^2-8*eta*Pcr*m^4-24*eta*m^2*rho^2*Po+eta*rho^6*Pcr*m^2*log(rc^8)+8*eta*rho^2*Pcr*m^4-8*eta*rho^2*Po*m^4+8*eta*rho^2*Pcr*m^3*cos(2*upsilon)-8*eta*m^3*Pcr*cos(2*upsilon)+8*eta*m^3*Po*cos(2*upsilon)+eta*Po*m^4*log(1/(rho^8*rc^8))+eta*rho^6*Po*log(1/(rc^8))+24*eta*m*rho^4*Po*cos(2*upsilon)-8*eta*m^2*rho^2*Po*cos(4*upsilon)+8*eta*m^2*rho^4*Po*cos(4*upsilon)-24*eta*m*rho^6*Po*cos(2*upsilon)+8*eta*m^2*rho^2*Pcr*cos(4*upsilon)-8*eta*m^2*rho^4*Pcr*cos(4*upsilon)-8*eta*rho^2*Po*m^3*cos(2*upsilon)+eta*m^2*rho^4*Pcr*log(rho^16)*cos(4*upsilon)+eta*m^2*rho^4*Po*log(1/(rho^16))*cos(4*upsilon)-24*eta*m*rho^4*Pcr*cos(2*upsilon)+eta*rho^2*Po*m^3*cos(2*upsilon)*log(rho^32)+24*eta*m*rho^6*Pcr*cos(2*upsilon)+eta*m^2*rho^2*Po*log(rc^8)+eta*rho^6*Po*m^2*log(1/(rc^8))+eta*m*rho^6*Pcr*cos(2*upsilon)*log(1/(rho^32)))/(m^2*rho^4*cos(4*upsilon)*log(rc^16)+m^2*rho^4*log(rc^32)+rho^6*m*cos(2*upsilon)*log(1/(rc^32))+rho^2*m^3*cos(2*upsilon)*log(1/(rc^32))+rho^8*log(rc^8)+m^4*log(rc^8));
+	    Srr = (eta*rho^2*Pcr*m^3*cos(2*upsilon)*log(1/(rho^32))+eta*rho^2*Pcr*m^4*log(1/(rc^8))+eta*Pcr*m^4*log(rho^8*rc^8)+eta*rho^6*Pcr*log(rc^8)+eta*m^2*rho^4*Po*log(1/(rho^32))+eta*m^2*rho^4*Pcr*log(rho^32)+eta*m*rho^6*Po*cos(2*upsilon)*log(rho^32)+eta*m^2*rho^2*Pcr*log(1/(rc^8))+eta*rho^2*Po*m^4*log(rc^8)+eta*rho^8*Pcr*log(1/rc^8*rho^8)+eta*rho^8*Po*log(1/rho^8*rc^8)+8*eta*Po*m^4+24*eta*m^2*rho^2*Pcr+16*eta*m^2*rho^4*Po-16*eta*m^2*rho^4*Pcr-8*eta*rho^6*Pcr*m^2+8*eta*rho^6*Po*m^2-8*eta*Pcr*m^4-24*eta*m^2*rho^2*Po+eta*rho^6*Pcr*m^2*log(rc^8)+8*eta*rho^2*Pcr*m^4-8*eta*rho^2*Po*m^4+8*eta*rho^2*Pcr*m^3*cos(2*upsilon)-8*eta*m^3*Pcr*cos(2*upsilon)+8*eta*m^3*Po*cos(2*upsilon)+eta*Po*m^4*log(1/(rho^8*rc^8))+eta*rho^6*Po*log(1/(rc^8))+24*eta*m*rho^4*Po*cos(2*upsilon)-8*eta*m^2*rho^2*Po*cos(4*upsilon)+8*eta*m^2*rho^4*Po*cos(4*upsilon)-24*eta*m*rho^6*Po*cos(2*upsilon)+8*eta*m^2*rho^2*Pcr*cos(4*upsilon)-8*eta*m^2*rho^4*Pcr*cos(4*upsilon)-8*eta*rho^2*Po*m^3*cos(2*upsilon)+eta*m^2*rho^4*Pcr*log(rho^16)*cos(4*upsilon)+eta*m^2*rho^4*Po*log(1/(rho^16))*cos(4*upsilon)-24*eta*m*rho^4*Pcr*cos(2*upsilon)+eta*rho^2*Po*m^3*cos(2*upsilon)*log(rho^32)+24*eta*m*rho^6*Pcr*cos(2*upsilon)+eta*m^2*rho^2*Po*log(rc^8)+eta*rho^6*Po*m^2*log(1/(rc^8))+eta*m*rho^6*Pcr*cos(2*upsilon)*log(1/(rho^32)))/(m^2*rho^4*cos(4*upsilon)*log(rc^16)+m^2*rho^4*log(rc^32)+rho^6*m*cos(2*upsilon)*log(1/(rc^32))+rho^2*m^3*cos(2*upsilon)*log(1/(rc^32))+rho^8*log(rc^8)+m^4*log(rc^8));
 	    Stt = (eta*Pcr*m^4*log(rho^8*rc^8)+eta*m^2*rho^4*Po*log(1/(rho^32))+eta*m^2*rho^4*Pcr*log(rho^32)+eta*m^2*rho^2*Pcr*log(rc^8)+eta*rho^6*Po*m^2*log(rc^8)+eta*rho^2*Pcr*m^4*log(rc^8)+eta*m^2*rho^2*Po*log(1/(rc^8))+eta*rho^8*Pcr*log(1/rc^8*rho^8)+eta*rho^8*Po*log(1/rho^8*rc^8)+16*eta*Po*m^4-24*eta*m^2*rho^2*Pcr+16*eta*m^2*rho^4*Po-16*eta*m^2*rho^4*Pcr+8*eta*rho^6*Pcr*m^2-8*eta*rho^6*Po*m^2-16*eta*Pcr*m^4+24*eta*m^2*rho^2*Po-8*eta*rho^2*Pcr*m^4+8*eta*rho^2*Po*m^4+56*eta*rho^2*Pcr*m^3*cos(2*upsilon)+8*eta*m^3*Pcr*cos(2*upsilon)-8*eta*m^3*Po*cos(2*upsilon)+eta*Po*m^4*log(1/(rho^8*rc^8))-24*eta*m*rho^4*Po*cos(2*upsilon)+8*eta*m^2*rho^2*Po*cos(4*upsilon)+8*eta*m^2*rho^4*Po*cos(4*upsilon)+24*eta*m*rho^6*Po*cos(2*upsilon)-8*eta*m^2*rho^2*Pcr*cos(4*upsilon)-8*eta*m^2*rho^4*Pcr*cos(4*upsilon)-56*eta*rho^2*Po*m^3*cos(2*upsilon)+eta*m^2*rho^4*Pcr*log(rho^16)*cos(4*upsilon)+eta*m^2*rho^4*Po*log(1/(rho^16))*cos(4*upsilon)+24*eta*m*rho^4*Pcr*cos(2*upsilon)-24*eta*m*rho^6*Pcr*cos(2*upsilon)+eta*rho^6*Pcr*log(1/(rc^8))+eta*rho^6*Pcr*m^2*log(1/(rc^8))+eta*rho^2*Po*m^3*cos(2*upsilon)*log(rho^32*rc^32)+eta*rho^6*Po*log(rc^8)+eta*rho^2*Po*m^4*log(1/(rc^8))+eta*m*rho^6*Po*cos(2*upsilon)*log(1/rc^32*rho^32)+8*eta*rho^8*Pcr-8*eta*rho^8*Po+eta*m*rho^6*Pcr*cos(2*upsilon)*log(1/rho^32*rc^32)+eta*rho^2*Pcr*m^3*cos(2*upsilon)*log(1/(rho^32*rc^32)))/(m^2*rho^4*cos(4*upsilon)*log(rc^16)+m^2*rho^4*log(rc^32)+rho^6*m*cos(2*upsilon)*log(1/(rc^32))+rho^2*m^3*cos(2*upsilon)*log(1/(rc^32))+rho^8*log(rc^8)+m^4*log(rc^8));
 	    Srt = eta*m*sin(2*upsilon)*(-2*rho^6*Pcr*log(rc)+2*rho^2*log(rc)*Po*m^2-2*rho^4*log(rc)*Po*m^2+2*rho^4*Pcr*log(rc)*m^2+2*m*Pcr*rho^2*cos(2*upsilon)-2*m*Po*rho^2*cos(2*upsilon)-2*rho^4*Pcr*m^2+2*rho^6*log(rc)*Po+2*rho^4*Po*m^2-2*m*rho^4*Pcr*cos(2*upsilon)-m^2*Pcr+m^2*Po-3*rho^2*Po*m^2+3*rho^4*Po-3*rho^4*Pcr+3*rho^2*Pcr*m^2-3*rho^6*Po+3*rho^6*Pcr+2*m*rho^4*Po*cos(2*upsilon)+2*rho^4*Pcr*log(rc)-2*rho^2*Pcr*log(rc)*m^2-2*rho^4*log(rc)*Po)/log(rc)/(4*m^2*rho^4*cos(2*upsilon)^2+2*m^2*rho^4-4*rho^6*m*cos(2*upsilon)-4*rho^2*m^3*cos(2*upsilon)+rho^8+m^4);
 
-		Sxx[cur_index] = 1/2*(((-2*Rho.^2+1+Rho.^4).*Srr+(-2*Rho.^2-1-Rho.^4).*Stt).*cos(2*alpha)+(-2*Rho.^2+1+Rho.^4).*Srr+(2*Rho.^2+1+Rho.^4).*Stt+(-2*Rho.^4*sin(2*alpha)+2*sin(2*alpha)).*Srt)./(-2*Rho.^2*cos(2*alpha)+Rho.^4+1);
-		Syy[cur_index] = -1/2*(((2*Rho.^2+1+Rho.^4).*Srr+(-Rho.^4+2*Rho.^2-1).*Stt).*cos(2*alpha)+(-2*Rho.^2-1-Rho.^4).*Srr+(-Rho.^4+2*Rho.^2-1).*Stt+(-2*Rho.^4*sin(2*alpha)+2*sin(2*alpha)).*Srt)./(-2*Rho.^2*cos(2*alpha)+Rho.^4+1);
-		Sxy[cur_index] = 1/2*((2+2*Rho.^4).*Srt.*cos(2*alpha)+(-sin(2*alpha)+Rho.^4*sin(2*alpha)).*Srr+(sin(2*alpha)-Rho.^4*sin(2*alpha)).*Stt-4*Srt.*Rho.^2)./(-2*Rho.^2*cos(2*alpha)+Rho.^4+1)
+		# Sxx[cur_index] = Sxx[cur_index] + 1/2*(((-2*Rho.^2+1+Rho.^4).*Srr+(-2*Rho.^2-1-Rho.^4).*Stt).*cos(2*alpha)+(-2*Rho.^2+1+Rho.^4).*Srr+(2*Rho.^2+1+Rho.^4).*Stt+(-2*Rho.^4*sin(2*alpha)+2*sin(2*alpha)).*Srt)./(-2*Rho.^2*cos(2*alpha)+Rho.^4+1);
+		# Syy[cur_index] = Syy[cur_index] - 1/2*(((2*Rho.^2+1+Rho.^4).*Srr+(-Rho.^4+2*Rho.^2-1).*Stt).*cos(2*alpha)+(-2*Rho.^2-1-Rho.^4).*Srr+(-Rho.^4+2*Rho.^2-1).*Stt+(-2*Rho.^4*sin(2*alpha)+2*sin(2*alpha)).*Srt)./(-2*Rho.^2*cos(2*alpha)+Rho.^4+1);
+		# Sxy[cur_index] = Sxy[cur_index] + 1/2*((2+2*Rho.^4).*Srt.*cos(2*alpha)+(-sin(2*alpha)+Rho.^4*sin(2*alpha)).*Srr+(sin(2*alpha)-Rho.^4*sin(2*alpha)).*Stt-4*Srt.*Rho.^2)./(-2*Rho.^2*cos(2*alpha)+Rho.^4+1)
+		
+		#dSxx = 
+		#CUDA.atomic_add!(pointer(Sxx, idc(ix1, iy1, nx)), k11 * pT[ip])
+
+		Sxx[cur_index] = Sxx[cur_index] + 1/2*(((-2*Rho.^2+1+Rho.^4).*Srr+(-2*Rho.^2-1-Rho.^4).*Stt).*cos(2*alpha)+(-2*Rho.^2+1+Rho.^4).*Srr+(2*Rho.^2+1+Rho.^4).*Stt+(-2*Rho.^4*sin(2*alpha)+2*sin(2*alpha)).*Srt)./(-2*Rho.^2*cos(2*alpha)+Rho.^4+1)
+		Syy[cur_index] = Syy[cur_index] - 1/2*(((2*Rho.^2+1+Rho.^4).*Srr+(-Rho.^4+2*Rho.^2-1).*Stt).*cos(2*alpha)+(-2*Rho.^2-1-Rho.^4).*Srr+(-Rho.^4+2*Rho.^2-1).*Stt+(-2*Rho.^4*sin(2*alpha)+2*sin(2*alpha)).*Srt)./(-2*Rho.^2*cos(2*alpha)+Rho.^4+1)
+		Sxy[cur_index] = Sxy[cur_index] + 1/2*((2+2*Rho.^4).*Srt.*cos(2*alpha)+(-sin(2*alpha)+Rho.^4*sin(2*alpha)).*Srr+(sin(2*alpha)-Rho.^4*sin(2*alpha)).*Stt-4*Srt.*Rho.^2)./(-2*Rho.^2*cos(2*alpha)+Rho.^4+1)
 	else
-		Sxx[cur_index] = 1;
-		Syy[cur_index] = 1;
-		Sxy[cur_index] = 1;
+		Sxx[cur_index] = Sxx[cur_index] + 1
+		Syy[cur_index] = Syy[cur_index] + 1
+		Sxy[cur_index] = Sxy[cur_index] + 1
 	end
 
 	return nothing
@@ -266,8 +119,8 @@ function d2dm_cart_to_polar(x::Float64,y::Float64)
 end
 
 
-function get_points!(dyke_param)
-	upsilon = 0:(2*pi)/12:2*pi
+function get_points!(dyke_param, num_of_points)
+	upsilon = 0:(2*pi)/(num_of_points-1):2*pi
 	rho = 1
 
 	Z_real = rho .* exp.(1im*upsilon);
@@ -304,13 +157,80 @@ function d2dm_blerp(x1, x2, y1, y2, f11, f12, f21, f22, x, y)
 	return invDxDy * (f11 * dx2 * dy2 + f12 * dx2 * dy1 + f21 * dx1 * dy2 + f22 * dx1 * dy1)
 end
 
+function get_sigma2(x, y, XX, YY, Sxx, Syy, Sxy)
 
-function calc_cent_of_next_dyke(dyke_param, Sxx, Syy, Sxy, XX, YY)
+	x_lf = 0.0
+	y_lf = 0.0
+
+
+	for i in eachindex(collect(XX))
+		if (XX[i]>x)
+			x_lf = i - 1;
+			break
+		end
+	end
+
+	for i in eachindex(collect(YY))
+		if (YY[i]>y)
+			y_lf = i - 1;
+			break
+		end
+	end
+
+
+	#From nearest point
+	# println(x_lf)
+	# println(y_lf)
+	
+	
+	small_dif_x = 0
+	small_dif_y = 0
+
+
+	Sxx_local = d2dm_blerp(XX[x_lf], XX[x_lf+1], YY[y_lf], YY[y_lf+1], Sxx[x_lf, y_lf], Sxx[x_lf, y_lf+1], Sxx[x_lf+1, y_lf], Sxx[x_lf+1, y_lf+1], x + small_dif_x, y + small_dif_y)
+	Sxy_local = d2dm_blerp(XX[x_lf], XX[x_lf+1], YY[y_lf], YY[y_lf+1], Sxy[x_lf, y_lf], Sxy[x_lf, y_lf+1], Sxy[x_lf+1, y_lf], Sxy[x_lf+1, y_lf+1], x + small_dif_x, y + small_dif_y)
+	Syy_local = d2dm_blerp(XX[x_lf], XX[x_lf+1], YY[y_lf], YY[y_lf+1], Syy[x_lf, y_lf], Syy[x_lf, y_lf+1], Syy[x_lf+1, y_lf], Syy[x_lf+1, y_lf+1], x + small_dif_x, y + small_dif_y)
+
+	# println("Points around pick:")
+	# println(Sxx[x_lf, y_lf])
+	# println(Sxx[x_lf+1, y_lf])
+	# println(Sxx[x_lf, y_lf+1])
+	# println(Sxx[x_lf+1, y_lf+1])
+	# println("Point in pick:")
+	# println(Sxx_local)
+
+
+	mat_local = [Sxx_local Sxy_local; Sxy_local Syy_local]
+	#println(mat_local)
+	l_vecs = eigvecs(mat_local)
+	l_vals = eigvals(mat_local)
+	println(l_vals)
+
+	#TODO:check if sorted
+	return l_vals[2], l_vecs
+end
+
+
+function calc_cent_of_next_dyke(dyke_param, Sxx, Syy, Sxy, XX, YY, y_limit)
 	#TODO
 	#1. calculate points on boundary
-	xpoints, ypoints = get_points!(dyke_param)
-#	println(":")
-#	println(xpoints)
+	num_of_points::Int = 14
+	xpoints, ypoints = get_points!(dyke_param, num_of_points)
+	l_vecs = Matrix{Float64}(undef, 2,2)
+
+	for i in eachindex(ypoints)
+		x_new = 7.0
+		y_new = 3.0
+		#println(ypoints)
+		if ypoints[i] > y_limit
+			println("REACHED SURFACE!");
+			#_, l_vecs = get_sigma2(x_new, y_new, XX, YY, Sxx, Syy, Sxy)
+			tmp, l_vecs = get_sigma2(xpoints[1], ypoints[1], XX, YY, Sxx, Syy, Sxy)
+			return x_new, y_new, xpoints, ypoints, l_vecs
+		end
+	end
+
+	#println(xpoints)
 	#2. calculate preassure on boundary
 		#2.1. find normal to ellipsis
 		#2.2. find average preassure tensor in points
@@ -319,62 +239,46 @@ function calc_cent_of_next_dyke(dyke_param, Sxx, Syy, Sxy, XX, YY)
 	#4. Kalculate K
 	#5. choose point based on K
 	
-	_, indx = findmax(ypoints)
+	#find sigmas in observation points
+	sigma2_in_points = Array{Float64}(undef, 0)
 
-	next_point_phi = 0.45 + 0.9 * pi * rand()
-
-	cent_x = xpoints[indx]
-	cent_y = ypoints[indx]
-
-	x_lf = 0.0
-	y_lf = 0.0
-
-
-	for i in eachindex(collect(XX))
-		if (XX[i]>xpoints[indx])
-			x_lf = i - 1;
-			break
-		end
+	for i in eachindex(xpoints)
+		sigma2, _ = get_sigma2(xpoints[i], ypoints[i], XX, YY, Sxx, Syy, Sxy)
+		append!(sigma2_in_points, sigma2)
 	end
 
-	for i in eachindex(collect(YY))
-		if (YY[i]>ypoints[indx])
-			y_lf = i - 1;
-			break
-		end
+	#println(size(sigma2_in_points)[1])
+	#println(sigma2_in_points)
+
+	c = dyke_param.a + dyke_param.b
+	K = Array{Float64}(undef,0)
+	K_size::Int64 = Int(size(sigma2_in_points)[1])
+	g = 9.8
+	rho_m = 2800
+
+
+	for i in eachindex(sigma2_in_points)
+		i_opposite = Int((i+K_size÷2)%(K_size)+1)
+		#println(i)
+		#println(i_opposite)
+		#println("x - $(xpoints[i])")
+		tmp_sigma_dif = sigma2_in_points[i] - sigma2_in_points[i_opposite]
+		#NOTE:here - ypoints - from surface, i guess...
+		delta_y = (tmp_sigma_dif)/(2*c) - rho_m * g *((10-ypoints[i]) - (10-ypoints[i_opposite]))
+		#println("sigma diff - $tmp_sigma_dif")
+		append!(K,  4/3*pi*delta_y*c*sqrt(pi*c))
 	end
 
 
-	#From nearest point
-	println(x_lf)
-	println(y_lf)
-	#small_dif_x = XX[x_lf] - XX[x_lf-1]
-	#small_dif_y = XX[x_lf] - XX[x_lf-1]
-	
-	
-	small_dif_x = 0
-	small_dif_y = 0
+	_, indx = findmax(K)
 
+	# println(K)
+	# println(size(K)[1])
+	# println("indx - $indx")
 
-	Sxx_local = d2dm_blerp(XX[x_lf], XX[x_lf+1], YY[y_lf], YY[y_lf+1], Sxx[x_lf, y_lf], Sxx[x_lf, y_lf+1], Sxx[x_lf+1, y_lf], Sxx[x_lf+1, y_lf+1], cent_x + small_dif_x, cent_y + small_dif_y)
-	println("___________:")
-	println(Sxx[x_lf, y_lf])
-	println(Sxx[x_lf+1, y_lf])
-	println(Sxx[x_lf, y_lf+1])
-	println(Sxx[x_lf+1, y_lf+1])
-	println("Answer:")
-	println(Sxx_local)
+	_, l_vecs = get_sigma2(xpoints[indx], ypoints[indx], XX, YY, Sxx, Syy, Sxy)
 
-	Sxy_local = d2dm_blerp(XX[x_lf], XX[x_lf+1], YY[y_lf], YY[y_lf+1], Sxy[x_lf, y_lf], Sxy[x_lf, y_lf+1], Sxy[x_lf+1, y_lf], Sxy[x_lf+1, y_lf+1], cent_x + small_dif_x, cent_y + small_dif_y)
-	Syy_local = d2dm_blerp(XX[x_lf], XX[x_lf+1], YY[y_lf], YY[y_lf+1], Syy[x_lf, y_lf], Syy[x_lf, y_lf+1], Syy[x_lf+1, y_lf], Syy[x_lf+1, y_lf+1], cent_x + small_dif_x, cent_y + small_dif_y)
-	mat_local = [Sxx_local Sxy_local; Sxy_local Syy_local]
-	l_vecs = eigvecs(mat_local)
-	l_vals = eigvals(mat_local)
-	println(l_vecs)
-	println(l_vals)
-
-
-	return xpoints[indx], ypoints[indx], next_point_phi, xpoints, ypoints, l_vecs
+	return xpoints[indx], ypoints[indx], xpoints, ypoints, l_vecs
 end
 
 function d2dm_pres_test()
@@ -398,21 +302,23 @@ function d2dm_pres_test()
 	xs = 0:dx:Lx
 	ys = 0:dy:Ly
 
-	#P::CuArray{Float64,1} = CuArray{Float64,1}(undef, 0);
-	#P::Array{Float64,1} = Array{Float64,1}(undef, nx*ny)
+	X_left_lim, X_right_lim = 0,10
+	Y_left_lim, Y_right_lim = 0,10
+	y_limit = 8
 
-	XX = range(-5, 5, nx)
-	YY = range(-4, 4, ny)
+	XX = range(X_left_lim, X_right_lim, nx)
+	YY = range(Y_left_lim, Y_right_lim, ny)
 	X_rec, Y_rec = meshgrid(XX, YY)
 
-	dx = (10.0/nx)
-	dy = (8.0/ny)
 
 	Sxx = zeros(size(X_rec));
 	Syy = zeros(size(X_rec));
 	Sxy = zeros(size(X_rec));
+
+	println(size(XX))
+	println(size(Sxx))
 	
-	dyke_param = DykeParam(x = 0, y = -2, a = 4, b = 0.5, phi = 0.3)
+	dyke_param = DykeParam(x = 5, y = 3, a = 4, b = 0.5, phi = pi/2)
 	xpoints::Vector{Float64} = Vector{Float64}(undef, 1)
 	ypoints::Vector{Float64} = Vector{Float64}(undef, 1)
 	l_vecs = 0
@@ -420,14 +326,15 @@ function d2dm_pres_test()
 	next_point_y = 0
 
 
-	#nx = size(XX)[1]
-	#ny = size(YY)[1]
-
 	Sxx_cpu= Array{Float64}(undef, nx*ny)
 
-	Sxx_gpu = CuArray{Float64}(undef, nx*ny)
-	Syy_gpu = CuArray{Float64}(undef, nx*ny)
-	Sxy_gpu = CuArray{Float64}(undef, nx*ny)
+	Sxx_gpu = CUDA.zeros(Float64, nx*ny)
+	Syy_gpu = CUDA.zeros(Float64, nx*ny)
+	Sxy_gpu = CUDA.zeros(Float64, nx*ny)
+
+	# Sxx_gpu = CuArray{Float64}(undef, nx*ny)
+	# Syy_gpu = CuArray{Float64}(undef, nx*ny)
+	# Sxy_gpu = CuArray{Float64}(undef, nx*ny)
 
 	println(size(X_rec))
 	println(size(Sxx_gpu))
@@ -437,50 +344,41 @@ function d2dm_pres_test()
 	#Sxy_gpu =CuArray([x::Float64 for x in Sxy]) 
 
 	blockSize = (16, 16)
-	gridSize = (Int64(floor((nx + blockSize[1] - 1) / blockSize[1])), Int64(floor((ny + blockSize[2] - 1) / blockSize[2])))
+	gridSize = (Int64(floor((nx + blockSize[1] - 1) ÷  blockSize[1])), Int64(floor((ny + blockSize[2] - 1) ÷  blockSize[2])))
 
 	for i in 1:1
-		#@time insert_dyke!(Sxx, Syy, Sxy, dyke_param, XX, YY)
-		@time @cuda blocks = gridSize[1], gridSize[2] threads = blockSize[1], blockSize[2] insert_dyke_gpu!(Sxx_gpu, Syy_gpu, Sxy_gpu,
+
+		@time begin
+			@cuda blocks = gridSize[1], gridSize[2] threads = blockSize[1], blockSize[2] insert_dyke_gpu!(Sxx_gpu, Syy_gpu, Sxy_gpu,
 						 XX, YY,
 						 nx, ny,
-						 dyke_param.a, dyke_param.b, dyke_param.P_in, dyke_param.x, dyke_param.y, dyke_param.phi,
-						 dx, dy)
+						 dyke_param.a, dyke_param.b, dyke_param.P_in, dyke_param.x, dyke_param.y, dyke_param.phi)
 
-		#reshape(Sxx_gpu, (nx, ny))
 		synchronize();
-		println("Success?")
+
 		copyto!(Sxx, Sxx_gpu)
 		copyto!(Syy, Syy_gpu)
 		copyto!(Sxy, Sxy_gpu)
 
-		println("Success 2?")
-
-		next_point_x, next_point_y, next_point_phi, xpoints, ypoints, l_vecs = calc_cent_of_next_dyke(dyke_param, Sxx, Syy, Sxy, XX, YY);
+		next_point_x, next_point_y, xpoints, ypoints, l_vecs = calc_cent_of_next_dyke(dyke_param, Sxx, Syy, Sxy, XX, YY, y_limit);
 
 		println("Dyke #$i inserted!")
 		_, phi_tmp =d2dm_cart_to_polar(l_vecs[3], l_vecs[4]) 
 		dyke_param = DykeParam(x = next_point_x, y = next_point_y, phi = phi_tmp)
+		end
 	end
 
-	P_plot = Plots.heatmap(x = XX', y = YY', Sxx', layout = (3,3))
-	Plots.heatmap!(P_plot, x = XX', y = YY', Syy', subplot = 2)
-	Plots.heatmap!(P_plot, x = XX', y = YY', Sxy', subplot = 3)
 
-	#println(typeof(tmp_x))
-	#Plots.scatter!(P_plot, tmp_x, tmp_y, subplot = 4, xlimit = [-5,5], ylimit = [-4,4])
-	Plots.scatter!(P_plot, xpoints, ypoints, subplot = 4, markersize = 1,xlimit = [-5,5], ylimit = [-4,4], legend = false)
 	println(typeof(l_vecs))
 	println(l_vecs)
 	println(typeof(l_vecs[1]))
-	Plots.quiver!(P_plot, [next_point_x, next_point_x], [next_point_y, next_point_y], quiver = ([l_vecs[1] l_vecs[2]], [l_vecs[3], l_vecs[4]]), subplot = 4, xlimit = [-5,5], ylimit = [-4,4], legend = false)
-	#Plots.quiver!(P_plot, [next_point_x, next_point_x], [next_point_y, next_point_y], quiver = (l_vecs), subplot = 4, xlimit = [-5,5], ylimit = [-4,4], legend = false)
 
+	P_plot = Plots.heatmap(x = XX', y = YY', Sxx', layout = (2,2), title = "Sxx")
+	Plots.heatmap!(P_plot, x = XX', y = YY', Syy', subplot = 2, title = "Syy")
+	Plots.heatmap!(P_plot, x = XX', y = YY', Sxy', subplot = 3, title = "Sxy")
+	Plots.scatter!(P_plot, xpoints, ypoints, subplot = 4, markersize = 1,xlimit = [X_left_lim,X_right_lim], ylimit = [Y_left_lim,Y_right_lim], title = "last dyke")
+	Plots.quiver!(P_plot, [next_point_x, next_point_x], [next_point_y, next_point_y], quiver = ([l_vecs[1] l_vecs[2]], [l_vecs[3], l_vecs[4]]), subplot = 4, xlimit = [X_left_lim,X_right_lim], ylimit = [X_left_lim,X_right_lim])
 
-	#mat_local = [Sxx_local Sxy_local; Sxy_local Syy_local]
-	#l_vecs = eigvecs(mat_local)
-
-	Plots.savefig(P_plot, "fig.png")
 	
 	display(P_plot)
 
