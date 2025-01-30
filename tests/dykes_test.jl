@@ -5,7 +5,7 @@ include("../dykes_test_funcs.jl")
 using Test
 
 @testset "Funcs" begin
-	@testset "mf_magma" begin
-		@test true
-	end;
+    @testset "mf_magma" begin
+        @test true
+    end
 end;

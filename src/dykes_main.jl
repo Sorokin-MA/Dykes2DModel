@@ -8,679 +8,679 @@ include("dykes_funcs.jl")
 #Pkg.generate("Dykes_2D")
 
 function main()
-	#Initialization of inner random
-	Random.seed!(1234)
-
-	#TODO:Настроить фильтр
-	#TODO:Настроить девайс если не выбран
-	
-	print_gpu_properties()
-
-	
-	#Initialization of main variables
-	Lx = 0.0				#X size of researched area (m)
-	Ly = 0.0				#Y size of researched area (m)
-	lam_r_rhoCp = 0.0		#Thermal conductivity of rock/(density*specific heat capacity)
-	lam_m_rhoCp = 0.0		#Thermal conductivity of magma/(density*specific heat capacity)
-	L_Cp = 0.0			#???#dT/Ste, Ste = dT/(Lheat/Cp); L_heat/Cp
-	T_top = 0.0				#Temperature on the top of area (°C)
-	T_bot = 0.0				#Temperature at the bottom of the area (°C)
-	T_magma = 0.0			#Magma instrusion temperature(°C)
-	tsh = 0.0			#???#nondimensonal 0.75
-	gamma = 0.0			#???#nondimensional 0.1
-	Ly_eruption = 0.0	#???#2000, m
-	nu = 0.0				#Poisson ratio of rock
-	G = 0.0				#???#E/(2*(1+nu));
-	dt = 0.0			#???#time step
-	dx::Float64 = 0.0		#X dimension step
-	dy::Float64 = 0.0		#Y dimension step
-	eiter = 0.0			#???#epsilon
-	pic_amount = 0.0	#???#0.05
-
-	pmlt = 0			#???#unused
-	nx = 0					#Resolution for X dimension
-	ny = 0					#Resolution for Y dimension
-	nl = 0					#?
-	nt = 0					#?
-	niter = 0				#?
-	nout = 0				#?
-	nsub = 0				#?
-	nerupt = 0				#how often check for eruptions
-	npartcl = 0				#number of particles
-	nmarker = 0				#number of markers
-	nSample = 0				#size of a Sample, 1000
-
-	filename = Array{Char,1}(undef, 1024)
-	is_eruption = false
-
-
-	dpa = Array{Float64,1}(undef, 18)	#array of double values from matlab script
-	ipa = Array{Int32,1}(undef, 12)		#array of int values from matlab script
-
-
-	io = open("data/pa.bin", "r")
-	read!(io, dpa)
-	read!(io, ipa)
-
-	ipar = 1								
-	Lx, ipar = read_par(dpa, ipar)			
-	Ly, ipar = read_par(dpa, ipar)			
-	lam_r_rhoCp, ipar = read_par(dpa, ipar)	
-	lam_m_rhoCp, ipar = read_par(dpa, ipar)	
-	L_Cp, ipar = read_par(dpa, ipar)		
-	T_top, ipar = read_par(dpa, ipar)
-	T_bot, ipar = read_par(dpa, ipar)
-	T_magma, ipar = read_par(dpa, ipar)
-	tsh, ipar = read_par(dpa, ipar)
-	gamma, ipar = read_par(dpa, ipar)
-	Ly_eruption, ipar = read_par(dpa, ipar)
-	nu, ipar = read_par(dpa, ipar)
-	G, ipar = read_par(dpa, ipar)
-	dt, ipar = read_par(dpa, ipar)
-	dx, ipar = read_par(dpa, ipar)
-	dy, ipar = read_par(dpa, ipar)
-	eiter, ipar = read_par(dpa, ipar)
-	pic_amount, ipar = read_par(dpa, ipar)
-
-	ipar = 1
-
-	pmlt, ipar = read_par(ipa, ipar)
-	nx, ipar = read_par(ipa, ipar)
-	ny, ipar = read_par(ipa, ipar)
-	nl, ipar = read_par(ipa, ipar)
-	nt, ipar = read_par(ipa, ipar)
-	niter, ipar = read_par(ipa, ipar)
-	nout, ipar = read_par(ipa, ipar)
-	nsub, ipar = read_par(ipa, ipar)
-	nerupt, ipar = read_par(ipa, ipar)
-	npartcl, ipar = read_par(ipa, ipar)
-	nmarker, ipar = read_par(ipa, ipar)
-	nSample, ipar = read_par(ipa, ipar)
-
-	critVol = Array{Float64,1}(undef, nSample) #???#Critical volume when eruption appears, predefined variable
-	read!(io, critVol)
-
-	#array 0 0 1 0 0 ... like, where 1 -instrusion
-	ndykes = Array{Int32,1}(undef, nt)	#number of dykes intruded on n-th time step
-	read!(io, ndykes)
-
-	ndykes_all = 0
-
-	#count all dykes
-	for istep in 1:nt
-		ndykes_all = ndykes_all + ndykes[istep]
-	end
+    #Initialization of inner random
+    Random.seed!(1234)
+
+    #TODO:Настроить фильтр
+    #TODO:Настроить девайс если не выбран
+
+    print_gpu_properties()
+
+
+    #Initialization of main variables
+    Lx = 0.0#X size of researched area (m)
+    Ly = 0.0#Y size of researched area (m)
+    lam_r_rhoCp = 0.0#Thermal conductivity of rock/(density*specific heat capacity)
+    lam_m_rhoCp = 0.0#Thermal conductivity of magma/(density*specific heat capacity)
+    L_Cp = 0.0#???#dT/Ste, Ste = dT/(Lheat/Cp); L_heat/Cp
+    T_top = 0.0#Temperature on the top of area (°C)
+    T_bot = 0.0#Temperature at the bottom of the area (°C)
+    T_magma = 0.0#Magma instrusion temperature(°C)
+    tsh = 0.0#???#nondimensonal 0.75
+    gamma = 0.0#???#nondimensional 0.1
+    Ly_eruption = 0.0#???#2000, m
+    nu = 0.0#Poisson ratio of rock
+    G = 0.0#???#E/(2*(1+nu));
+    dt = 0.0#???#time step
+    dx::Float64 = 0.0#X dimension step
+    dy::Float64 = 0.0#Y dimension step
+    eiter = 0.0#???#epsilon
+    pic_amount = 0.0#???#0.05
+
+    pmlt = 0#???#unused
+    nx = 0#Resolution for X dimension
+    ny = 0#Resolution for Y dimension
+    nl = 0#?
+    nt = 0#?
+    niter = 0#?
+    nout = 0#?
+    nsub = 0#?
+    nerupt = 0#how often check for eruptions
+    npartcl = 0#number of particles
+    nmarker = 0#number of markers
+    nSample = 0#size of a Sample, 1000
+
+    filename = Array{Char,1}(undef, 1024)
+    is_eruption = false
+
+
+    dpa = Array{Float64,1}(undef, 18)#array of double values from matlab script
+    ipa = Array{Int32,1}(undef, 12)#array of int values from matlab script
+
+
+    io = open("data/pa.bin", "r")
+    read!(io, dpa)
+    read!(io, ipa)
+
+    ipar = 1
+    Lx, ipar = read_par(dpa, ipar)
+    Ly, ipar = read_par(dpa, ipar)
+    lam_r_rhoCp, ipar = read_par(dpa, ipar)
+    lam_m_rhoCp, ipar = read_par(dpa, ipar)
+    L_Cp, ipar = read_par(dpa, ipar)
+    T_top, ipar = read_par(dpa, ipar)
+    T_bot, ipar = read_par(dpa, ipar)
+    T_magma, ipar = read_par(dpa, ipar)
+    tsh, ipar = read_par(dpa, ipar)
+    gamma, ipar = read_par(dpa, ipar)
+    Ly_eruption, ipar = read_par(dpa, ipar)
+    nu, ipar = read_par(dpa, ipar)
+    G, ipar = read_par(dpa, ipar)
+    dt, ipar = read_par(dpa, ipar)
+    dx, ipar = read_par(dpa, ipar)
+    dy, ipar = read_par(dpa, ipar)
+    eiter, ipar = read_par(dpa, ipar)
+    pic_amount, ipar = read_par(dpa, ipar)
+
+    ipar = 1
+
+    pmlt, ipar = read_par(ipa, ipar)
+    nx, ipar = read_par(ipa, ipar)
+    ny, ipar = read_par(ipa, ipar)
+    nl, ipar = read_par(ipa, ipar)
+    nt, ipar = read_par(ipa, ipar)
+    niter, ipar = read_par(ipa, ipar)
+    nout, ipar = read_par(ipa, ipar)
+    nsub, ipar = read_par(ipa, ipar)
+    nerupt, ipar = read_par(ipa, ipar)
+    npartcl, ipar = read_par(ipa, ipar)
+    nmarker, ipar = read_par(ipa, ipar)
+    nSample, ipar = read_par(ipa, ipar)
 
-	println("ndykes_all")
-	println(ndykes_all)
+    critVol = Array{Float64,1}(undef, nSample) #???#Critical volume when eruption appears, predefined variable
+    read!(io, critVol)
+
+    #array 0 0 1 0 0 ... like, where 1 -instrusion
+    ndykes = Array{Int32,1}(undef, nt)#number of dykes intruded on n-th time step
+    read!(io, ndykes)
 
-	#array which describes amount of particles in new dyke
-	particle_edges = Array{Int32,1}(undef, ndykes_all + 1)
-	read!(io, particle_edges)
+    ndykes_all = 0
 
-	marker_edges = Array{Int32,1}(undef, ndykes_all + 1)
-	read!(io, marker_edges)
+    #count all dykes
+    for istep in 1:nt
+        ndykes_all = ndykes_all + ndykes[istep]
+    end
 
-	close(io)
+    println("ndykes_all")
+    println(ndykes_all)
 
-	#end of first part of reading
+    #array which describes amount of particles in new dyke
+    particle_edges = Array{Int32,1}(undef, ndykes_all + 1)
+    read!(io, particle_edges)
 
-	cap_frac = 1.5  #value to spcify how much particles we allow to inject in runtime
-	npartcl0 = npartcl #initial amount of particles
-	max_npartcl = convert(Int64, npartcl * cap_frac) + particle_edges[ndykes_all+1] #???#count max particles
+    marker_edges = Array{Int32,1}(undef, ndykes_all + 1)
+    read!(io, marker_edges)
 
-	println("max_npartcl")
-	println(max_npartcl)
+    close(io)
 
-	nmarker0 = nmarker
+    #end of first part of reading
 
-	max_nmarker = nmarker + marker_edges[ndykes_all+1]
+    cap_frac = 1.5  #value to spcify how much particles we allow to inject in runtime
+    npartcl0 = npartcl #initial amount of particles
+    max_npartcl = convert(Int64, npartcl * cap_frac) + particle_edges[ndykes_all+1] #???#count max particles
 
+    println("max_npartcl")
+    println(max_npartcl)
 
-	#blockSize(16, 32);
-	#gridSize((nx + blockSize.x - 1) / blockSize.x, (ny + blockSize.y - 1) / blockSize.y);
+    nmarker0 = nmarker
 
+    max_nmarker = nmarker + marker_edges[ndykes_all+1]
 
-	blockSize = (16,32)
-	gridSize = (Int64(floor((nx + blockSize[1] - 1) / blockSize[1])), Int64(floor((ny + blockSize[2] - 1) / blockSize[2])))
 
+    #blockSize(16, 32);
+    #gridSize((nx + blockSize.x - 1) / blockSize.x, (ny + blockSize.y - 1) / blockSize.y);
 
-	T = CuArray{Float64,1}(undef, nx * ny)
-	T_old = CuArray{Float64,1}(undef, nx * ny)
-	C = CuArray{Float64,1}(undef, nx * ny)
-	wts = CuArray{Float64,1}(undef, nx * ny)
-	pcnt = CuArray{Int32,1}(undef, nx * ny)
 
-	a = CuArray{Float64}(undef, (1, 2))
+    blockSize = (16, 32)
+    gridSize = (Int64(floor((nx + blockSize[1] - 1) / blockSize[1])), Int64(floor((ny + blockSize[2] - 1) / blockSize[2])))
 
-	px = CuArray{Float64}(undef, max_npartcl)	#x coordinate of particle
-	py = CuArray{Float64}(undef, max_npartcl)	#y coordinate of particle
-	pT = CuArray{Float64}(undef, max_npartcl)	#Temperature of particle
-	pPh = CuArray{Int8}(undef, max_npartcl)		#???#Ph?
 
-	np_dykes = particle_edges[ndykes_all+1]		#number of particles in each dyke during intrusion
+    T = CuArray{Float64,1}(undef, nx * ny)
+    T_old = CuArray{Float64,1}(undef, nx * ny)
+    C = CuArray{Float64,1}(undef, nx * ny)
+    wts = CuArray{Float64,1}(undef, nx * ny)
+    pcnt = CuArray{Int32,1}(undef, nx * ny)
 
-	px_dykes = CuArray{Float64,1}(undef, np_dykes)	#x of dykes particles
-	py_dykes = CuArray{Float64,1}(undef, np_dykes)	#y of dykes particles
-	
+    a = CuArray{Float64}(undef, (1, 2))
 
-	mx = CuArray{Float64,1}(undef, max_nmarker)		#x of marker
-	my = CuArray{Float64,1}(undef, max_nmarker)		#y of marker
-	mT = CuArray{Float64,1}(undef, max_nmarker)		#T of marker
+    px = CuArray{Float64}(undef, max_npartcl)#x coordinate of particle
+    py = CuArray{Float64}(undef, max_npartcl)#y coordinate of particle
+    pT = CuArray{Float64}(undef, max_npartcl)#Temperature of particle
+    pPh = CuArray{Int8}(undef, max_npartcl)#???#Ph?
 
-	#???
-	staging = Array{Float64,1}(undef, max_npartcl)
-	npartcl_d = CuArray{Int32,1}(undef, 1)
-	npartcl_h = Array{Int32,1}(undef, 1)
+    np_dykes = particle_edges[ndykes_all+1]#number of particles in each dyke during intrusion
 
-	#small grid dimensions
-	nxl = convert(Int64, nx / nl)
-	nyl = convert(Int64, ny / nl)
+    px_dykes = CuArray{Float64,1}(undef, np_dykes)#x of dykes particles
+    py_dykes = CuArray{Float64,1}(undef, np_dykes)#y of dykes particles
 
-	println("nx  - $nx")
-	println("ny - $ny")
-	println("nl - $nl")
-	println(nxl)
-	
-	#small grid itself
-	L = CuArray{Int32,1}(undef, nxl * nyl)
 
-	#small grid on host
-	L_host = Array{Int32,1}(undef, nxl * nyl)
+    mx = CuArray{Float64,1}(undef, max_nmarker)#x of marker
+    my = CuArray{Float64,1}(undef, max_nmarker)#y of marker
+    mT = CuArray{Float64,1}(undef, max_nmarker)#T of marker
 
-	#???
-	mfl = CuArray{Float64,1}(undef, nxl * nyl)
+    #???
+    staging = Array{Float64,1}(undef, max_npartcl)
+    npartcl_d = CuArray{Int32,1}(undef, 1)
+    npartcl_h = Array{Int32,1}(undef, 1)
 
+    #small grid dimensions
+    nxl = convert(Int64, nx / nl)
+    nyl = convert(Int64, ny / nl)
 
-	#a and b of ellips for dykes
-	dyke_a = Array{Float64,1}(undef, ndykes_all)
-	dyke_b = Array{Float64,1}(undef, ndykes_all)
+    println("nx  - $nx")
+    println("ny - $ny")
+    println("nl - $nl")
+    println(nxl)
 
-	#x and y coordinate of center
-	dyke_x = Array{Float64,1}(undef, ndykes_all)
-	dyke_y = Array{Float64,1}(undef, ndykes_all)
+    #small grid itself
+    L = CuArray{Int32,1}(undef, nxl * nyl)
 
-	#???
-	dyke_t = Array{Float64,1}(undef, ndykes_all)
+    #small grid on host
+    L_host = Array{Int32,1}(undef, nxl * nyl)
 
+    #???
+    mfl = CuArray{Float64,1}(undef, nxl * nyl)
 
-	#NOTE:Dykes data upload takes time
-	io = open("data/dykes.bin", "r");
-	read!(io, dyke_a)
-	read!(io, dyke_b)
-	read!(io, dyke_x)
-	read!(io, dyke_y)
-	read!(io, dyke_t)
 
-	close(io)
+    #a and b of ellips for dykes
+    dyke_a = Array{Float64,1}(undef, ndykes_all)
+    dyke_b = Array{Float64,1}(undef, ndykes_all)
 
-	fid = h5open("data/particles.h5", "r")
+    #x and y coordinate of center
+    dyke_x = Array{Float64,1}(undef, ndykes_all)
+    dyke_y = Array{Float64,1}(undef, ndykes_all)
 
-	h_px = Array{Float64,1}(undef, max_npartcl)
-	h_py = Array{Float64,1}(undef, max_npartcl)
+    #???
+    dyke_t = Array{Float64,1}(undef, ndykes_all)
 
-	h_px = read(fid,"px")
-	h_py = read(fid,"py")
 
-	copyto!(px, h_px)
-	copyto!(py, h_py)
+    #NOTE:Dykes data upload takes time
+    io = open("data/dykes.bin", "r")
+    read!(io, dyke_a)
+    read!(io, dyke_b)
+    read!(io, dyke_x)
+    read!(io, dyke_y)
+    read!(io, dyke_t)
 
-	#???
-	h_px_dykes = Array{Float64,1}(undef, np_dykes)
-	h_py_dykes = Array{Float64,1}(undef, np_dykes)
+    close(io)
 
-	h_px_dykes = read(fid,"px_dykes")
-	h_py_dykes = read(fid,"py_dykes")
+    fid = h5open("data/particles.h5", "r")
 
-	copyto!(px_dykes, h_px_dykes)
-	copyto!(py_dykes, h_py_dykes)
-	close(fid)
+    h_px = Array{Float64,1}(undef, max_npartcl)
+    h_py = Array{Float64,1}(undef, max_npartcl)
 
-#=	
-	#process markers
-	fid = h5open("markers.h5", "r")
+    h_px = read(fid, "px")
+    h_py = read(fid, "py")
 
-	obj = fid["0"]
+    copyto!(px, h_px)
+    copyto!(py, h_py)
 
-	h_mx = Array{Float64,1}(undef, max_nmarker)
-	h_my = Array{Float64,1}(undef, max_nmarker)
-	h_mT = Array{Float64,1}(undef, max_nmarker)
+    #???
+    h_px_dykes = Array{Float64,1}(undef, np_dykes)
+    h_py_dykes = Array{Float64,1}(undef, np_dykes)
 
-	h_mx = read(obj, "mx")
-	h_my = read(obj, "my")
-	h_mT = read(obj, "mT")
+    h_px_dykes = read(fid, "px_dykes")
+    h_py_dykes = read(fid, "py_dykes")
 
-	close(fid)
-=#
+    copyto!(px_dykes, h_px_dykes)
+    copyto!(py_dykes, h_py_dykes)
+    close(fid)
 
-	#copyto!(mx, h_mx)
-	#copyto!(my, h_my)
-	#copyto!(mT, h_mT)
+    #=	
+    	#process markers
+    	fid = h5open("markers.h5", "r")
 
-	#reading initial grid
+    	obj = fid["0"]
 
-	NDIGITS = 5
+    	h_mx = Array{Float64,1}(undef, max_nmarker)
+    	h_my = Array{Float64,1}(undef, max_nmarker)
+    	h_mT = Array{Float64,1}(undef, max_nmarker)
 
-	filename = "data/grid." * "0"^NDIGITS * "0" * ".h5"
+    	h_mx = read(obj, "mx")
+    	h_my = read(obj, "my")
+    	h_mT = read(obj, "mT")
 
-	fid = h5open(filename, "r")
-	T_h = read(fid, "T")
-	copyto!(T, T_h)
-	C_h = read(fid, "C")
-	copyto!(C, C_h)
-	close(fid)
+    	close(fid)
+    =#
 
+    #copyto!(mx, h_mx)
+    #copyto!(my, h_my)
+    #copyto!(mT, h_mT)
 
-	global iSample = Int32(1)
+    #reading initial grid
 
-	bar1 = "\n├──"
-	bar2 = "\n\t ├──"
-	#bar2 = "\xb3  \xc3\xc4\xc4";
+    NDIGITS = 5
 
-	#@time begin
-		#init
-		#@time begin
-			@printf("%s initialization			  ", bar1)
-			pic_amount_tmp = pic_amount #???
-			pic_amount = 1.0
+    filename = "data/grid." * "0"^NDIGITS * "0" * ".h5"
 
-			blockSize1D = 768
-			gridSize1D = convert(Int64, floor((npartcl + blockSize1D - 1) / blockSize1D))
+    fid = h5open(filename, "r")
+    T_h = read(fid, "T")
+    copyto!(T, T_h)
+    C_h = read(fid, "C")
+    copyto!(C, C_h)
+    close(fid)
 
-			#NOTE:
-			#changing only pT
-			#grid to particles interpolation
-			#differene with cuda like 6.e-8 for some reason
-			@cuda blocks = gridSize1D threads=blockSize1D g2p!(T, T_old, px, py, pT, dx, dy, pic_amount, nx, ny, npartcl)
 
-			gridSize1D = convert(
-				Int64,
-				floor((max_npartcl - npartcl + blockSize1D - 1) / blockSize1D),
-			)
+    global iSample = Int32(1)
 
-			pTs  = @view pT[npartcl+1:end];
-			@cuda blocks = gridSize1D threads=blockSize1D init_particles_T(pTs, T_magma, max_npartcl-npartcl);
+    bar1 = "\n├──"
+    bar2 = "\n\t ├──"
+    #bar2 = "\xb3  \xc3\xc4\xc4";
 
+    #@time begin
+    #init
+    #@time begin
+    @printf("%s initialization			  ", bar1)
+    pic_amount_tmp = pic_amount #???
+    pic_amount = 1.0
 
-			pPhs = @view pPh[npartcl+1:end];
-			@cuda blocks = gridSize1D threads=blockSize1D init_particles_Ph(pPhs, 1, max_npartcl - npartcl);
+    blockSize1D = 768
+    gridSize1D = convert(Int64, floor((npartcl + blockSize1D - 1) / blockSize1D))
 
-			gridSize1D = Int64(floor((max_nmarker - nmarker + blockSize1D - 1) / blockSize1D))
+    #NOTE:
+    #changing only pT
+    #grid to particles interpolation
+    #differene with cuda like 6.e-8 for some reason
+    @cuda blocks = gridSize1D threads = blockSize1D g2p!(T, T_old, px, py, pT, dx, dy, pic_amount, nx, ny, npartcl)
 
-			mTs = @view mT[nmarker+1:end];
-			@cuda blocks = gridSize1D threads=blockSize1D init_particles_T(mTs, T_magma, max_nmarker - nmarker);
+    gridSize1D = convert(
+        Int64,
+        floor((max_npartcl - npartcl + blockSize1D - 1) / blockSize1D),
+    )
 
-			synchronize()
+    pTs = @view pT[npartcl+1:end]
+    @cuda blocks = gridSize1D threads = blockSize1D init_particles_T(pTs, T_magma, max_npartcl - npartcl)
 
-			pic_amount = pic_amount_tmp
-		#end
 
-		
-		idyke = 0
-		global iSample = Int32(1)
+    pPhs = @view pPh[npartcl+1:end]
+    @cuda blocks = gridSize1D threads = blockSize1D init_particles_Ph(pPhs, 1, max_npartcl - npartcl)
 
-		eruptionSteps = Vector{Int32}()
+    gridSize1D = Int64(floor((max_nmarker - nmarker + blockSize1D - 1) / blockSize1D))
 
-		#Main loop
-		#for it ∈ 1:nt
-		for it in 1:nt
-			#action
-			@printf("%s it = %d", bar1, it)
-			is_eruption = false
-			is_intrusion = (ndykes[it] > 0)
-			#is_intrusion = false
-			nerupt = 1;
+    mTs = @view mT[nmarker+1:end]
+    @cuda blocks = gridSize1D threads = blockSize1D init_particles_T(mTs, T_magma, max_nmarker - nmarker)
 
-			if (it % nerupt == 0)
-				@time begin
-					@printf("\n%s checking melt fraction   | ", bar2)
+    synchronize()
 
-					blockSizel = (16, 32)
-					gridSizel = (
-						(nxl + blockSizel[1] - 1) ÷ blockSizel[1],
-						(nyl + blockSizel[2] - 1) ÷ blockSizel[2],
-					)
+    pic_amount = pic_amount_tmp
+    #end
 
-					#Усредняется по mf да mfl относительно содержания магмы и вмещающей породы
-					#average<<<gridSizel, blockSizel>>>(mfl, T, C, nl, nx, ny);
-					@cuda blocks = gridSizel threads=blockSizel average!(mfl, T, C, nl, nx, ny);
 
-					synchronize()
+    idyke = 0
+    global iSample = Int32(1)
 
-					ccl(mfl, L, tsh, nxl, nyl)
+    eruptionSteps = Vector{Int32}()
 
-					copyto!(L_host, L)
+    #Main loop
+    #for it ∈ 1:nt
+    for it in 1:nt
+        #action
+        @printf("%s it = %d", bar1, it)
+        is_eruption = false
+        is_intrusion = (ndykes[it] > 0)
+        #is_intrusion = false
+        nerupt = 1
 
-					volumes = Dict{Int32,Int32}(-1 => 0)
+        if (it % nerupt == 0)
+            @time begin
+                @printf("\n%s checking melt fraction   | ", bar2)
 
-					#counting volumes
-					for iy = 0:(nyl - 1)
-						#taking into account only volumes higher then certain boundary
-						if (iy * dy * nl < Ly_eruption)
-							continue
-						end
-						for ix = 1:nxl
-							if L_host[iy * nxl + ix] >= 0
-								#WARN:for what?
-								if haskey(volumes, L_host[iy * nxl + ix])
-									volumes[L_host[iy * nxl + ix]] =
-										volumes[L_host[iy * nxl + ix]] + 1
-								else
-									volumes[L_host[iy * nxl + ix]] = 0
-									volumes[L_host[iy * nxl + ix]] =
-										volumes[L_host[iy * nxl + ix]] + 1
-								end
-							end
-						end
-					end
+                blockSizel = (16, 32)
+                gridSizel = (
+                    (nxl + blockSizel[1] - 1) ÷ blockSizel[1],
+                    (nyl + blockSizel[2] - 1) ÷ blockSizel[2],
+                )
 
-					#maxVol - numbrer of cells
-					maxVol = -1
-					maxIdx = -1
+                #Усредняется по mf да mfl относительно содержания магмы и вмещающей породы
+                #average<<<gridSizel, blockSizel>>>(mfl, T, C, nl, nx, ny);
+                @cuda blocks = gridSizel threads = blockSizel average!(mfl, T, C, nl, nx, ny)
 
-					#searching for max vol
-					for (idx, vol) in volumes
-						if vol > maxVol
-							maxVol = vol
-							maxIdx = idx
-						end
-					end
+                synchronize()
 
-				end
+                ccl(mfl, L, tsh, nxl, nyl)
 
-				dxl = dx * nl
-				dyl = dy * nl
+                copyto!(L_host, L)
 
-				#checking eruption criteria
-				if (maxVol * dxl * dyl >= critVol[iSample])
-					@printf("%s erupting %07d cells   | ", bar2, maxVol)
-					@time begin
+                volumes = Dict{Int32,Int32}(-1 => 0)
 
-						cell_idx = CuArray{Int32,1}(undef, maxVol)
-						cell_idx_host = Array{Int32,1}(undef, maxVol)
+                #counting volumes
+                for iy = 0:(nyl-1)
+                    #taking into account only volumes higher then certain boundary
+                    if (iy * dy * nl < Ly_eruption)
+                        continue
+                    end
+                    for ix = 1:nxl
+                        if L_host[iy*nxl+ix] >= 0
+                            #WARN:for what?
+                            if haskey(volumes, L_host[iy*nxl+ix])
+                                volumes[L_host[iy*nxl+ix]] =
+                                    volumes[L_host[iy*nxl+ix]] + 1
+                            else
+                                volumes[L_host[iy*nxl+ix]] = 0
+                                volumes[L_host[iy*nxl+ix]] =
+                                    volumes[L_host[iy*nxl+ix]] + 1
+                            end
+                        end
+                    end
+                end
 
+                #maxVol - numbrer of cells
+                maxVol = -1
+                maxIdx = -1
 
-						next_idx = 0
-						for idx = 0:(nxl * nyl)-1
-							if L_host[idx+1] == maxIdx
-								#if next_idx < maxVol
-								next_idx = next_idx + 1
-								cell_idx_host[next_idx] = idx
-								#end
-							end
-						end
+                #searching for max vol
+                for (idx, vol) in volumes
+                    if vol > maxVol
+                        maxVol = vol
+                        maxIdx = idx
+                    end
+                end
 
-						copyto!(cell_idx, cell_idx_host)
+            end
 
-						local blockSize1D = 512
-						local gridSize1D = (npartcl + blockSize1D - 1) ÷ blockSize1D
+            dxl = dx * nl
+            dyl = dy * nl
 
-						#advect particles
-						@cuda blocks = gridSize1D threads = blockSize1D advect_particles_eruption(px, py, cell_idx, gamma, dxl, dyl, npartcl, maxVol, nxl, nyl)
-						synchronize()
-			
-						
+            #checking eruption criteria
+            if (maxVol * dxl * dyl >= critVol[iSample])
+                @printf("%s erupting %07d cells   | ", bar2, maxVol)
+                @time begin
 
-						gridSize1D = (nmarker + blockSize1D - 1) ÷ blockSize1D
-						#advect markers
-						@cuda blocks = gridSize1D threads = blockSize1D advect_particles_eruption(mx, my, cell_idx, gamma, dxl, dyl, nmarker, maxVol, nxl, nyl)
-						synchronize()
+                    cell_idx = CuArray{Int32,1}(undef, maxVol)
+                    cell_idx_host = Array{Int32,1}(undef, maxVol)
 
-						global iSample = iSample + 1
 
-						is_eruption = true
-						append!(eruptionSteps, it)
-					end
-				end
-			end
+                    next_idx = 0
+                    for idx = 0:(nxl*nyl)-1
+                        if L_host[idx+1] == maxIdx
+                            #if next_idx < maxVol
+                            next_idx = next_idx + 1
+                            cell_idx_host[next_idx] = idx
+                            #end
+                        end
+                    end
 
+                    copyto!(cell_idx, cell_idx_host)
 
-			#processing intrusions of dyke
-			if (is_intrusion)
-				@printf("%s inserting %02d dykes	   | ", bar2, ndykes[it])
-				@time begin
-					for i = 1:ndykes[it]
-						idyke = idyke + 1
+                    local blockSize1D = 512
+                    local gridSize1D = (npartcl + blockSize1D - 1) ÷ blockSize1D
 
-						blockSize1D = 512
-						gridSize1D = (npartcl + blockSize1D - 1) ÷ blockSize1D
+                    #advect particles
+                    @cuda blocks = gridSize1D threads = blockSize1D advect_particles_eruption(px, py, cell_idx, gamma, dxl, dyl, npartcl, maxVol, nxl, nyl)
+                    synchronize()
 
-						#@printf("\nDebug\n")
-						@cuda blocks = gridSize1D threads = blockSize1D advect_particles_intrusion(
-							px,
-							py,
-							dyke_a[idyke],
-							dyke_b[idyke],
-							dyke_x[idyke],
-							dyke_y[idyke],
-							dyke_t[idyke],
-							nu,
-							G,
-							ndykes[it],
-							npartcl
-						)
 
-						dyke_start = particle_edges[idyke]
-						dyke_end = particle_edges[idyke + 1]
-						np_dyke = dyke_end - dyke_start
 
-						if (npartcl + np_dyke > max_npartcl)
-							@printf("ERROR: number of particles exceeds maximum value, increase capacity\n");
-							return -1;
-						end
+                    gridSize1D = (nmarker + blockSize1D - 1) ÷ blockSize1D
+                    #advect markers
+                    @cuda blocks = gridSize1D threads = blockSize1D advect_particles_eruption(mx, my, cell_idx, gamma, dxl, dyl, nmarker, maxVol, nxl, nyl)
+                    synchronize()
 
-						
-					pxs = @view px[(npartcl+1):(npartcl+np_dyke)];
-					px_dykess = @view px_dykes[(dyke_start+1):(dyke_start+np_dyke)];
-					pys = @view py[(npartcl+1):(npartcl+np_dyke)];
-					py_dykess = @view py_dykes[(dyke_start+1):(dyke_start+np_dyke)];
-						
+                    global iSample = iSample + 1
 
-						copyto!(pxs, px_dykess)
-						copyto!(pys, py_dykess)
-					
+                    is_eruption = true
+                    append!(eruptionSteps, it)
+                end
+            end
+        end
 
-						npartcl += np_dyke
 
-						gridSize1D = (nmarker + blockSize1D - 1) ÷ blockSize1D
+        #processing intrusions of dyke
+        if (is_intrusion)
+            @printf("%s inserting %02d dykes	   | ", bar2, ndykes[it])
+            @time begin
+                for i = 1:ndykes[it]
+                    idyke = idyke + 1
 
+                    blockSize1D = 512
+                    gridSize1D = (npartcl + blockSize1D - 1) ÷ blockSize1D
 
-						@cuda blocks = gridSize1D threads = blockSize1D advect_particles_intrusion(
-							mx,
-							my,
-							dyke_a[idyke],
-							dyke_b[idyke],
-							dyke_x[idyke],
-							dyke_y[idyke],
-							dyke_t[idyke],
-							nu,
-							G,
-							ndykes[it],
-							nmarker,
-						)
+                    #@printf("\nDebug\n")
+                    @cuda blocks = gridSize1D threads = blockSize1D advect_particles_intrusion(
+                        px,
+                        py,
+                        dyke_a[idyke],
+                        dyke_b[idyke],
+                        dyke_x[idyke],
+                        dyke_y[idyke],
+                        dyke_t[idyke],
+                        nu,
+                        G,
+                        ndykes[it],
+                        npartcl
+                    )
 
-						synchronize()
+                    dyke_start = particle_edges[idyke]
+                    dyke_end = particle_edges[idyke+1]
+                    np_dyke = dyke_end - dyke_start
 
-						nmarker += marker_edges[idyke + 1] - marker_edges[idyke]
+                    if (npartcl + np_dyke > max_npartcl)
+                        @printf("ERROR: number of particles exceeds maximum value, increase capacity\n")
+                        return -1
+                    end
 
-					end
-				end
-			end
 
+                    pxs = @view px[(npartcl+1):(npartcl+np_dyke)]
+                    px_dykess = @view px_dykes[(dyke_start+1):(dyke_start+np_dyke)]
+                    pys = @view py[(npartcl+1):(npartcl+np_dyke)]
+                    py_dykess = @view py_dykes[(dyke_start+1):(dyke_start+np_dyke)]
 
-			#if eruption or injection happend, taking into account their effcto on grid with p2g
-			if (is_eruption || is_intrusion)
-				@printf("%s p2g interpolation		| ", bar2)
-				@time begin
 
-					fill!(T, 0)
-					fill!(C, 0)
-					fill!(wts, 0)
+                    copyto!(pxs, px_dykess)
+                    copyto!(pys, py_dykess)
 
-					blockSize1D = 512
-					gridSize1D = (npartcl + blockSize1D - 1) ÷ blockSize1D
 
+                    npartcl += np_dyke
 
-					#p2g_project<<<gridSize1D, blockSize1D>>>(ALL_ARGS);
-					@cuda blocks = gridSize1D threads = blockSize1D p2g_project!(T, C, wts, px, py, pT, pPh, dx, dy, nx, ny, npartcl, npartcl0)
-					synchronize()
+                    gridSize1D = (nmarker + blockSize1D - 1) ÷ blockSize1D
 
 
-					#p2g_weight<<<gridSize, blockSize>>>(ALL_ARGS);
-					@cuda blocks = gridSize threads = blockSize p2g_weight!(T, C, wts, nx, ny)
-					synchronize()
+                    @cuda blocks = gridSize1D threads = blockSize1D advect_particles_intrusion(
+                        mx,
+                        my,
+                        dyke_a[idyke],
+                        dyke_b[idyke],
+                        dyke_x[idyke],
+                        dyke_y[idyke],
+                        dyke_t[idyke],
+                        nu,
+                        G,
+                        ndykes[it],
+                        nmarker,
+                    )
 
+                    synchronize()
 
-				end
+                    nmarker += marker_edges[idyke+1] - marker_edges[idyke]
 
+                end
+            end
+        end
 
-				@printf("%s particle injection	   | ", bar2)
 
-				@time begin
+        #if eruption or injection happend, taking into account their effcto on grid with p2g
+        if (is_eruption || is_intrusion)
+            @printf("%s p2g interpolation		| ", bar2)
+            @time begin
 
+                fill!(T, 0)
+                fill!(C, 0)
+                fill!(wts, 0)
 
-					blockSize1D = 512
-					gridSize1D = (npartcl + blockSize1D - 1) ÷ blockSize1D
+                blockSize1D = 512
+                gridSize1D = (npartcl + blockSize1D - 1) ÷ blockSize1D
 
-					#buf_arr_int = zeros(Int32, nx*ny)
-					#copyto!(pcnt, buf_arr_int)
-				
-					#@printf("%s particle injection	   | ", bar2)
-					#@device_code_warntype interactive=true @cuda blocks = gridSize threads=blockSize gpu_set_to_zero_2d!(pcnt, nx)
 
-					#@printf("%s particle injection	   | ", bar2)
-					fill!(pcnt, 0);
+                #p2g_project<<<gridSize1D, blockSize1D>>>(ALL_ARGS);
+                @cuda blocks = gridSize1D threads = blockSize1D p2g_project!(T, C, wts, px, py, pT, pPh, dx, dy, nx, ny, npartcl, npartcl0)
+                synchronize()
 
-					#count particles
-					@cuda blocks = gridSize1D threads=blockSize1D count_particles!(pcnt, px, py, dx, dy, nx, ny, npartcl);
-					synchronize()
 
-					#@printf("%s particle injection	   | ", bar2)
-					#CUDA.allowscalar(true)
-					
-					npartcl_h[1] = npartcl
-					copyto!(npartcl_d, npartcl_h);
+                #p2g_weight<<<gridSize, blockSize>>>(ALL_ARGS);
+                @cuda blocks = gridSize threads = blockSize p2g_weight!(T, C, wts, nx, ny)
+                synchronize()
 
-					min_pcount = 2
 
-					#inject particles where theit not enough
-					@cuda blocks = gridSize threads=blockSize inject_particles!(px, py, pT, pPh, npartcl_d, pcnt, T, C, dx, dy, nx, ny, min_pcount, max_npartcl);
-					synchronize()
+            end
 
-					new_npartcl = npartcl
-					#new_npartcl = npartcl_d[1]
-					copyto!(npartcl_h, npartcl_d)
 
-					new_npartcl = npartcl_h[1]
+            @printf("%s particle injection	   | ", bar2)
 
-					#println(new_npartcl)
+            @time begin
 
-					#println(max_npartcl)
 
-					#CUDA.allowscalar(false)
+                blockSize1D = 512
+                gridSize1D = (npartcl + blockSize1D - 1) ÷ blockSize1D
 
-					if new_npartcl > max_npartcl
-						fprintf(
-							stderr,
-							"ERROR: number of particles exceeds maximum value, increase capacity\n",
-						)
-						exit(EXIT_FAILURE)
-					end
+                #buf_arr_int = zeros(Int32, nx*ny)
+                #copyto!(pcnt, buf_arr_int)
 
-					if (new_npartcl > npartcl)
-						@printf("(%03d) | ", new_npartcl - npartcl)
-						npartcl = new_npartcl
-					else
-						@printf("(000) | ")
-					end
+                #@printf("%s particle injection	   | ", bar2)
+                #@device_code_warntype interactive=true @cuda blocks = gridSize threads=blockSize gpu_set_to_zero_2d!(pcnt, nx)
 
-				end
-	
-			end
+                #@printf("%s particle injection	   | ", bar2)
+                fill!(pcnt, 0)
 
-			#solving heat equation
-			#NOTE:difference like 2.e-1, mb make sense to fix it
-			@time begin
-				@printf("%s solving heat diffusion   | ", bar2)
+                #count particles
+                @cuda blocks = gridSize1D threads = blockSize1D count_particles!(pcnt, px, py, dx, dy, nx, ny, npartcl)
+                synchronize()
 
-				copyto!(T_old, T)
-				for isub = 0:nsub-1
-					dmf_rock_c = CuArray{Float64,1}(undef, vp.nx * vp.ny)
-					dmf_rock_c = dmf_rock(gp.T)
-					@cuda blocks=gridSize[1],gridSize[2] threads=blockSize[1],blockSize[2] update_T!(T,  T_old, T_top, T_bot, C, lam_r_rhoCp, lam_m_rhoCp, L_Cp, dx, dy, dt, nx, ny, dmf_rock_c);
-					synchronize()
-				end
-			end
+                #@printf("%s particle injection	   | ", bar2)
+                #CUDA.allowscalar(true)
 
+                npartcl_h[1] = npartcl
+                copyto!(npartcl_d, npartcl_h)
 
-			#g2p interpolation
-			@time begin
-				@printf("%s g2p interpolation		| ", bar2)
-				#particles g2p
-				#println(npartcl)
-				blockSize1D = 512
-				gridSize1D = (npartcl + blockSize1D - 1) ÷ blockSize1D
-				@cuda blocks = gridSize1D threads=blockSize1D g2p!(T, T_old, px, py, pT, dx, dy, pic_amount, nx, ny, npartcl)
+                min_pcount = 2
 
-				#markers g2p
-				gridSize1D = (nmarker + blockSize1D - 1) ÷ blockSize1D
-				pic_amount_tmp = pic_amount
-				pic_amount = 1.0
-				@cuda blocks = gridSize1D threads=blockSize1D g2p!(T, T_old, mx, my, mT, dx, dy, pic_amount, nx, ny, nmarker);
-				synchronize()
-				pic_amount = pic_amount_tmp
-			end
+                #inject particles where theit not enough
+                @cuda blocks = gridSize threads = blockSize inject_particles!(px, py, pT, pPh, npartcl_d, pcnt, T, C, dx, dy, nx, ny, min_pcount, max_npartcl)
+                synchronize()
 
-			
-			if (it % nout == 0 || is_eruption)
-				@time begin
-					#@printf("\n%s writing debug results to disk  | ", bar2);
-					#return 0;
-					@printf("%s writing results to disk  | ", bar2)
-					filename = "data/julia_grid." * string(it) * ".h5"
+                new_npartcl = npartcl
+                #new_npartcl = npartcl_d[1]
+                copyto!(npartcl_h, npartcl_d)
 
-					small_mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl, max_nmarker, px, py, mx ,my, h_px_dykes,pcnt, mfl);
-					#mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl, max_nmarker, px, py, mx ,my, h_px_dykes,pcnt, mfl);
-					#=
-					fid = h5open(filename, "w")
+                new_npartcl = npartcl_h[1]
 
-					write_h5(fid, "T", T, staging, nx * ny)
-					write_h5(fid, "C", C, staging, nx * ny)
+                #println(new_npartcl)
 
-					if (is_eruption)
-						write_h5(fid, "L", L, staging, nxl * nyl)
-					end
+                #println(max_npartcl)
 
-					close(fid)
-					=#
-				end
-			end
-			#end
+                #CUDA.allowscalar(false)
 
-			#NOTE:writing markers to disk
-			#not checked
-			if(false)
-				@time begin
-				@printf("%s writing markers to disk  | ", bar2)
-				filename = "markers.h5"
-				fid = h5open(filename, "w")
-				filename_gname = string(it) * "_gname"
-				create_group(fid, filename_gname)
-				g = fid[filename_gname]
-				write_h5(g, "mx", mx, staging, nmarker)
-				write_h5(g, "my", my, staging, nmarker)
-				write_h5(g, "mT", mT, staging, nmarker)
-				close(fid)
-				end
+                if new_npartcl > max_npartcl
+                    fprintf(
+                        stderr,
+                        "ERROR: number of particles exceeds maximum value, increase capacity\n",
+                    )
+                    exit(EXIT_FAILURE)
+                end
 
-			end
+                if (new_npartcl > npartcl)
+                    @printf("(%03d) | ", new_npartcl - npartcl)
+                    npartcl = new_npartcl
+                else
+                    @printf("(000) | ")
+                end
 
-		end
-		@printf("\nTotal time: ")
+            end
 
-	fid = open("data/eruptions.bin", "w")
-	write(fid, iSample)
-	write(fid, eruptionSteps)
-	close(fid)
-	return 0
+        end
+
+        #solving heat equation
+        #NOTE:difference like 2.e-1, mb make sense to fix it
+        @time begin
+            @printf("%s solving heat diffusion   | ", bar2)
+
+            copyto!(T_old, T)
+            for isub = 0:nsub-1
+                dmf_rock_c = CuArray{Float64,1}(undef, vp.nx * vp.ny)
+                dmf_rock_c = dmf_rock(gp.T)
+                @cuda blocks = gridSize[1], gridSize[2] threads = blockSize[1], blockSize[2] update_T!(T, T_old, T_top, T_bot, C, lam_r_rhoCp, lam_m_rhoCp, L_Cp, dx, dy, dt, nx, ny, dmf_rock_c)
+                synchronize()
+            end
+        end
+
+
+        #g2p interpolation
+        @time begin
+            @printf("%s g2p interpolation		| ", bar2)
+            #particles g2p
+            #println(npartcl)
+            blockSize1D = 512
+            gridSize1D = (npartcl + blockSize1D - 1) ÷ blockSize1D
+            @cuda blocks = gridSize1D threads = blockSize1D g2p!(T, T_old, px, py, pT, dx, dy, pic_amount, nx, ny, npartcl)
+
+            #markers g2p
+            gridSize1D = (nmarker + blockSize1D - 1) ÷ blockSize1D
+            pic_amount_tmp = pic_amount
+            pic_amount = 1.0
+            @cuda blocks = gridSize1D threads = blockSize1D g2p!(T, T_old, mx, my, mT, dx, dy, pic_amount, nx, ny, nmarker)
+            synchronize()
+            pic_amount = pic_amount_tmp
+        end
+
+
+        if (it % nout == 0 || is_eruption)
+            @time begin
+                #@printf("\n%s writing debug results to disk  | ", bar2);
+                #return 0;
+                @printf("%s writing results to disk  | ", bar2)
+                filename = "data/julia_grid." * string(it) * ".h5"
+
+                small_mailbox_out(filename, T, pT, C, mT, staging, is_eruption, L, nx, ny, nxl, nyl, max_npartcl, max_nmarker, px, py, mx, my, h_px_dykes, pcnt, mfl)
+                #mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl, max_nmarker, px, py, mx ,my, h_px_dykes,pcnt, mfl);
+                #=
+                fid = h5open(filename, "w")
+
+                write_h5(fid, "T", T, staging, nx * ny)
+                write_h5(fid, "C", C, staging, nx * ny)
+
+                if (is_eruption)
+                	write_h5(fid, "L", L, staging, nxl * nyl)
+                end
+
+                close(fid)
+                =#
+            end
+        end
+        #end
+
+        #NOTE:writing markers to disk
+        #not checked
+        if (false)
+            @time begin
+                @printf("%s writing markers to disk  | ", bar2)
+                filename = "markers.h5"
+                fid = h5open(filename, "w")
+                filename_gname = string(it) * "_gname"
+                create_group(fid, filename_gname)
+                g = fid[filename_gname]
+                write_h5(g, "mx", mx, staging, nmarker)
+                write_h5(g, "my", my, staging, nmarker)
+                write_h5(g, "mT", mT, staging, nmarker)
+                close(fid)
+            end
+
+        end
+
+    end
+    @printf("\nTotal time: ")
+
+    fid = open("data/eruptions.bin", "w")
+    write(fid, iSample)
+    write(fid, eruptionSteps)
+    close(fid)
+    return 0
 end

@@ -14,7 +14,7 @@ function dykes_graph()
     dpa = Array{Float64,1}(undef, 19)#array of double values from matlab script
     ipa = Array{Int32,1}(undef, 12)#array of int values from matlab script
 
-    io = open(data_folder*"pa.bin", "r")
+    io = open(data_folder * "pa.bin", "r")
     read!(io, dpa)
     read!(io, ipa)
 
@@ -56,65 +56,65 @@ function dykes_graph()
 
     close(io)
 
-	#Lx = 4000
-	#Lx = 5000
+    #Lx = 4000
+    #Lx = 5000
     xs = 0:dx:Lx
     ys = 0:dy:Ly
 
-#    fid = h5open(data_folder * "julia_grid.40001.h5", "r")
+    #    fid = h5open(data_folder * "julia_grid.40001.h5", "r")
     fid = h5open(data_folder * "julia_grid.60.h5", "r")
     T = read(fid, "T")
     C = read(fid, "C")
     close(fid)
 
-	l = @layout [ [grid(1,2)] 
-					a]
+    l = @layout [[grid(1, 2)]
+        a]
 
-#=
-	campi_calc = Int32[10000, 20000, 25000, 26000]
-	println(typeof(campi_calc))
-	file = open(data_folder*"eruptions.bin", "w")
-	write(file, campi_calc)
-	close(file)
-=#
+    #=
+    	campi_calc = Int32[10000, 20000, 25000, 26000]
+    	println(typeof(campi_calc))
+    	file = open(data_folder*"eruptions.bin", "w")
+    	write(file, campi_calc)
+    	close(file)
+    =#
 
-	fz = filesize(data_folder*"eruptions.bin")
-	fz_int = Int32(floor(fz/sizeof(Int32)))
+    fz = filesize(data_folder * "eruptions.bin")
+    fz_int = Int32(floor(fz / sizeof(Int32)))
 
-	println(fz/sizeof(Int32))
-	if(fz_int <= 1)
-		println("No eruptions!!!")
+    println(fz / sizeof(Int32))
+    if (fz_int <= 1)
+        println("No eruptions!!!")
         campi_calc_fake = Int32[10000, 20000, 25000, 26000]
-	    println(typeof(campi_calc_fake))
-	    file = open(data_folder*"eruptions.bin", "w")
-	    write(file, campi_calc_fake)
-	close(file)
-		
-	end
-	campi_calc = Array{Int32,1}(undef, fz_int)#array of int values from matlab script
-	read!(data_folder*"eruptions.bin", campi_calc)
+        println(typeof(campi_calc_fake))
+        file = open(data_folder * "eruptions.bin", "w")
+        write(file, campi_calc_fake)
+        close(file)
 
-    campi_calc =@view campi_calc[2:end]
+    end
+    campi_calc = Array{Int32,1}(undef, fz_int)#array of int values from matlab script
+    read!(data_folder * "eruptions.bin", campi_calc)
 
-	println(campi_calc)
-	tyear = 365 * 24 * 3600		#seconds in year
-	tfin = (tfin/tyear)/1.e3
-	campi_calc = -(1 .- campi_calc./nt) .* (tfin)
-	println(campi_calc)
-	display(campi_calc)
-	campi_real = -vcat(39.8, 14.9, 14.3, 13, 12, 12.8, 11.8, 11, 11.5, 11, 10.6, 9.6, 9.3, 5.1, 4.9, 4.5, 4.3, 4.2, 4.2, 4.2, 4.1, 3.9, 0.5);
+    campi_calc = @view campi_calc[2:end]
 
-	p = Plots.scatter(campi_real, zeros(length(campi_real)), markersize=7, 
-        markershape=:circle, color = :red, legend=true, 
-			 framestyle=:origin, yaxis=false, grid=false, aspect_ratio=1.0, label="real campi", xlimits=(min(minimum(campi_real),minimum(campi_calc))-10, 0))
+    println(campi_calc)
+    tyear = 365 * 24 * 3600#seconds in year
+    tfin = (tfin / tyear) / 1.e3
+    campi_calc = -(1 .- campi_calc ./ nt) .* (tfin)
+    println(campi_calc)
+    display(campi_calc)
+    campi_real = -vcat(39.8, 14.9, 14.3, 13, 12, 12.8, 11.8, 11, 11.5, 11, 10.6, 9.6, 9.3, 5.1, 4.9, 4.5, 4.3, 4.2, 4.2, 4.2, 4.1, 3.9, 0.5)
 
-	p = Plots.scatter!(campi_calc, zeros(length(campi_calc)), markersize=4, 
-        markershape=:circle, color = :blue, legend=true, 
-        framestyle=:origin, yaxis=false, grid=false, aspect_ratio=1.0, label="calc campi", markeralpha = 0.5)
+    p = Plots.scatter(campi_real, zeros(length(campi_real)), markersize=7,
+        markershape=:circle, color=:red, legend=true,
+        framestyle=:origin, yaxis=false, grid=false, aspect_ratio=1.0, label="real campi", xlimits=(min(minimum(campi_real), minimum(campi_calc)) - 10, 0))
 
-	T = reshape(T,(length(xs), length(ys)))
-	C = reshape(C,(length(xs), length(ys)))
-	p1 = Plots.plot(Plots.heatmap(ys, xs, transpose(T)), Plots.heatmap(ys, xs, transpose(C)), p, layout = l)
+    p = Plots.scatter!(campi_calc, zeros(length(campi_calc)), markersize=4,
+        markershape=:circle, color=:blue, legend=true,
+        framestyle=:origin, yaxis=false, grid=false, aspect_ratio=1.0, label="calc campi", markeralpha=0.5)
 
-	display(p1)
+    T = reshape(T, (length(xs), length(ys)))
+    C = reshape(C, (length(xs), length(ys)))
+    p1 = Plots.plot(Plots.heatmap(ys, xs, transpose(T)), Plots.heatmap(ys, xs, transpose(C)), p, layout=l)
+
+    display(p1)
 end
