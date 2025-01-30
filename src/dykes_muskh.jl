@@ -141,7 +141,7 @@ function get_points!(dyke_param, num_of_points)
 	x = x .+ dyke_param.x;
 	y = y .+ dyke_param.y;
 
-	return x, y
+	return x, y, r, phi .+ dyke_param.phi
 end
 
 #Averaging grid to particle
@@ -204,18 +204,18 @@ function get_sigma2(x, y, XX, YY, Sxx, Syy, Sxy)
 	#println(mat_local)
 	l_vecs = eigvecs(mat_local)
 	l_vals = eigvals(mat_local)
-	println(l_vals)
+	#println(l_vals)
 
 	#TODO:check if sorted
 	return l_vals[2], l_vecs
 end
 
 
-function calc_cent_of_next_dyke(dyke_param, Sxx, Syy, Sxy, XX, YY, y_limit)
+function calc_cent_of_next_dyke(dyke_param, Sxx, Syy, Sxy, XX, YY, y_limit, Y_right_lim)
 	#TODO
 	#1. calculate points on boundary
-	num_of_points::Int = 14
-	xpoints, ypoints = get_points!(dyke_param, num_of_points)
+	num_of_points::Int = 1134
+	xpoints, ypoints, point_dist, point_angle = get_points!(dyke_param, num_of_points)
 	l_vecs = Matrix{Float64}(undef, 2,2)
 
 	for i in eachindex(ypoints)
@@ -262,11 +262,21 @@ function calc_cent_of_next_dyke(dyke_param, Sxx, Syy, Sxy, XX, YY, y_limit)
 		#println(i)
 		#println(i_opposite)
 		#println("x - $(xpoints[i])")
-		tmp_sigma_dif = sigma2_in_points[i] - sigma2_in_points[i_opposite]
-		#NOTE:here - ypoints - from surface, i guess...
-		delta_y = (tmp_sigma_dif)/(2*c) - rho_m * g *((10-ypoints[i]) - (10-ypoints[i_opposite]))
-		#println("sigma diff - $tmp_sigma_dif")
+		sigma_dif = sigma2_in_points[i] - sigma2_in_points[i_opposite]
+
+		#NOTE pseudo penny shaped
+		#NOTE here - ypoints - from surface, i guess...
+		delta_y = (sigma_dif)/(2*c) - rho_m * g *((Y_right_lim-ypoints[i]) - (Y_right_lim-ypoints[i_opposite]))/(2*c)
 		append!(K,  4/3*pi*delta_y*c*sqrt(pi*c))
+
+		#NOTE: eliptical
+		# c = 2*point_dist[i]
+		# phi = point_angle[i]
+		# delta_y = (sigma_dif)/(2*c) - rho_m * g *((Y_right_lim-ypoints[i]) - (Y_right_lim-ypoints[i_opposite]))/(2*c)
+		# append!(K,  4/3*pi*delta_y*(pi/(dyke_param.a*dyke_param.b))^(1.0/2)*(dyke_param.a^2*sin(phi)^2 + dyke_param.b^2*cos(phi)^2)^(1.0/4))
+
+
+		#println("sigma diff - $tmp_sigma_dif")
 	end
 
 
@@ -346,7 +356,7 @@ function d2dm_pres_test()
 	blockSize = (16, 16)
 	gridSize = (Int64(floor((nx + blockSize[1] - 1) ÷  blockSize[1])), Int64(floor((ny + blockSize[2] - 1) ÷  blockSize[2])))
 
-	for i in 1:1
+	for i in 1:4
 
 		@time begin
 			@cuda blocks = gridSize[1], gridSize[2] threads = blockSize[1], blockSize[2] insert_dyke_gpu!(Sxx_gpu, Syy_gpu, Sxy_gpu,
@@ -360,7 +370,7 @@ function d2dm_pres_test()
 		copyto!(Syy, Syy_gpu)
 		copyto!(Sxy, Sxy_gpu)
 
-		next_point_x, next_point_y, xpoints, ypoints, l_vecs = calc_cent_of_next_dyke(dyke_param, Sxx, Syy, Sxy, XX, YY, y_limit);
+		next_point_x, next_point_y, xpoints, ypoints, l_vecs = calc_cent_of_next_dyke(dyke_param, Sxx, Syy, Sxy, XX, YY, y_limit, Y_right_lim);
 
 		println("Dyke #$i inserted!")
 		_, phi_tmp =d2dm_cart_to_polar(l_vecs[3], l_vecs[4]) 
