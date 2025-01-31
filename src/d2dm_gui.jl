@@ -1,3 +1,7 @@
+"""
+GUI implementation for d2dm
+"""
+
 include("dykes_init.jl")
 
 function simple_imput(name::String, init_val)

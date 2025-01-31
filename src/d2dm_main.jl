@@ -1,4 +1,6 @@
-#main jl file
+"""
+File to test how d2dm work
+"""
 
 include("dykes_init.jl")
 include("dykes_funcs.jl")

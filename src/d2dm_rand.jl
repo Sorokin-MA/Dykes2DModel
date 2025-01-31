@@ -1,3 +1,7 @@
+"""
+File to test initialisaion of values approach
+"""
+
 include("dykes_init.jl")
 #include("dykes_structs.jl")
 

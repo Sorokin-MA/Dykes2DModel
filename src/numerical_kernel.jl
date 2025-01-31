@@ -1,9 +1,8 @@
 """
 """
 
-include("d2dm_init.jl")
 
-using CUDA
+include("dykes_init.jl")
 
 bar1 = "\n├──"
 bar2 = "\n\t ├──"

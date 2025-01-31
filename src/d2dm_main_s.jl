@@ -1,3 +1,8 @@
+"""
+File to test d2dm with gui
+"""
+
+
 #main jl file made with structs
 include("dykes_init.jl")
 include("dykes_funcs.jl")

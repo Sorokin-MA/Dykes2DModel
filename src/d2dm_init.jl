@@ -1,3 +1,7 @@
+"""
+Init file
+"""
+
 using CUDA
 using Printf
 using HDF5

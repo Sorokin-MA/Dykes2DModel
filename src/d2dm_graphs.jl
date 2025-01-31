@@ -1,3 +1,7 @@
+"""
+Print graphs for d2dm output
+"""
+
 include("dykes_init.jl")
 include("dykes_funcs.jl")
 
