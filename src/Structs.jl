@@ -1,8 +1,6 @@
 """
 Structs for d2dm
 """
-using CUDA
-
 Base.@kwdef mutable struct GridParams
     cumulutive_calc = Vector{Float64}()
     cumulutive_real = Vector{Float64}()

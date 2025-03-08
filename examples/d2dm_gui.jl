@@ -2,7 +2,61 @@
 GUI implementation for d2dm
 """
 
-include("dykes_init.jl")
+using Dykes2DModel
+using Printf
+using Dash
+using PlotlyJS
+using Dates #for Time
+using CUDA
+using HDF5
+using Random
+
+
+bar1 = "\n├──"
+bar2 = "\n\t ├──"
+
+
+descr_Lx = "Lx\n\nThe size of the area along the x axis\n\nDimension: [m]"
+descr_Ly = "Ly\n\nThe size of the area along the y axis\n\nDimension: [m]"
+descr_Lz = "Lz\n\nThe size of the area along the z axis\n\nDimension: [m]"
+
+
+global_EruptionVolumesVec = Vector{Float64}([10, 10, 10, 10, 10, 10, 220, 45, 16, 50, 0.5, 0.02, 0.64, 0.02, 0.02, 0.7, 0.201, 0.06, 0.05, 0.02, 0.07, 0.930, 0.018, 0.12, 0.661, 0.016, 0.02, 0.029])
+global_EruptionTimesVec = Vector{Float64}([160.2, 109.3, 105.6, 102.5, 101.2, 91.8, 39.8, 39.7, 29.3, 14.9, 14.3, 13, 12, 12.8, 11.8, 11, 10.6, 9.6, 9.3, 5.1, 4.7, 4.9, 4.5, 4.3, 4.2, 4.1, 3.9, 0.5])
+
+
+str_time_spend::Float64 = 0;
+str_time_left = Time(0)
+
+data_folder = "..\\d2dm_data\\"
+path_to_snap = "c:\\"
+
+
+FLAG_make_snapshot::Bool = true
+
+start_flag::Bool = false
+flag_break::Bool = false
+G_FLAG_INIT::Bool = true
+
+D2DM_STARTED::Bool = false
+D2DM_STOPED::Bool = true
+D2DM_MARKERS::Bool = false
+
+buf = "\n\nWelcome to Dykes2DModel!\n 1.Set parameters and upload history of eruptions \n 2. Generate dykes \n 3. Start calculations\n"
+time_of_loop::Float64 = 0
+
+
+if (isdir(data_folder) == false)
+    mkdir(data_folder)
+end
+
+
+function read_par(par, ipar)
+    par_name_2 = par[ipar]
+    ipar_2 = ipar + 1
+    return par_name_2, ipar_2
+end
+
 
 function simple_imput(name::String, init_val)
     html_div() do
@@ -13,6 +67,11 @@ function simple_imput(name::String, init_val)
             ],
         )
     end
+end
+
+
+function log_to_buffer(input_string)
+    #global buf= input_string*buf
 end
 
 
@@ -32,6 +91,7 @@ end
 function log_to_buffer(input_string)
     #global buf= input_string*buf
 end
+
 
 #parse csv file
 function parse_contents_csv(contents, filename, date, init_vp::InitVarParams)
@@ -470,7 +530,7 @@ function dykes_gui()
         copyto!(h_C, gp.C)
 
 
-        mf = mf_magma.(h_T) .* h_C + mf_rock.(h_T) .* (1.0 .- h_C)
+        mf = d2dm_mf_magma.(h_T) .* h_C + d2dm_mf_rock.(h_T) .* (1.0 .- h_C)
 
         title_string = "Melt fraction (mf), (time, " * string(-(vp.nt - vp.it) / vp.nt * init_vp.calc_years / 1000) * " ka)"
         layout_inner = Layout(title=title_string)
@@ -495,19 +555,20 @@ function dykes_gui()
         dmf = CuArray{Float64,1}(undef, vp.nx * vp.ny)
         h_dmf = Array{Float64,1}(undef, vp.nx * vp.ny)
 
-        #h_T = Array{Float64,1}(undef, vp.nx * vp.ny)#array of double values from matlab script
-        #copyto!(h_T, gp.T)
+        # h_T = Array{Float64,1}(undef, vp.nx * vp.ny)#array of double values from matlab script
+        # copyto!(h_T, gp.T)
 
-        #h_C = Array{Float64,1}(undef, vp.nx * vp.ny)#array of double values from matlab script
-        #copyto!(h_C, gp.C)
-
-        dmf = dmf_magma.(gp.T) .* h_C + dmf_rock.(gp.T) .* (1.0 .- gp.C)
+        # h_C = Array{Float64,1}(undef, vp.nx * vp.ny)#array of double values from matlab script
+        # copyto!(h_C, gp.C)
+        CUDA.allowscalar(true)
+        dmf = d2dm_dmf_magma.(gp.T) .* gp.C + d2dm_dmf_rock.(gp.T) .* (1.0 .- gp.C)
+        CUDA.allowscalar(false)
         copyto!(h_dmf, dmf)
 
         title_string = "Derivative of melt fraction (dmf), (time, " * string(-(vp.nt - vp.it) / vp.nt * init_vp.calc_years / 1000) * " ka)"
         layout_inner = Layout(title=title_string)
 
-        p = Plot(PlotlyJS.heatmap(x=xs, y=ys, z=collect(eachrow(reshape(dmf, (vp.nx, vp.ny))))), layout_inner)
+        p = Plot(PlotlyJS.heatmap(x=xs, y=ys, z=collect(eachrow(reshape(h_dmf, (vp.nx, vp.ny))))), layout_inner)
 
         return [
             html_div(id="dykes_figures_dmf", className="row") do
@@ -1090,4 +1151,224 @@ function dykes_gui()
 
     run_server(app)
     #run_server(app, "0.0.0.0", 8050)
+end
+
+
+function main_test_gui(gp::GridParams, vp::VarParams, init_vp::InitVarParams, FLAG_init::Bool)
+    local_buff::String = ""
+    #Initialization of inner random
+    CUDA.device!(0)
+    Random.seed!(1234)
+    checker = Array{Float64}(undef, 1)
+
+    #print_gpu_properties()
+    if FLAG_init == true
+        #reading params from hdf5 files
+
+        @printf("%s reading params			  ", bar1)
+        log_to_buffer(@sprintf("%s reading params			  ", bar1))
+
+        d2dm_read_params(gp, vp, data_folder)
+
+        global str_time_spend = 0
+        global str_time_left = 0
+
+        #println(gp)
+        #println(vp)
+        #initialisation of T and Ph variables
+        @printf("%s initialization			  ", bar1)
+        log_to_buffer(@sprintf("%s initialization			  ", bar1))
+
+        d2dm_init(gp, vp, D2DM_MARKERS)
+        global G_FLAG_INIT = false
+    end
+
+    filename = Array{Char,1}(undef, 1024)
+    eruption_counter::Int64 = 1
+
+    total_time = @elapsed begin
+        #main loop
+        for vp.it in vp.it:vp.nt
+            @printf("%s it = %d", bar1, vp.it)
+            log_to_buffer(@sprintf("%s it = %d", bar1, vp.it))
+
+            global str_time_spend = str_time_spend + time_of_loop
+            #global str_time_left = Time(0)+Second(Int64(floor((str_time_spend/Float64(vp.it))*(Float64(vp.nt - vp.it)))))
+            global str_time_left = Time(0) + Second(Int64(floor(time_of_loop * (vp.nt - vp.it))))
+
+
+            global time_of_loop = @elapsed begin
+                vp.is_eruption = false
+                eruption_counter = eruption_counter - 1
+                is_intrusion = (gp.ndykes[vp.it] > 0)
+                nerupt = 1
+
+                #checking eruption criteria and advect particles if eruption
+                if (vp.it % nerupt == 0)
+                    #calculating maxVol
+                    maxVol, maxIdx = d2dm_check_melt_fracton(gp, vp)
+
+                    if maxVol == -1
+                        return 0
+                    end
+
+                    dxl = vp.dx * vp.nl
+                    dyl = vp.dy * vp.nl
+
+                    real_vol = (maxVol * (dxl * dyl) / 1.e9) * 1.e4 * vp.gamma
+                    real_vol_2 = (maxVol * (dxl * dyl) / 1.e9) * 1.e4 * (1 - vp.gamma)
+
+                    append!(gp.next_cumulutive_erupt, (gp.critVol[vp.iSample] / 1.e9) * 1.e4 * (1 - vp.gamma))
+                    append!(gp.next_cumulutive_vol, real_vol_2)
+
+
+                    #in reality
+                    if (vp.iSample <= length(global_EruptionTimesVec))
+                        if (-vcat(global_EruptionTimesVec)[vp.iSample_real] <= -(vp.nt .- vp.it) / vp.nt * init_vp.calc_years / 1000)
+                            vp.sum_erupted_real = vp.sum_erupted_real + gp.critVol[vp.iSample_real]
+                            vp.iSample_real = vp.iSample_real + 1
+                        end
+                    end
+                    append!(gp.cumulutive_real, (vp.sum_erupted_real / 1.e9) * 1.e4 * (1 - vp.gamma))
+                    #in calculus
+                    append!(gp.cumulutive_calc, vp.sum_erupted_calc)
+
+                    append!(gp.cumulutive_time, vp.it)
+
+                    @printf("%s accomulated %06f km^3| ", bar2, real_vol_2)
+                    log_to_buffer(@sprintf("%s accomulated %06f km^3| ", bar2, real_vol_2))
+
+                    if (maxVol * dxl * dyl >= gp.critVol[vp.iSample] && eruption_counter <= 0)
+                        @printf("%s erupting %07d cells   | ", bar2, maxVol)
+
+                        log_to_buffer(@sprintf("%s erupting %07d cells   | ", bar2, maxVol))
+                        vp.sum_erupted_calc = vp.sum_erupted_calc + real_vol_2
+
+                        filename = data_folder * "julia_grid." * string(vp.it) * ".before_eruption" * ".h5"
+                        make_snapshot(vp, gp, filename)
+                        #small_mailbox_out(filename, gp.T, gp.pT, gp.C, gp.mT, gp.staging, gp.L, vp.nx, vp.ny, vp.nxl, vp.nyl, vp.max_npartcl, vp.max_nmarker, gp.px, gp.py, gp.mx, gp.my, gp.h_px_dykes, gp.pcnt, gp.mfl, vp.dx, vp.dy, vp.Lx, vp.Ly)
+
+                        eruption_advection(gp, vp, maxVol, maxIdx, vp.it, D2DM_MARKERS)
+
+                        eruption_counter = 10
+                    end
+                end
+
+
+                #processing intrusions of dykes
+                if (is_intrusion)
+                    @printf("%s inserting %02d dykes	   | ", bar2, gp.ndykes[vp.it])
+                    log_to_buffer(@sprintf("%s inserting %02d dykes	   | ", bar2, gp.ndykes[vp.it]))
+                    d2dm_inserting_dykes(gp, vp, vp.it, D2DM_MARKERS)
+                end
+
+
+                #if eruption or injection happend, taking into account their effcto on grid with p2g
+                if (vp.is_eruption || is_intrusion)
+                    @printf("%s p2g interpolation		| ", bar2)
+                    log_to_buffer(@sprintf("%s p2g interpolation		| ", bar2))
+                    d2dm_p2g_interpolation(gp, vp)
+
+
+                    @printf("%s particle injection	   | ", bar2)
+                    log_to_buffer(@sprintf("%s particle injection	   | ", bar2))
+                    d2dm_particles_injection(gp, vp)
+                end
+
+
+                #solving heat equation
+                #NOTE:difference like 2.e-1, mb make sense to fix it
+                @time begin
+                    @printf("%s solving heat diffusion   | ", bar2)
+                    log_to_buffer(@sprintf("%s solving heat diffusion   | ", bar2))
+
+                    blockSize = (28, 32)
+                    gridSize = (Int64(floor((vp.nx + blockSize[1] - 1) / blockSize[1])), Int64(floor((vp.ny + blockSize[2] - 1) / blockSize[2])))
+
+                    copyto!(gp.T_old, gp.T)
+                    for isub = 0:vp.nsub-1
+                        dmf_rock_c = CuArray{Float64,1}(undef, vp.nx * vp.ny)
+                        #dmf_rock_c = cuitp.(gp.T)
+                        #dmf_rock_c = only.(Interpolations.gradient.(Ref(cuitp), gp.T))
+                        dmf_rock_c = d2dm_dmf_magma.(gp.T)
+
+                        @cuda blocks = gridSize[1], gridSize[2] threads = blockSize[1], blockSize[2] d2dm_update_T!(gp.T, gp.T_old,
+                            vp.T_top, vp.T_bot,
+                            gp.C, vp.lam_r_rhoCp, vp.lam_m_rhoCp, vp.L_Cp,
+                            vp.dx, vp.dy, vp.dt,
+                            vp.nx, vp.ny, dmf_rock_c)
+                        synchronize()
+                    end
+
+                    #check for calculation explosion
+                    T_for_chek = @view gp.T[1]
+                    copyto!(checker, T_for_chek)
+                    if isnan(checker[1])
+                        log_to_buffer(@sprintf("EXPLOSION!!!"))
+                        println("EXPLOSION!!!")
+                        return -1
+                    end
+                end
+
+
+                #g2p interpolation
+                @time begin
+                    @printf("%s g2p interpolation		| ", bar2)
+                    log_to_buffer(@sprintf("%s g2p interpolation		| ", bar2))
+                    blockSize1D = 896
+                    gridSize1D = (vp.npartcl + blockSize1D - 1) ÷ blockSize1D
+                    @cuda blocks = gridSize1D threads = blockSize1D d2dm_g2p!(gp.T, gp.T_old, gp.px, gp.py, gp.pT, vp.dx, vp.dy, vp.pic_amount, vp.nx, vp.ny, vp.npartcl)
+
+                    gridSize1D = (vp.nmarker + blockSize1D - 1) ÷ blockSize1D
+                    pic_amount_tmp = vp.pic_amount
+                    pic_amount = 1.0
+                    if (D2DM_MARKERS)
+                        @cuda blocks = gridSize1D threads = blockSize1D d2dm_g2p!(gp.T, gp.T_old, gp.mx, gp.my, gp.mT, vp.dx, vp.dy, vp.pic_amount, vp.nx, vp.ny, vp.nmarker)
+                    end
+                    synchronize()
+                    vp.pic_amount = pic_amount_tmp
+                end
+
+
+                #mailbox output
+                if (vp.it % vp.nout == 0 || vp.is_eruption)
+                    @time begin
+                        @printf("%s writing results to disk  | ", bar2)
+                        log_to_buffer(@sprintf("%s writing results to disk  | ", bar2))
+                        if (vp.is_eruption)
+                            filename = data_folder * "julia_grid." * string(vp.it) * ".after_eruption" * ".h5"
+                        else
+                            filename = data_folder * "julia_grid." * string(vp.it) * ".h5"
+                        end
+
+                        d2dm_make_snapshot(vp, gp, filename)
+                        #small_mailbox_out(filename, gp.T, gp.pT, gp.C, gp.mT, gp.staging, gp.L, vp.nx, vp.ny, vp.nxl, vp.nyl, vp.max_npartcl, vp.max_nmarker, gp.px, gp.py, gp.mx, gp.my, gp.h_px_dykes, gp.pcnt, gp.mfl, vp.dx, vp.dy, vp.Lx, vp.Ly)
+                        #mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl, max_nmarker, px, py, mx ,my, h_px_dykes,pcnt, mfl);
+                    end
+                end
+
+                if ((flag_break) == true)
+                    #vp.it = vp.it + 1;
+                    return 0
+                end
+            end
+        end
+
+    end
+
+    @printf("%s writing results to disk  | ", bar2)
+    log_to_buffer(@sprintf("%s writing results to disk  | ", bar2))
+    filename = data_folder * "julia_grid." * string(vp.nt + 1) * ".h5"
+    #	small_mailbox_out(filename, gp.T, gp.pT, gp.C, gp.mT, gp.staging, gp.L, vp.nx, vp.ny, vp.nxl, vp.nyl, vp.max_npartcl, vp.max_nmarker, gp.px, gp.py, gp.mx, gp.my, gp.h_px_dykes, gp.pcnt, gp.mfl, vp.dx, vp.dy, vp.Lx, vp.Ly)
+    make_snapshot(vp, gp, filename)
+
+    @printf("\nTotal time: %s", total_time)
+    log_to_buffer(@sprintf("\nTotal time: %s", total_time))
+
+    fid = open(data_folder * "eruptions.bin", "w")
+    write(fid, vp.iSample)
+    write(fid, gp.eruptionSteps)
+    close(fid)
+    global G_FLAG_INIT = true
+    return 0
 end

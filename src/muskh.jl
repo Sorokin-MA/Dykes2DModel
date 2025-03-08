@@ -1,16 +1,3 @@
-"""
-file to test d2dm preassure model
-"""
-
-using CoordRefSystems
-using LinearAlgebra
-
-function meshgrid(x, y)
-    X = [i for i in x, j in 1:length(y)]
-    Y = [j for i in 1:length(x), j in y]
-    return [X, Y]
-end
-
 Base.@kwdef mutable struct DykeParam
     a::Float64 = 4
     b::Float64 = 0.5
@@ -123,6 +110,9 @@ function d2dm_cart_to_polar(x::Float64, y::Float64)
 end
 
 
+```
+Get ints on peremeter of ellipsis
+```
 function get_points!(dyke_param, num_of_points)
     upsilon = 0:(2*pi)/(num_of_points-1):2*pi
     rho = 1
@@ -161,8 +151,12 @@ function d2dm_blerp(x1, x2, y1, y2, f11, f12, f21, f22, x, y)
     return invDxDy * (f11 * dx2 * dy2 + f12 * dx2 * dy1 + f21 * dx1 * dy2 + f22 * dx1 * dy1)
 end
 
-function get_sigma2(x, y, XX, YY, Sxx, Syy, Sxy)
 
+```
+Function interpolate point with blerp, interpolate Sxx, Sxy, Syy accordingly
+and then calculating maximal sigma
+```
+function get_sigma2(x, y, XX, YY, Sxx, Syy, Sxy)
     x_lf = 0.0
     y_lf = 0.0
 
@@ -181,12 +175,6 @@ function get_sigma2(x, y, XX, YY, Sxx, Syy, Sxy)
         end
     end
 
-
-    #From nearest point
-    # println(x_lf)
-    # println(y_lf)
-
-
     small_dif_x = 0
     small_dif_y = 0
 
@@ -195,35 +183,24 @@ function get_sigma2(x, y, XX, YY, Sxx, Syy, Sxy)
     Sxy_local = d2dm_blerp(XX[x_lf], XX[x_lf+1], YY[y_lf], YY[y_lf+1], Sxy[x_lf, y_lf], Sxy[x_lf, y_lf+1], Sxy[x_lf+1, y_lf], Sxy[x_lf+1, y_lf+1], x + small_dif_x, y + small_dif_y)
     Syy_local = d2dm_blerp(XX[x_lf], XX[x_lf+1], YY[y_lf], YY[y_lf+1], Syy[x_lf, y_lf], Syy[x_lf, y_lf+1], Syy[x_lf+1, y_lf], Syy[x_lf+1, y_lf+1], x + small_dif_x, y + small_dif_y)
 
-    # println("Points around pick:")
-    # println(Sxx[x_lf, y_lf])
-    # println(Sxx[x_lf+1, y_lf])
-    # println(Sxx[x_lf, y_lf+1])
-    # println(Sxx[x_lf+1, y_lf+1])
-    # println("Point in pick:")
-    # println(Sxx_local)
-
-
     mat_local = [Sxx_local Sxy_local; Sxy_local Syy_local]
-    #println(mat_local)
+
     l_vecs = eigvecs(mat_local)
     l_vals = eigvals(mat_local)
-    #println(l_vals)
 
-    #TODO:check if sorted
+    #TODO:check if sorted right
     return l_vals[2], l_vecs
 end
 
 
-function calc_cent_of_next_dyke(dyke_param, Sxx, Syy, Sxy, XX, YY, y_limit, Y_right_lim)
-    #TODO
-    #1. calculate points on boundary
-    num_of_points::Int = 1134
-    xpoints, ypoints, point_dist, point_angle = get_points!(dyke_param, num_of_points)
+function calc_cent_of_next_dyke(dyke_param, Sxx, Syy, Sxy, XX, YY, y_limit, Y_right_lim, X_lim)
+
+    num_of_points_on_ellipsis::Int = 1134
+    xpoints, ypoints, point_dist, point_angle = get_points!(dyke_param, num_of_points_on_ellipsis)
     l_vecs = Matrix{Float64}(undef, 2, 2)
 
     for i in eachindex(ypoints)
-        x_new = 7.0
+		x_new = X_lim/4 + X_lim/2 * rand()
         y_new = 3.0
         #println(ypoints)
         if ypoints[i] > y_limit
@@ -263,9 +240,6 @@ function calc_cent_of_next_dyke(dyke_param, Sxx, Syy, Sxy, XX, YY, y_limit, Y_ri
 
     for i in eachindex(sigma2_in_points)
         i_opposite = Int((i + K_size ÷ 2) % (K_size) + 1)
-        #println(i)
-        #println(i_opposite)
-        #println("x - $(xpoints[i])")
         sigma_dif = sigma2_in_points[i] - sigma2_in_points[i_opposite]
 
         #NOTE pseudo penny shaped
@@ -274,10 +248,11 @@ function calc_cent_of_next_dyke(dyke_param, Sxx, Syy, Sxy, XX, YY, y_limit, Y_ri
         append!(K, 4 / 3 * pi * delta_y * c * sqrt(pi * c))
 
         #NOTE: eliptical
-        # c = 2*point_dist[i]
-        # phi = point_angle[i]
-        # delta_y = (sigma_dif)/(2*c) - rho_m * g *((Y_right_lim-ypoints[i]) - (Y_right_lim-ypoints[i_opposite]))/(2*c)
-        # append!(K,  4/3*pi*delta_y*(pi/(dyke_param.a*dyke_param.b))^(1.0/2)*(dyke_param.a^2*sin(phi)^2 + dyke_param.b^2*cos(phi)^2)^(1.0/4))
+		#       c = 2*point_dist[i]
+		#       phi = point_angle[i]
+		#       delta_y = (sigma_dif)/(2*c) - rho_m * g *((Y_right_lim-ypoints[i]) - (Y_right_lim-ypoints[i_opposite]))/(2*c)
+		# C_00 = ypoints[i];
+		# append!(K,  C_00/(dyke_param.a*dyke_param.b)*(pi/(dyke_param.a*dyke_param.b))^(1/2)*(dyke_param.a^2*sin(phi)^2 + dyke_param.b^2*cos(phi)^2)^(1.0/4))
 
 
         #println("sigma diff - $tmp_sigma_dif")
@@ -295,106 +270,3 @@ function calc_cent_of_next_dyke(dyke_param, Sxx, Syy, Sxy, XX, YY, y_limit, Y_ri
     return xpoints[indx], ypoints[indx], xpoints, ypoints, l_vecs
 end
 
-function d2dm_pres_test()
-    #init phase
-
-    #grid params
-    Lx = 20000
-    Ly = 20000
-
-    nx = 2000
-    ny = 2000
-
-    tmp = 1024
-
-    nx = tmp
-    ny = tmp
-
-    dx::Float64 = Lx / (nx - 1)
-    dy::Float64 = Ly / (ny - 1)
-
-    xs = 0:dx:Lx
-    ys = 0:dy:Ly
-
-    X_left_lim, X_right_lim = 0, 10
-    Y_left_lim, Y_right_lim = 0, 10
-    y_limit = 8
-
-    XX = range(X_left_lim, X_right_lim, nx)
-    YY = range(Y_left_lim, Y_right_lim, ny)
-    X_rec, Y_rec = meshgrid(XX, YY)
-
-
-    Sxx = zeros(size(X_rec))
-    Syy = zeros(size(X_rec))
-    Sxy = zeros(size(X_rec))
-
-    println(size(XX))
-    println(size(Sxx))
-
-    dyke_param = DykeParam(x=5, y=3, a=4, b=0.5, phi=pi / 2)
-    xpoints::Vector{Float64} = Vector{Float64}(undef, 1)
-    ypoints::Vector{Float64} = Vector{Float64}(undef, 1)
-    l_vecs = 0
-    next_point_x = 0
-    next_point_y = 0
-
-
-    Sxx_cpu = Array{Float64}(undef, nx * ny)
-
-    Sxx_gpu = CUDA.zeros(Float64, nx * ny)
-    Syy_gpu = CUDA.zeros(Float64, nx * ny)
-    Sxy_gpu = CUDA.zeros(Float64, nx * ny)
-
-    # Sxx_gpu = CuArray{Float64}(undef, nx*ny)
-    # Syy_gpu = CuArray{Float64}(undef, nx*ny)
-    # Sxy_gpu = CuArray{Float64}(undef, nx*ny)
-
-    println(size(X_rec))
-    println(size(Sxx_gpu))
-
-    #Sxx_gpu = CuArray([x::Float64 for x in Sxx])
-    #Syy_gpu =CuArray([x::Float64 for x in Syy]) 
-    #Sxy_gpu =CuArray([x::Float64 for x in Sxy]) 
-
-    blockSize = (16, 16)
-    gridSize = (Int64(floor((nx + blockSize[1] - 1) ÷ blockSize[1])), Int64(floor((ny + blockSize[2] - 1) ÷ blockSize[2])))
-
-    for i in 1:4
-
-        @time begin
-            @cuda blocks = gridSize[1], gridSize[2] threads = blockSize[1], blockSize[2] insert_dyke_gpu!(Sxx_gpu, Syy_gpu, Sxy_gpu,
-                XX, YY,
-                nx, ny,
-                dyke_param.a, dyke_param.b, dyke_param.P_in, dyke_param.x, dyke_param.y, dyke_param.phi)
-
-            synchronize()
-
-            copyto!(Sxx, Sxx_gpu)
-            copyto!(Syy, Syy_gpu)
-            copyto!(Sxy, Sxy_gpu)
-
-            next_point_x, next_point_y, xpoints, ypoints, l_vecs = calc_cent_of_next_dyke(dyke_param, Sxx, Syy, Sxy, XX, YY, y_limit, Y_right_lim)
-
-            println("Dyke #$i inserted!")
-            _, phi_tmp = d2dm_cart_to_polar(l_vecs[3], l_vecs[4])
-            dyke_param = DykeParam(x=next_point_x, y=next_point_y, phi=phi_tmp)
-        end
-    end
-
-
-    println(typeof(l_vecs))
-    println(l_vecs)
-    println(typeof(l_vecs[1]))
-
-    P_plot = Plots.heatmap(x=XX', y=YY', Sxx', layout=(2, 2), title="Sxx")
-    Plots.heatmap!(P_plot, x=XX', y=YY', Syy', subplot=2, title="Syy")
-    Plots.heatmap!(P_plot, x=XX', y=YY', Sxy', subplot=3, title="Sxy")
-    Plots.scatter!(P_plot, xpoints, ypoints, subplot=4, markersize=1, xlimit=[X_left_lim, X_right_lim], ylimit=[Y_left_lim, Y_right_lim], title="last dyke")
-    Plots.quiver!(P_plot, [next_point_x, next_point_x], [next_point_y, next_point_y], quiver=([l_vecs[1] l_vecs[2]], [l_vecs[3], l_vecs[4]]), subplot=4, xlimit=[X_left_lim, X_right_lim], ylimit=[X_left_lim, X_right_lim])
-
-
-    display(P_plot)
-
-    println("Success!!!")
-end

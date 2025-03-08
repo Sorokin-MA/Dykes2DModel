@@ -1,12 +1,6 @@
-"""
-"""
+#include("d2dm_init.jl")
 
-include("d2dm_init.jl")
 
-using CUDA
-
-bar1 = "\n├──"
-bar2 = "\n\t ├──"
 
 """
 Function to count 1D index based on 2D indexes.
@@ -25,27 +19,6 @@ Maybe will be fixed in the future.
 """
 function idc(ix, iy, nx)
     return ((iy) * nx + ix + 1)
-end
-
-#Basic info aobut GPU
-function print_gpu_properties()
-    for (i, device) in enumerate(CUDA.devices())
-        println("*** General properties for device $i ***")
-        name = CUDA.name(device)
-        println("Device name: $name")
-        major = CUDA.attribute(device, CUDA.CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR)
-        minor = CUDA.attribute(device, CUDA.CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR)
-        println("Compute capabilities: $major.$minor")
-        clock_rate = CUDA.attribute(device, CUDA.CU_DEVICE_ATTRIBUTE_CLOCK_RATE)
-        println("Clock rate: $clock_rate")
-        device_overlap = CUDA.attribute(device, CUDA.CU_DEVICE_ATTRIBUTE_GPU_OVERLAP)
-        print("Device copy overlap: ")
-        println(device_overlap > 0 ? "enabled" : "disabled")
-        kernel_exec_timeout =
-            CUDA.attribute(device, CUDA.CU_DEVICE_ATTRIBUTE_KERNEL_EXEC_TIMEOUT)
-        print("Kernel execution timeout: ")
-        println(kernel_exec_timeout > 0 ? "enabled" : "disabled")
-    end
 end
 
 #helper function which helps to read from IO stream
@@ -122,15 +95,39 @@ end
 
 #melt fraction of host rocks
 function mf_rock(T)
-    return mf_campi_rhyolite(T)
+    #FIXME: bad interpolation
+    #return mf_campi_rhyolite(T)
+    return mf_rhyolite(T)
 end
+
+function d2dm_dmf_rock(T)
+    #FIXME: bad interpolation
+    #return mf_campi_rhyolite(T)
+    return dmf_basalt(T)
+end
+
+function d2dm_mf_rock(T)
+    return mf_basalt(T)
+end
+
+function d2dm_dmf_magma(T)
+    return dmf_magma(T)
+end
+
+function d2dm_mf_magma(T)
+    return mf_magma(T)
+end
+
+
+
+
 
 """
 	update_T!(T,  T_old, T_top, T_bot, C, lam_r_rhoCp, lam_m_rhoCp, L_Cp, dx, dy, dt, nx, ny)
 
 Solve heat equasion
 """
-function update_T!(T, T_old, T_top, T_bot, C, lam_r_rhoCp, lam_m_rhoCp, L_Cp, dx, dy, dt, nx, ny, dmf_rock_arr)
+function d2dm_update_T!(T, T_old, T_top, T_bot, C, lam_r_rhoCp, lam_m_rhoCp, L_Cp, dx, dy, dt, nx, ny, dmf_rock_arr)
     ix = (blockIdx().x - 1) * blockDim().x + threadIdx().x - 1
     iy = (blockIdx().y - 1) * blockDim().y + threadIdx().y - 1
 
@@ -166,6 +163,7 @@ function update_T!(T, T_old, T_top, T_bot, C, lam_r_rhoCp, lam_m_rhoCp, L_Cp, dx
         qyn = -(T[idc(ix, iy + 1, nx)] - T[idc(ix, iy, nx)]) / dy
     end
 
+    #FIXME: bad interpolation
     dmf::Float64 = dmf_magma(T[idc(ix, iy, nx)]) * C[idc(ix, iy, nx)] + dmf_rock_arr[idc(ix, iy, nx)] * (1.0 - C[idc(ix, iy, nx)])
     lam_rhoCp::Float64 = (lam_m_rhoCp * C[idc(ix, iy, nx)]) + lam_r_rhoCp * (1.0 - C[idc(ix, iy, nx)])
 
@@ -405,11 +403,11 @@ function p2g_project!(T, C, wts, px, py, pT, pPh, dx, dy, nx, ny, npartcl, npart
 end
 
 """
-	g2p!(T, T_old, px, py, pT, dx, dy, pic_amount, nx, ny, npartcl)
+	d2dm_g2p!(T, T_old, px, py, pT, dx, dy, pic_amount, nx, ny, npartcl)
 
 Grid to particles interpolation
 """
-function g2p!(T, T_old, px, py, pT, dx, dy, pic_amount, nx, ny, npartcl)
+function d2dm_g2p!(T, T_old, px, py, pT, dx, dy, pic_amount, nx, ny, npartcl)
     ip = (blockIdx().x - 1) * blockDim().x + threadIdx().x
 
     if ip > (npartcl)
@@ -860,7 +858,7 @@ function small_mailbox_out(filename, T, pT, C, mT, staging, L, nx, ny, nxl, nyl,
     end
 end
 
-function make_snapshot(vp, gp, filename)
+function d2dm_make_snapshot(vp, gp, filename)
     if (FLAG_make_snapshot)
         #filename_donwload = @sprintf("d2d_snapshot_%d_%s.hdf5",vp.it, Dates.format(now(), "yyyy_mm_dd_HH_MM_SS"))
         #filename_donwload = @sprintf("d2d_snapshot.hdf5")
@@ -888,7 +886,7 @@ function make_snapshot(vp, gp, filename)
         end
 
         println("snapshot saved to " * filename)
-        log_to_buffer("snapshot saved to " * filename)
+        #log_to_buffer("snapshot saved to " * filename)
 
         close(fid)
     end
@@ -982,7 +980,7 @@ function rand_limited_2(u, d, dyke_type::Int64)
     return ans
 end
 
-function read_params(gp::GridParams, vp::VarParams)
+function d2dm_read_params(gp::GridParams, vp::VarParams, data_folder)
 
     dpa = Array{Float64,1}(undef, 19)#array of double values from matlab script
     ipa = Array{Int32,1}(undef, 12)#array of int values from matlab script
@@ -1196,7 +1194,8 @@ function read_params(gp::GridParams, vp::VarParams)
 
 end
 
-function init(gp::GridParams, vp::VarParams)
+
+function d2dm_init(gp::GridParams, vp::VarParams, markers_flag)
     pic_amount_tmp = vp.pic_amount
     vp.pic_amount = 1.0
 
@@ -1207,7 +1206,7 @@ function init(gp::GridParams, vp::VarParams)
     #changing only pT
     #grid to particles interpolation
     #differene with cuda like 6.e-8 for some reason
-    @cuda blocks = gridSize1D threads = blockSize1D g2p!(gp.T, gp.T_old, gp.px, gp.py, gp.pT, vp.dx, vp.dy, vp.pic_amount, vp.nx, vp.ny, vp.npartcl)
+    @cuda blocks = gridSize1D threads = blockSize1D d2dm_g2p!(gp.T, gp.T_old, gp.px, gp.py, gp.pT, vp.dx, vp.dy, vp.pic_amount, vp.nx, vp.ny, vp.npartcl)
 
     gridSize1D = convert(
         Int64,
@@ -1225,7 +1224,7 @@ function init(gp::GridParams, vp::VarParams)
     println(vp.max_nmarker)
     println(vp.nmarker)
 
-    if (D2DM_MARKERS)
+    if (markers_flag)
         #processing all markers 
         gridSize1D = Int64(floor((vp.max_nmarker - vp.nmarker + blockSize1D - 1) / blockSize1D))
         mTs = @view gp.mT[vp.nmarker+1:end]
@@ -1238,7 +1237,7 @@ function init(gp::GridParams, vp::VarParams)
 
 end
 
-function check_melt_fracton(gp::GridParams, vp::VarParams)
+function d2dm_check_melt_fracton(gp::GridParams, vp::VarParams)
     @time begin
         nxl = vp.nxl
         nyl = vp.nyl
@@ -1251,7 +1250,9 @@ function check_melt_fracton(gp::GridParams, vp::VarParams)
 
 
         mf_rock_c = CuArray{Float64,1}(undef, vp.nx * vp.ny)
-        mf_rock_c = cuitp.(gp.T)
+        #FIXME: bad interpolation
+        #mf_rock_c = cuitp.(gp.T)
+        mf_rock_c = mf_rock.(gp.T)
 
         #Усредняется mf 
         @cuda blocks = gridSizel threads = blockSizel average!(gp.mfl, gp.T, gp.C, vp.nl, vp.nx, vp.ny, mf_rock_c)
@@ -1262,7 +1263,7 @@ function check_melt_fracton(gp::GridParams, vp::VarParams)
 
         copyto!(gp.L_host, gp.L)
 
-        volumes = OrderedDict{Int32,Int32}(-1 => 0)
+        volumes = Dict{Int32,Int32}(-1 => 0)
 
         #counting volumes
         for iy = 0:(nyl-1)
@@ -1311,7 +1312,7 @@ function check_melt_fracton(gp::GridParams, vp::VarParams)
     return maxVol, maxIdx
 end
 
-function eruption_advection(gp::GridParams, vp::VarParams, maxVol, maxIdx, it)
+function eruption_advection(gp::GridParams, vp::VarParams, maxVol, maxIdx, it, markers_flag)
     @time begin
 
         cell_idx = CuArray{Int32,1}(undef, maxVol)
@@ -1343,7 +1344,7 @@ function eruption_advection(gp::GridParams, vp::VarParams, maxVol, maxIdx, it)
 
 
 
-        if (D2DM_MARKERS)
+        if (markers_flag)
             gridSize1D = (vp.nmarker + blockSize1D - 1) ÷ blockSize1D
             #advect markers
             @cuda blocks = gridSize1D threads = blockSize1D advect_particles_eruption(gp.mx, gp.my, cell_idx, vp.gamma, dxl, dyl, vp.nmarker, maxVol, vp.nxl, vp.nyl)
@@ -1358,7 +1359,7 @@ function eruption_advection(gp::GridParams, vp::VarParams, maxVol, maxIdx, it)
 
 end
 
-function inserting_dykes(gp::GridParams, vp::VarParams, it)
+function d2dm_inserting_dykes(gp::GridParams, vp::VarParams, it, markers_flag)
     @time begin
         for i = 1:gp.ndykes[it]
             vp.idyke = vp.idyke + 1
@@ -1406,7 +1407,7 @@ function inserting_dykes(gp::GridParams, vp::VarParams, it)
             gridSize1D = (vp.nmarker + blockSize1D - 1) ÷ blockSize1D
 
 
-            if (D2DM_MARKERS)
+            if (markers_flag)
                 @cuda blocks = gridSize1D threads = blockSize1D advect_particles_intrusion(
                     gp.mx,
                     gp.my,
@@ -1429,7 +1430,7 @@ function inserting_dykes(gp::GridParams, vp::VarParams, it)
     end
 end
 
-function p2g_interpolation(gp::GridParams, vp::VarParams)
+function d2dm_p2g_interpolation(gp::GridParams, vp::VarParams)
     @time begin
         fill!(gp.T, 0)
         fill!(gp.C, 0)
@@ -1450,7 +1451,7 @@ function p2g_interpolation(gp::GridParams, vp::VarParams)
     end
 end
 
-function particles_injection(gp::GridParams, vp::VarParams)
+function d2dm_particles_injection(gp::GridParams, vp::VarParams)
     @time begin
         blockSize1D = 896
         gridSize1D = (vp.npartcl + blockSize1D - 1) ÷ blockSize1D
