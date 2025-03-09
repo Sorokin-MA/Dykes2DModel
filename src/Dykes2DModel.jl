@@ -3,7 +3,7 @@ module Dykes2DModel
 
 #Main funcs
 export d2dm_init, d2dm_read_params, d2dm_check_melt_fracton,
-       d2dm_update_T!, d2dm_make_snapshot,
+       d2dm_update_T!, d2dm_make_snapshot, d2dm_update_T_NG!,
        d2dm_particles_injection,
        d2dm_g2p!, d2dm_p2g_interpolation,
        d2dm_inserting_dykes,
@@ -26,7 +26,6 @@ export dykes_rand_param
 #export global_EruptionVolumesVec
 
 
-using CUDA
 using Printf
 using HDF5
 using Random
@@ -37,13 +36,14 @@ using LazyGrids
 using Interpolations
 using Distributions
 #using DataStructures
+using Adapt
 using PlotlyJS
 #using DashBootstrapComponents
 #using DelimitedFiles
 #using Base64
 using Core: Typeof
 using Dates
-using Adapt
+using CUDA
 #using ForwardDiff
 #using DataInterpolations
 #using Dash

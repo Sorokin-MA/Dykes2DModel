@@ -2,8 +2,10 @@
 Print graphs for d2dm output
 """
 
-include("dykes_init.jl")
-include("dykes_funcs.jl")
+using Dykes2DModel
+
+#include("dykes_init.jl")
+#include("dykes_funcs.jl")
 
 
 function dykes_graph()

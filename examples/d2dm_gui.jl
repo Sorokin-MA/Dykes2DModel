@@ -7,10 +7,11 @@ using Printf
 using Dash
 using PlotlyJS
 using Dates #for Time
-using CUDA
 using HDF5
 using Random
-
+using Interpolations
+using Adapt
+using CUDA
 
 bar1 = "\n├──"
 bar2 = "\n\t ├──"
@@ -44,6 +45,47 @@ D2DM_MARKERS::Bool = false
 
 buf = "\n\nWelcome to Dykes2DModel!\n 1.Set parameters and upload history of eruptions \n 2. Generate dykes \n 3. Start calculations\n"
 time_of_loop::Float64 = 0
+
+
+d2dm_campi_rhyolite_mf = 1 .- Vector{Float64}([1, 0.9978, 0.9955, 0.9918, 0.9881, 0.9401, 0.9273, 0.9231, 0.9189, 0.9029, 0.8859, 0.8532, 0.7972, 0.6777, 0.371, 0.2195, 0.1545, 0.1184, 0.1111, 0.1038, 0.0965, 0.0892, 0.0819, 0.0769, 0.0721, 0.0672, 0.0624, 0.0573, 0.0516, 0.0459, 0.0402, 0.0338, 0.0265, 0.0192, 0.0143, 0.0143, 0.0143, 0.0143, 0.0121, 0.0099, 0.0076, 0.006, 0.0056, 0.0051, 0.0047, 0.0043, 0.0037, 0.0028, 0.0019, 0.0009, 0])
+d2dm_campi_rhyolite_temp = Vector{Float64}([699.2355, 708.9755, 718.7156, 728.4557, 738.1957, 747.9358, 757.6758, 767.4159, 777.156, 786.896, 796.6361, 806.3761, 816.1162, 825.8563, 835.5963, 845.3364, 855.0765, 864.8165, 874.5566, 884.2966, 894.0367, 903.7768, 913.5168, 923.2569, 932.9969, 942.737, 952.4771, 962.2171, 971.9572, 981.6972, 991.4373, 1001.1774, 1010.9174, 1020.6575, 1030.3976, 1040.1376, 1049.8777, 1059.6177, 1069.3578, 1079.0979, 1088.8379, 1098.578, 1108.318, 1118.0581, 1127.7982, 1137.5382, 1147.2783, 1157.0183, 1166.7584, 1176.4985, 1186.2385])
+
+#d2dm_campi_rhyolite::Interpolations.MonotonicInterpolation = interpolate(dykes_temp, dykes_crystalinity, SteffenMonotonicInterpolation())
+
+# A_x = range(699.2355, 1186.2385, 51);
+# itp = interpolate(d2dm_campi_rhyolite_mf, BSpline(Cubic(Line(OnGrid()))))
+# itp = Interpolations.scale(itp, A_x)
+# itp = extrapolate(itp, Flat())
+#
+# cuitp = CUDA.adapt(CuArray{eltype(d2dm_campi_rhyolite_temp)}, itp);
+
+# dykes_crystalinity = 1 .- Vector{Float64}([1, 0.9978, 0.9955, 0.9918, 0.9881, 0.9401, 0.9273, 0.9231, 0.9189, 0.9029, 0.8859, 0.8532, 0.7972, 0.6777, 0.371, 0.2195, 0.1545, 0.1184, 0.1111, 0.1038, 0.0965, 0.0892, 0.0819, 0.0769, 0.0721, 0.0672, 0.0624, 0.0573, 0.0516, 0.0459, 0.0402, 0.0338, 0.0265, 0.0192, 0.0143, 0.0143, 0.0143, 0.0143, 0.0121, 0.0099, 0.0076, 0.006, 0.0056, 0.0051, 0.0047, 0.0043, 0.0037, 0.0028, 0.0019, 0.0009, 0])
+# dykes_temp = Vector{Float64}([699.2355, 708.9755, 718.7156, 728.4557, 738.1957, 747.9358, 757.6758, 767.4159, 777.156, 786.896, 796.6361, 806.3761, 816.1162, 825.8563, 835.5963, 845.3364, 855.0765, 864.8165, 874.5566, 884.2966, 894.0367, 903.7768, 913.5168, 923.2569, 932.9969, 942.737, 952.4771, 962.2171, 971.9572, 981.6972, 991.4373, 1001.1774, 1010.9174, 1020.6575, 1030.3976, 1040.1376, 1049.8777, 1059.6177, 1069.3578, 1079.0979, 1088.8379, 1098.578, 1108.318, 1118.0581, 1127.7982, 1137.5382, 1147.2783, 1157.0183, 1166.7584, 1176.4985, 1186.2385])
+#
+#
+# A_x = range(699.2355, 1186.2385, 51);
+# itp = interpolate(dykes_crystalinity, BSpline(Cubic(Line(OnGrid()))))
+# itp = Interpolations.scale(itp, A_x)
+# itp = extrapolate(itp, Flat())
+#
+#
+# cuitp = adapt(CuArray{eltype(dykes_temp)}, itp);
+
+
+dykes_crystalinity = 1 .- Vector{Float64}([1, 0.9978, 0.9955, 0.9918, 0.9881, 0.9401, 0.9273, 0.9231, 0.9189, 0.9029, 0.8859, 0.8532, 0.7972, 0.6777, 0.371, 0.2195, 0.1545, 0.1184, 0.1111, 0.1038, 0.0965, 0.0892, 0.0819, 0.0769, 0.0721, 0.0672, 0.0624, 0.0573, 0.0516, 0.0459, 0.0402, 0.0338, 0.0265, 0.0192, 0.0143, 0.0143, 0.0143, 0.0143, 0.0121, 0.0099, 0.0076, 0.006, 0.0056, 0.0051, 0.0047, 0.0043, 0.0037, 0.0028, 0.0019, 0.0009, 0])
+dykes_temp = Vector{Float64}([699.2355, 708.9755, 718.7156, 728.4557, 738.1957, 747.9358, 757.6758, 767.4159, 777.156, 786.896, 796.6361, 806.3761, 816.1162, 825.8563, 835.5963, 845.3364, 855.0765, 864.8165, 874.5566, 884.2966, 894.0367, 903.7768, 913.5168, 923.2569, 932.9969, 942.737, 952.4771, 962.2171, 971.9572, 981.6972, 991.4373, 1001.1774, 1010.9174, 1020.6575, 1030.3976, 1040.1376, 1049.8777, 1059.6177, 1069.3578, 1079.0979, 1088.8379, 1098.578, 1108.318, 1118.0581, 1127.7982, 1137.5382, 1147.2783, 1157.0183, 1166.7584, 1176.4985, 1186.2385])
+
+#d2dm_campi_rhyolite::Interpolations.MonotonicInterpolation = interpolate(dykes_temp, dykes_crystalinity, SteffenMonotonicInterpolation())
+
+A_x = range(699.2355, 1186.2385, 51);
+dykes_crystalinity_ = range(699.2355, 1186.2385, 51);
+nodes = (A_x,)
+itp = interpolate(dykes_crystalinity, BSpline(Cubic(Natural(OnGrid()))))
+itp = Interpolations.scale(itp, A_x)
+itp = extrapolate(itp, Flat())
+
+cuitp = adapt(CuArray{eltype(dykes_temp)}, itp);
+
 
 
 if (isdir(data_folder) == false)
@@ -1205,8 +1247,12 @@ function main_test_gui(gp::GridParams, vp::VarParams, init_vp::InitVarParams, FL
 
                 #checking eruption criteria and advect particles if eruption
                 if (vp.it % nerupt == 0)
+
+                    mf_rock_arr = CuArray{Float64,1}(undef, vp.nx * vp.ny)
+                    mf_rock_arr = cuitp.(gp.T)
+
                     #calculating maxVol
-                    maxVol, maxIdx = d2dm_check_melt_fracton(gp, vp)
+                    maxVol, maxIdx = d2dm_check_melt_fracton(gp, vp, mf_rock_arr)
 
                     if maxVol == -1
                         return 0
@@ -1287,16 +1333,19 @@ function main_test_gui(gp::GridParams, vp::VarParams, init_vp::InitVarParams, FL
 
                     copyto!(gp.T_old, gp.T)
                     for isub = 0:vp.nsub-1
-                        dmf_rock_c = CuArray{Float64,1}(undef, vp.nx * vp.ny)
+                        #dmf_rock_c = CuArray{Float64,1}(undef, vp.nx * vp.ny)
                         #dmf_rock_c = cuitp.(gp.T)
                         #dmf_rock_c = only.(Interpolations.gradient.(Ref(cuitp), gp.T))
-                        dmf_rock_c = d2dm_dmf_magma.(gp.T)
+                        #dmf_rock_c = d2dm_dmf_rock.(gp.T)
+                        
+                        dmf_rock_arr = CuArray{Float64,1}(undef, vp.nx * vp.ny)
+                        dmf_rock_arr = only.(Interpolations.gradient.(Ref(cuitp), gp.T))
 
-                        @cuda blocks = gridSize[1], gridSize[2] threads = blockSize[1], blockSize[2] d2dm_update_T!(gp.T, gp.T_old,
+                        d2dm_update_T_NG!(gp.T, gp.T_old,
                             vp.T_top, vp.T_bot,
                             gp.C, vp.lam_r_rhoCp, vp.lam_m_rhoCp, vp.L_Cp,
                             vp.dx, vp.dy, vp.dt,
-                            vp.nx, vp.ny, dmf_rock_c)
+                            vp.nx, vp.ny, dmf_rock_arr)
                         synchronize()
                     end
 
