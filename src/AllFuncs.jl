@@ -882,7 +882,7 @@ function small_mailbox_out(filename, T, pT, C, mT, staging, L, nx, ny, nxl, nyl,
     end
 end
 
-function d2dm_make_snapshot(vp, gp, filename)
+function d2dm_make_snapshot(vp, gp, filename, FLAG_make_snapshot)
     if (FLAG_make_snapshot)
         #filename_donwload = @sprintf("d2d_snapshot_%d_%s.hdf5",vp.it, Dates.format(now(), "yyyy_mm_dd_HH_MM_SS"))
         #filename_donwload = @sprintf("d2d_snapshot.hdf5")
