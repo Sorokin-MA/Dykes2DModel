@@ -2,7 +2,7 @@
 
 julia_version = "1.10.5"
 manifest_format = "2.0"
-project_hash = "b7f02e3eb0cab8337007fa5369efc89b5fafcf19"
+project_hash = "358a60001a68811aaa94f02f0efc8625dedddc6e"
 
 [[deps.ATK_jll]]
 deps = ["Artifacts", "Glib_jll", "JLLWrappers", "Libdl"]
@@ -424,6 +424,12 @@ version = "0.9.3"
 deps = ["ArgTools", "FileWatching", "LibCURL", "NetworkOptions"]
 uuid = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
 version = "1.6.0"
+
+[[deps.Dykes2DModel]]
+deps = ["Adapt", "Base64", "Blink", "CSV", "CUDA", "Cairo", "CoordRefSystems", "Dash", "DashBootstrapComponents", "DataFrames", "DataInterpolations", "DataStructures", "Dates", "Debugger", "DelimitedFiles", "Distributed", "Distributions", "ForwardDiff", "Gtk", "HDF5", "Infiltrator", "Inflate", "Interpolations", "Kaleido_jll", "LanguageServer", "LazyGrids", "LinearAlgebra", "Parameters", "Plotly", "PlotlyBase", "PlotlyJS", "PlotlyKaleido", "Printf", "PyCall", "Random", "Revise", "Tables"]
+path = ".."
+uuid = "37276686-6ef0-49cb-add9-6ddf75a145b3"
+version = "0.1.0"
 
 [[deps.EnumX]]
 git-tree-sha1 = "bdb1942cd4c45e3c678fd11569d5cccd80976237"

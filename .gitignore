@@ -6,6 +6,8 @@ pa.bin
 particles.h5
 eruptions.bin
 init_data
+d2d_config*
+d2d_snapshot*
 *.asv
 *.vim
 *.norg
@@ -17,7 +19,9 @@ untitled*
 *.png
 *.fig
 *init_data
-*.csv
 *~
 *.exe
 *.cu
+
+#For debugging purpose onlye
+*6ms*
