@@ -1291,7 +1291,7 @@ function main_test_gui(gp::GridParams, vp::VarParams, init_vp::InitVarParams, FL
                         vp.sum_erupted_calc = vp.sum_erupted_calc + real_vol_2
 
                         filename = data_folder * "julia_grid." * string(vp.it) * ".before_eruption" * ".h5"
-                        make_snapshot(vp, gp, filename)
+                        d2dm_make_snapshot(vp, gp, filename, FLAG_make_snapshot)
                         #small_mailbox_out(filename, gp.T, gp.pT, gp.C, gp.mT, gp.staging, gp.L, vp.nx, vp.ny, vp.nxl, vp.nyl, vp.max_npartcl, vp.max_nmarker, gp.px, gp.py, gp.mx, gp.my, gp.h_px_dykes, gp.pcnt, gp.mfl, vp.dx, vp.dy, vp.Lx, vp.Ly)
 
                         eruption_advection(gp, vp, maxVol, maxIdx, vp.it, D2DM_MARKERS)
@@ -1390,7 +1390,7 @@ function main_test_gui(gp::GridParams, vp::VarParams, init_vp::InitVarParams, FL
                             filename = data_folder * "julia_grid." * string(vp.it) * ".h5"
                         end
 
-                        d2dm_make_snapshot(vp, gp, filename)
+                        d2dm_make_snapshot(vp, gp, filename, FLAG_make_snapshot)
                         #small_mailbox_out(filename, gp.T, gp.pT, gp.C, gp.mT, gp.staging, gp.L, vp.nx, vp.ny, vp.nxl, vp.nyl, vp.max_npartcl, vp.max_nmarker, gp.px, gp.py, gp.mx, gp.my, gp.h_px_dykes, gp.pcnt, gp.mfl, vp.dx, vp.dy, vp.Lx, vp.Ly)
                         #mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl, max_nmarker, px, py, mx ,my, h_px_dykes,pcnt, mfl);
                     end
