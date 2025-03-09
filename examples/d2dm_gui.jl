@@ -33,7 +33,7 @@ data_folder = "..\\d2dm_data\\"
 path_to_snap = "c:\\"
 
 
-FLAG_make_snapshot::Bool = true
+FLAG_make_snapshot::Bool = false
 
 start_flag::Bool = false
 flag_break::Bool = false
@@ -572,7 +572,7 @@ function dykes_gui()
         copyto!(h_C, gp.C)
 
 
-        mf = d2dm_mf_magma.(h_T) .* h_C + d2dm_mf_rock.(h_T) .* (1.0 .- h_C)
+        mf = d2dm_mf_magma.(h_T) .* h_C + cuitp.(h_T) .* (1.0 .- h_C)
 
         title_string = "Melt fraction (mf), (time, " * string(-(vp.nt - vp.it) / vp.nt * init_vp.calc_years / 1000) * " ka)"
         layout_inner = Layout(title=title_string)
@@ -603,7 +603,7 @@ function dykes_gui()
         # h_C = Array{Float64,1}(undef, vp.nx * vp.ny)#array of double values from matlab script
         # copyto!(h_C, gp.C)
         CUDA.allowscalar(true)
-        dmf = d2dm_dmf_magma.(gp.T) .* gp.C + d2dm_dmf_rock.(gp.T) .* (1.0 .- gp.C)
+        dmf = d2dm_dmf_magma.(gp.T) .* gp.C + only.(Interpolations.gradient.(Ref(cuitp), gp.T)).* (1.0 .- gp.C)
         CUDA.allowscalar(false)
         copyto!(h_dmf, dmf)
 
@@ -1409,7 +1409,7 @@ function main_test_gui(gp::GridParams, vp::VarParams, init_vp::InitVarParams, FL
     log_to_buffer(@sprintf("%s writing results to disk  | ", bar2))
     filename = data_folder * "julia_grid." * string(vp.nt + 1) * ".h5"
     #	small_mailbox_out(filename, gp.T, gp.pT, gp.C, gp.mT, gp.staging, gp.L, vp.nx, vp.ny, vp.nxl, vp.nyl, vp.max_npartcl, vp.max_nmarker, gp.px, gp.py, gp.mx, gp.my, gp.h_px_dykes, gp.pcnt, gp.mfl, vp.dx, vp.dy, vp.Lx, vp.Ly)
-    make_snapshot(vp, gp, filename)
+    d2dm_make_snapshot(vp, gp, filename, true)
 
     @printf("\nTotal time: %s", total_time)
     log_to_buffer(@sprintf("\nTotal time: %s", total_time))

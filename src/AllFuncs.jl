@@ -59,11 +59,25 @@ itp = extrapolate(itp, Flat())
 cuitp = adapt(CuArray{eltype(dykes_temp)}, itp);
 
 
+
+function mf_rhyolite(T)
+    t2 = T * T
+    t7 = exp(0.961026371384066e3 - 0.3590508961e1 * T + 0.4479483398e-2 * t2 - 0.1866187556e-5 * t2 * T)
+    return 0.1e1 / (0.1e1 + t7)
+end
+
 function dmf_rhyolite(T)
     t1 = T * T
     t9 = exp(0.961026e3 - 0.186618e-5 * t1 * T + t1 * 0.447948e-2 + T * (-0.359050e1))
     t12 = (0.1e1 + t9) * (0.1e1 + t9)
     return 0.559856e-5 / t12 * t9 * (t1 - 0.160022e4 * T + 0.641326e6)
+end
+
+
+function mf_basalt(T)
+    t2 = T * T
+    t7 = exp(960 - 3.554 * T + 0.4468e-2 * t2 - 1.907e-06 * t2 * T)
+    return 0.1e1 / (0.1e1 + t7)
 end
 
 function dmf_basalt(T)
@@ -73,17 +87,6 @@ function dmf_basalt(T)
     return 0.6643338771e-6 * (t1 - 0.1723434948e4 * T + 0.7442458310e6) * t11 / t14
 end
 
-function mf_rhyolite(T)
-    t2 = T * T
-    t7 = exp(0.961026371384066e3 - 0.3590508961e1 * T + 0.4479483398e-2 * t2 - 0.1866187556e-5 * t2 * T)
-    return 0.1e1 / (0.1e1 + t7)
-end
-
-function mf_basalt(T)
-    t2 = T * T
-    t7 = exp(960 - 3.554 * T + 0.4468e-2 * t2 - 1.907e-06 * t2 * T)
-    return 0.1e1 / (0.1e1 + t7)
-end
 
 
 
