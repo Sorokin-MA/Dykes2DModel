@@ -21,6 +21,10 @@ function idc(ix, iy, nx)
     return ((iy) * nx + ix + 1)
 end
 
+dev_thread = CUDA.attribute(CUDA.device(), CUDA.DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK)
+maximum_threads = dev_thread*30 #total of 40 blocks, only going to use 30
+
+
 #helper function which helps to read from IO stream
 function read_par(par, ipar)
     par_name_2 = par[ipar]
@@ -42,14 +46,18 @@ function blerp(x1, x2, y1, y2, f11, f12, f21, f22, x, y)
 end
 
 #Forni F, Degruyter W, Bachmann O, De Astis G, Mollo S. Long-term magmatic evolution reveals the beginning of a new caldera cycle at Campi Flegrei. Sci Adv. 2018 Nov 14;4(11):eaat9401. doi: 10.1126/sciadv.aat9401. PMID: 30788429; PMCID: PMC6371846.
-d2dm_campi_rhyolite_mf = 1 .- Vector{Float64}([1, 1, 0.9904761904761905, 0.9439153277684773, 0.9280423118954614, 0.9121692960224456, 0.8772486611018104, 0.8306877983940973, 0.775661359514509, 0.7185185023716518, 0.6677248515780011, 0.6042327880859376, 0.5460317460317462, 0.4793650793650794, 0.41164017934647823, 0.35343908885168657, 0.2793650793650794, 0.2338624015687006, 0.19153432694692474, 0.13015873015873017, 0.09735446506076402, 0.08783065553695447, 0.08042321583581348, 0.06349206349206352, 0.04444444444444443, 0.022222222222222397, 0.009523809523809728, 0.008465576171874977, 0.007, 0.006, 0.005, 0.004, 0.003, 0.002, 0])
-d2dm_campi_rhyolite_temp = Vector{Float64}([0, 703.9651009116576, 739.2545589231133, 747.5812835431677, 765.0277420751164, 786.8358424662811, 802.2997596178105, 812.609025618284, 820.9357502383384, 823.3148144154968, 828.0729427698136, 830.8485297437112, 831.8485297437112, 835.2101353012887, 837.5891994784471, 838.3996673898679, 839.5717771605048, 843.1403734262424, 851.0705752495575, 859.0007770728726, 878.4298132868789, 907.7715927046195, 924.4250419447282, 953.370334867368, 987.8667654361645, 1018.3980769424843, 1044.1712963961259, 1067.9619381677096, 1092.9421120278728, 1120.697836560295, 1139.3338634824613, 1157.176844811149, 1170.658184280621, 1185.7256149370496, 2000])
+d2dm_campi_rhyolite_mf = 1 .- Vector{Float64}([1, 0.9978, 0.9955, 0.9918, 0.9881, 0.9401, 0.9273, 0.9231, 0.9189, 0.9029, 0.8859, 0.8532, 0.7972, 0.6777, 0.371, 0.2195, 0.1545, 0.1184, 0.1111, 0.1038, 0.0965, 0.0892, 0.0819, 0.0769, 0.0721, 0.0672, 0.0624, 0.0573, 0.0516, 0.0459, 0.0402, 0.0338, 0.0265, 0.0192, 0.0143, 0.0143, 0.0143, 0.0143, 0.0121, 0.0099, 0.0076, 0.006, 0.0056, 0.0051, 0.0047, 0.0043, 0.0037, 0.0028, 0.0019, 0.0009, 0])
+d2dm_campi_rhyolite_temp = Vector{Float64}([699.2355, 708.9755, 718.7156, 728.4557, 738.1957, 747.9358, 757.6758, 767.4159, 777.156, 786.896, 796.6361, 806.3761, 816.1162, 825.8563, 835.5963, 845.3364, 855.0765, 864.8165, 874.5566, 884.2966, 894.0367, 903.7768, 913.5168, 923.2569, 932.9969, 942.737, 952.4771, 962.2171, 971.9572, 981.6972, 991.4373, 1001.1774, 1010.9174, 1020.6575, 1030.3976, 1040.1376, 1049.8777, 1059.6177, 1069.3578, 1079.0979, 1088.8379, 1098.578, 1108.318, 1118.0581, 1127.7982, 1137.5382, 1147.2783, 1157.0183, 1166.7584, 1176.4985, 1186.2385])
 
 d2dm_campi_rhyolite::Interpolations.MonotonicInterpolation = interpolate(dykes_temp, dykes_crystalinity, SteffenMonotonicInterpolation())
 
-function mf_campi_rhyolite(T)
-    return itp(T)
-end
+A_x = range(699.2355, 1186.2385, 51);
+itp = interpolate(d2dm_campi_rhyolite_mf, BSpline(Cubic(Line(OnGrid()))))
+itp = Interpolations.scale(itp, A_x)
+itp = extrapolate(itp, Flat())
+
+cuitp = adapt(CuArray{eltype(d2dm_campi_rhyolite_temp)}, itp);
+
 
 
 function dmf_rhyolite(T)
@@ -78,9 +86,17 @@ function mf_basalt(T)
     return 0.1e1 / (0.1e1 + t7)
 end
 
+
+
 #coefficient which involved in heat equasion
 function dmf_magma(T)
     return dmf_basalt(T)
+end
+
+
+#melt fraction of magma
+function mf_magma(T)
+    return mf_basalt(T)
 end
 
 #coefficient which involved in heat equasion
@@ -88,26 +104,25 @@ function dmf_rock(T)
     return only.(Interpolations.gradient.(Ref(cuitp), T))
 end
 
-#melt fraction of magma
-function mf_magma(T)
-    return mf_basalt(T)
-end
-
 #melt fraction of host rocks
 function mf_rock(T)
-    #FIXME: bad interpolation
-    #return mf_campi_rhyolite(T)
-    return mf_rhyolite(T)
+    return cuitp(T)
+    #return mf_rhyolite(T)
 end
 
+
+
 function d2dm_dmf_rock(T)
-    #FIXME: bad interpolation
-    #return mf_campi_rhyolite(T)
-    return dmf_basalt(T)
+    ##FIXME: bad interpolation
+    return only.(Interpolations.gradient.(Ref(cuitp), T))
+    #return dmf_campi_rhyolite(T)
+
+    #return dmf_rhyolite(T)
 end
 
 function d2dm_mf_rock(T)
-    return mf_basalt(T)
+    return cuitp(T)
+    #return mf_rhyolite(T)
 end
 
 function d2dm_dmf_magma(T)
@@ -120,7 +135,16 @@ end
 
 
 
+function d2dm_update_T_NG!(T, T_old, T_top, T_bot, C, lam_r_rhoCp, lam_m_rhoCp, L_Cp, dx, dy, dt, nx, ny)
+    dmf_rock_arr = CuArray{Float64,1}(undef, vp.nx * vp.ny)
+    dmf_rock_arr = d2dm_dmf_rock(dmf_rock_arr)
 
+    blockSize = (28, 32)
+    gridSize = (Int64(floor((nx + blockSize[1] - 1) / blockSize[1])), Int64(floor((ny + blockSize[2] - 1) / blockSize[2])))
+
+    @cuda blocks = gridSize[1], gridSize[2] threads = blockSize[1], blockSize[2] d2dm_update_T!(T, T_old, T_top, T_bot, C, lam_r_rhoCp, lam_m_rhoCp, L_Cp, dx, dy, dt, nx, ny, dmf_rock_arr)
+    synchronize()
+end
 
 """
 	update_T!(T,  T_old, T_top, T_bot, C, lam_r_rhoCp, lam_m_rhoCp, L_Cp, dx, dy, dt, nx, ny)
@@ -695,7 +719,7 @@ function ccl(mf, L, tsh, nx, ny)
     CUDA.@sync begin
         @cuda blocks = gridSize2D threads = blockSize2D assignUniqueLables(mf, L, tsh, nx, ny)
     end
-    blockSize1D = 896
+    blockSize1D = dev_thread 
     gridSize1D = (ny + blockSize1D - 1) ÷ blockSize1D
 
     #merge labels in components horisotally
@@ -1199,7 +1223,7 @@ function d2dm_init(gp::GridParams, vp::VarParams, markers_flag)
     pic_amount_tmp = vp.pic_amount
     vp.pic_amount = 1.0
 
-    blockSize1D = 768
+    blockSize1D = dev_thread 
     gridSize1D = convert(Int64, floor((vp.npartcl + blockSize1D - 1) / blockSize1D))
 
     #NOTE:
@@ -1249,10 +1273,9 @@ function d2dm_check_melt_fracton(gp::GridParams, vp::VarParams)
         )
 
 
-        mf_rock_c = CuArray{Float64,1}(undef, vp.nx * vp.ny)
-        #FIXME: bad interpolation
-        #mf_rock_c = cuitp.(gp.T)
-        mf_rock_c = mf_rock.(gp.T)
+        #mf_rock_c = CuArray{Float64,1}(undef, vp.nx * vp.ny)
+        CUDA.device!(0)
+        mf_rock_c = cuitp.(adapt(CuArray{eltype(dykes_temp)}, gp.T))
 
         #Усредняется mf 
         @cuda blocks = gridSizel threads = blockSizel average!(gp.mfl, gp.T, gp.C, vp.nl, vp.nx, vp.ny, mf_rock_c)
@@ -1335,7 +1358,7 @@ function eruption_advection(gp::GridParams, vp::VarParams, maxVol, maxIdx, it, m
 
         copyto!(cell_idx, cell_idx_host)
 
-        local blockSize1D = 896
+        local blockSize1D = dev_thread 
         local gridSize1D = (vp.npartcl + blockSize1D - 1) ÷ blockSize1D
 
         #advect particles
@@ -1453,7 +1476,7 @@ end
 
 function d2dm_particles_injection(gp::GridParams, vp::VarParams)
     @time begin
-        blockSize1D = 896
+        blockSize1D = dev_thread 
         gridSize1D = (vp.npartcl + blockSize1D - 1) ÷ blockSize1D
 
         blockSize = (28, 32)
