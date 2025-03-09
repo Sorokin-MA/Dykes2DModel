@@ -882,7 +882,7 @@ function small_mailbox_out(filename, T, pT, C, mT, staging, L, nx, ny, nxl, nyl,
     end
 end
 
-function d2dm_make_snapshot(vp, gp, filename)
+function d2dm_make_snapshot(vp, gp, filename, FLAG_make_snapshot)
     if (FLAG_make_snapshot)
         #filename_donwload = @sprintf("d2d_snapshot_%d_%s.hdf5",vp.it, Dates.format(now(), "yyyy_mm_dd_HH_MM_SS"))
         #filename_donwload = @sprintf("d2d_snapshot.hdf5")
@@ -1335,7 +1335,7 @@ function d2dm_check_melt_fracton(gp::GridParams, vp::VarParams, mf_rock_c)
     return maxVol, maxIdx
 end
 
-function eruption_advection(gp::GridParams, vp::VarParams, maxVol, maxIdx, it, markers_flag)
+function d2dm_eruption_advection(gp::GridParams, vp::VarParams, maxVol, maxIdx, it, markers_flag)
     @time begin
 
         cell_idx = CuArray{Int32,1}(undef, maxVol)

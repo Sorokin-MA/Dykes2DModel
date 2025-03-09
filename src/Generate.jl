@@ -407,5 +407,5 @@ function dykes_rand_param(init_vp)
     println("ny = $ny")
     println("success!!!")
 
-    log_to_buffer("Generationg succeded\n")
+    #log_to_buffer("Generationg succeded\n")
 end
