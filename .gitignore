@@ -22,3 +22,6 @@ untitled*
 *~
 *.exe
 *.cu
+
+#For debugging purpose onlye
+*6ms*
