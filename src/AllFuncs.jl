@@ -1335,7 +1335,7 @@ function d2dm_check_melt_fracton(gp::GridParams, vp::VarParams, mf_rock_c)
     return maxVol, maxIdx
 end
 
-function eruption_advection(gp::GridParams, vp::VarParams, maxVol, maxIdx, it, markers_flag)
+function d2dm_eruption_advection(gp::GridParams, vp::VarParams, maxVol, maxIdx, it, markers_flag)
     @time begin
 
         cell_idx = CuArray{Int32,1}(undef, maxVol)
