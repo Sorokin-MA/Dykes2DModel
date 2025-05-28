@@ -53,10 +53,10 @@ using CUDA
 using LinearAlgebra
 
 #Includes
-include("Init.jl")
-include("Structs.jl")
-include("Generate.jl")
-include("AllFuncs.jl")
+include("init.jl")
+include("structs.jl")
+include("generate.jl")
+include("all_funcs.jl")
 
 #include("MechanicalKernel.jl")
 include("muskh.jl")
