@@ -1002,6 +1002,8 @@ function rand_limited_2(u, d, dyke_type::Int64)
             ans = rand(Normal(u, d), 1)[1]
         elseif (dyke_type == 2)
             ans = rand(Uniform(), 1)[1]
+        elseif (dyke_type == 3)
+            ans = rand(LogNormal(u, d), 1)[1]
         end
     end
     return ans

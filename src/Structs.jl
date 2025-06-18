@@ -130,11 +130,11 @@ end
 
 Base.@kwdef mutable struct InitVarParams
     #Physics
-    Lx::Float64 = 20000#X size of researched area (m)
-    Ly::Float64 = 20000#Y size of researched area (m)
-    Lz::Float64 = 10000#Y size of researched area (m)
-    narrow_fact::Float64 = 0.5
-    dyke_x_W::Float64 = 10000#Thermal conductivity of rock/(density*specific heat capacity)
+    Lx::Float64 = 20000           #X size of researched area (m)
+    Ly::Float64 = 20000           #Y size of researched area (m)
+    Lz::Float64 = 10000           #Z size of researched area (m)
+    narrow_fact::Float64 = 0.5    #factor, which describes (1)
+    dyke_x_W::Float64 = 10000     #size of x aread around center where dykes are inserted, (m)
 
     critVol::Array{Float64,1} = Array{Float64,1}(undef, 0)
     critVolTime = Array{Float64,1}(undef, 0)
@@ -164,9 +164,12 @@ Base.@kwdef mutable struct InitVarParams
     dyke_b_rng = Array{Float64,1}(undef, 0)
     dyke_t_rng = Array{Float64,1}(undef, 0)
 
-    dyke_nu::Float64 = 0.5
-    dyke_dev::Float64 = 0.1
-    dyke_type::Int64 = 1
+    # dyke_nu::Float64 = 0.5
+    # dyke_dev::Float64 = 0.1
+    dyke_nu::Float64 = -1
+    dyke_dev::Float64 = 0.4
+
+    dyke_type::Int64 = 3
 
     #Numerics
     seed::Int64 = 666#seed
