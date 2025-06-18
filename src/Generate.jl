@@ -53,28 +53,42 @@ function interp1(xpt, ypt, x; method="linear", extrapvalue=nothing)
     return y
 end
 
-function dykes_rand_param(init_vp)
-    #log_to_buffer("Generating data!\n")
 
+"""
+
+dykes_rand_param(init_vp::InitVarParams)
+
+Generates input data for calculus.
+
+saving output to
+pa.bin - generated particles info
+
+...
+# Arguments
+- `init_vp::InitVarParams`: struct with init params
+...
+"""
+function dykes_rand_param(init_vp::InitVarParams)
     Random.seed!(init_vp.seed)
 
-    tyear = 365 * 24 * 3600 #seconds in year
+    tyear = 365 * 24 * 3600 # seconds in year, sec
 
+    #Lx
     Lx::Float64 = init_vp.Lx # x size of area, m
-    Ly::Float64 = init_vp.Ly # y size of area, m %20000
-    Lx_Ly = Lx / Ly
-    narrow_fact = init_vp.narrow_fact
-    dyke_x_W = init_vp.dyke_x_W #m
-    dyke_x_Wn = dyke_x_W * narrow_fact #m 
-    dyke_a_rng = Vector{Int32}
-    dyke_a_rng = [100, 1500] #m
-    dyke_b_rng = [10, 20] #m
+    Ly::Float64 = init_vp.Ly # y size of area, m
+
+    dyke_x_W = init_vp.dyke_x_W #size of x area around center where dykes are inserted, (m)
+    dyke_x_Wn = dyke_x_W * init_vp.narrow_fact #size of x area around center where dykes are inserted, (m)
+
+    dyke_a_rng = [100, 1500] #dyke a parameter range, m
+    dyke_b_rng = [10, 20] #dyke b parameter range, m
 
     dyke_x_rng = [(Lx - dyke_x_W) / 2, (Lx + dyke_x_W) / 2]
     dyke_x_rng_n = [(Lx - dyke_x_Wn) / 2, (Lx + dyke_x_Wn) / 2]
 
-    dyke_y_rng = [7000, 13000]#dykes y distribution
-    dyke_t_rng = [0.95 * pi / 2, 1.05 * pi / 2]#dykes time distribution
+    #TODO: make this as parameter
+    dyke_y_rng = [2000, 15000] #dykes y distribution area
+    dyke_t_rng = [0.95 * pi / 2, 1.05 * pi / 2] #dykes angle distribution
     dyke_to_sill = init_vp.dyke_to_sill#boundary where dykes turn yourself to sill, m
     dz = init_vp.Lz#z dimension? i guess, m
 
@@ -87,7 +101,7 @@ function dykes_rand_param(init_vp)
     dTdy = init_vp.dTdy #how fast temperature decreasing with depth, K/km
     T_magma::Float64 = init_vp.T_magma#magma intrusion temperature, C
     T_ch = init_vp.T_ch#?
-    Qv = init_vp.Qv / tyear#m^3/s
+    Qv = init_vp.Qv / tyear #m^3/s
     dt::Float64 = init_vp.dt * tyear#time
     calc_years = init_vp.calc_years
     tfin::Float64 = calc_years * tyear
@@ -227,20 +241,22 @@ function dykes_rand_param(init_vp)
     Q_tsh = 0.5 * Vtot
 
     #log_to_buffer("Generating dykes...\n")
+    tmp_rnd_a = 0.5
+    tmp_rnd_b = 0.1
     while Q < Vtot
         #dyke_a = [dyke_a dyke_a_rng[1] + diff(dyke_a_rng)*rand];
-        append!(dyke_a, dyke_a_rng[1] .+ diff(dyke_a_rng, dims=1) .* rand_limited_2(init_vp.dyke_nu, init_vp.dyke_dev, init_vp.dyke_type))
+        append!(dyke_a, dyke_a_rng[1] .+ diff(dyke_a_rng, dims=1) .* rand_limited_2(init_vp.dyke_nu, init_vp.dyke_dev, 2))
         #dyke_b = [dyke_b dyke_b_rng[1] + diff(dyke_b_rng)*rand];
-        append!(dyke_b, dyke_b_rng[1] .+ diff(dyke_b_rng, dims=1) .* rand_limited_2(init_vp.dyke_nu, init_vp.dyke_dev, init_vp.dyke_type))
+        append!(dyke_b, dyke_b_rng[1] .+ diff(dyke_b_rng, dims=1) .* rand_limited_2(init_vp.dyke_nu, init_vp.dyke_dev, 2))
         if Q < Q_tsh
             #dyke_x = [dyke_x dyke_x_rng[1] + diff(dyke_x_rng)*rand];
-            append!(dyke_x, dyke_x_rng[1] .+ diff(dyke_x_rng, dims=1) .* rand_limited_2(init_vp.dyke_nu, init_vp.dyke_dev, init_vp.dyke_type))
+            append!(dyke_x, dyke_x_rng[1] .+ diff(dyke_x_rng, dims=1) .* rand_limited_2(tmp_rnd_a, tmp_rnd_b, 1))
         else
-            append!(dyke_x, dyke_x_rng_n[1] .+ diff(dyke_x_rng_n, dims=1) .* rand_limited_2(init_vp.dyke_nu, init_vp.dyke_dev, init_vp.dyke_type))
+            append!(dyke_x, dyke_x_rng_n[1] .+ diff(dyke_x_rng_n, dims=1) .* rand_limited_2(tmp_rnd_a, tmp_rnd_b, 1))
         end
-        dyke_y = append!(dyke_y, dyke_y_rng[1] .+ diff(dyke_y_rng, dims=1) .* rand_limited_2(init_vp.dyke_nu, init_vp.dyke_dev, init_vp.dyke_type))
-        dyke_t = append!(dyke_t, dyke_t_rng[1] .+ diff(dyke_t_rng, dims=1) .* rand_limited_2(init_vp.dyke_nu, init_vp.dyke_dev, init_vp.dyke_type))
-        dyke_v = append!(dyke_v, pi * last(dyke_a) * last(dyke_b))
+        dyke_y = append!(dyke_y, dyke_y_rng[1] .+ diff(dyke_y_rng, dims=1) .* (1-rand_limited_2(-1, 0.4, 3)))
+        dyke_t = append!(dyke_t, dyke_t_rng[1] .+ diff(dyke_t_rng, dims=1) .* rand_limited_2(init_vp.dyke_nu, init_vp.dyke_dev, 2))
+        dyke_v = append!(dyke_v, pi * last(dyke_a) * last(dyke_b)) #area of ellipsis
         Q = Q + last(dyke_v)
     end
 
@@ -265,7 +281,7 @@ function dykes_rand_param(init_vp)
     my_dyke = Vector{Any}(undef, sum(ndykes))
 
     dyke_t_idxs = findall(x -> x >= dyke_to_sill, dyke_y)
-    dyke_t[dyke_t_idxs] = dyke_t[dyke_t_idxs] .+ pi / 2 #reverse dykes to sills
+    dyke_t[dyke_t_idxs] = dyke_t[dyke_t_idxs] .+ pi / 2 #dykes to sills
 
     #log_to_buffer("Generating particles and markers...\n")
     for idyke = 1:sum(ndykes)

@@ -22,8 +22,8 @@ descr_Ly = "Ly\n\nThe size of the area along the y axis\n\nDimension: [m]"
 descr_Lz = "Lz\n\nThe size of the area along the z axis\n\nDimension: [m]"
 
 
-global_EruptionVolumesVec = Vector{Float64}([10, 10, 10, 10, 10, 10, 220, 45, 16, 50, 0.5, 0.02, 0.64, 0.02, 0.02, 0.7, 0.201, 0.06, 0.05, 0.02, 0.07, 0.930, 0.018, 0.12, 0.661, 0.016, 0.02, 0.029])
-global_EruptionTimesVec = Vector{Float64}([160.2, 109.3, 105.6, 102.5, 101.2, 91.8, 39.8, 39.7, 29.3, 14.9, 14.3, 13, 12, 12.8, 11.8, 11, 10.6, 9.6, 9.3, 5.1, 4.7, 4.9, 4.5, 4.3, 4.2, 4.1, 3.9, 0.5])
+global_EruptionVolumesVec = Vector{Float64}([100, 154  ,   10 ,    10,     10,   10,   220,  45 ,   16,   50,   0.5,  0.02, 0.64, 0.02  , 0.02, 0.7, 0.201, 0.06, 0.05, 0.02, 0.07, 0.930, 0.018, 0.12 , 0.661, 0.016, 0.02 , 0.029])
+global_EruptionTimesVec = Vector{Float64}([157.4, 109.3, 105.6, 102.5, 101.2 , 91.8, 39.8 , 39.7, 29.3, 14.9, 14.3 , 13   ,   12,   12.8, 11.8, 11 ,  10.6,  9.6,  9.3,  5.1,  4.7,  4.9 ,   4.5,   4.3,  4.2 ,   4.1,   3.9,  0.5])
 
 
 str_time_spend::Float64 = 0;
@@ -1191,8 +1191,8 @@ function dykes_gui()
     end
 
 
-    run_server(app)
-    #run_server(app, "0.0.0.0", 8050)
+    #run_server(app)
+    run_server(app, "0.0.0.0", 8050)
 end
 
 
