@@ -207,12 +207,26 @@ function dykes_rand_param(init_vp::InitVarParams)
     px = reshape(px, length(px), 1)
     py = reshape(py, length(py), 1)
 
-    mxs = Omx:dmx:Omx+Lmx
-    mys = Omy:dmy:Omy+Lmy
+    # mxs = Omx:dmx:Omx+Lmx
+    # mys = Omy:dmy:Omy+Lmy
+
+    # mx, my = meshgrid(mxs, mys)
+
+    # mx = reshape(mx, length(mx), 1)
+    # my = reshape(my, length(my), 1)
+
+
+    mxs = xs
+    mys = fill(Ly, length(xs))
+
+
     mx, my = meshgrid(mxs, mys)
+    println(typeof(mx))
+    println(typeof(my))
 
     mx = reshape(mx, length(mx), 1)
     my = reshape(my, length(my), 1)
+
 
     dt_diff = CFL * min(dx, dy)^2 / lam_r_rhoCp
     nsub::Int32 = ceil(dt / dt_diff)
@@ -353,8 +367,9 @@ function dykes_rand_param(init_vp::InitVarParams)
     px_dykes = vcat([px_dyke[i] for i in 1:size(px_dyke, 1)]...)
     py_dykes = vcat([py_dyke[i] for i in 1:size(py_dyke, 1)]...)
 
-    mx = vcat(mx, vcat([mx_dyke[i] for i in 1:size(mx_dyke, 1)]...))
-    my = vcat(my, vcat([my_dyke[i] for i in 1:size(my_dyke, 1)]...))
+    #adding dykes markers to markers
+    #mx = vcat(mx, vcat([mx_dyke[i] for i in 1:size(mx_dyke, 1)]...))
+    #my = vcat(my, vcat([my_dyke[i] for i in 1:size(my_dyke, 1)]...))
 
     mT = T_top .+ dTdy / 1e3 .* (Ly .- my)
 
