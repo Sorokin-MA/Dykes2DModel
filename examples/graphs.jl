@@ -2,7 +2,9 @@
 Print graphs for d2dm output
 """
 
+using CSV, DataFrames
 using Dykes2DModel
+using PlotlyJS
 
 #include("dykes_init.jl")
 #include("dykes_funcs.jl")
@@ -17,64 +19,64 @@ function dykes_graph()
 
     #fid = h5open(data_folder * "julia_grid.120000.h5", "r")
 
-    dpa = Array{Float64,1}(undef, 19)#array of double values from matlab script
-    ipa = Array{Int32,1}(undef, 12)#array of int values from matlab script
-
-    io = open(data_folder * "pa.bin", "r")
-    read!(io, dpa)
-    read!(io, ipa)
-
-    ipar = 1
-    Lx, ipar = read_par(dpa, ipar)
-    Ly, ipar = read_par(dpa, ipar)
-    lam_r_rhoCp, ipar = read_par(dpa, ipar)
-    lam_m_rhoCp, ipar = read_par(dpa, ipar)
-    L_Cp, ipar = read_par(dpa, ipar)
-    T_top, ipar = read_par(dpa, ipar)
-    T_bot, ipar = read_par(dpa, ipar)
-    T_magma, ipar = read_par(dpa, ipar)
-    tsh, ipar = read_par(dpa, ipar)
-    gamma, ipar = read_par(dpa, ipar)
-    Ly_eruption, ipar = read_par(dpa, ipar)
-    nu, ipar = read_par(dpa, ipar)
-    G, ipar = read_par(dpa, ipar)
-    dt, ipar = read_par(dpa, ipar)
-    dx, ipar = read_par(dpa, ipar)
-    dy, ipar = read_par(dpa, ipar)
-    eiter, ipar = read_par(dpa, ipar)
-    pic_amount, ipar = read_par(dpa, ipar)
-    tfin, ipar = read_par(dpa, ipar)
-
-    ipar = 1
-
-    pmlt, ipar = read_par(ipa, ipar)
-    nx, ipar = read_par(ipa, ipar)
-    ny, ipar = read_par(ipa, ipar)
-    nl, ipar = read_par(ipa, ipar)
-    nt, ipar = read_par(ipa, ipar)
-    niter, ipar = read_par(ipa, ipar)
-    nout, ipar = read_par(ipa, ipar)
-    nsub, ipar = read_par(ipa, ipar)
-    nerupt, ipar = read_par(ipa, ipar)
-    npartcl, ipar = read_par(ipa, ipar)
-    nmarker, ipar = read_par(ipa, ipar)
-    nSample, ipar = read_par(ipa, ipar)
-
-    close(io)
-
+    # dpa = Array{Float64,1}(undef, 19)#array of double values from matlab script
+    # ipa = Array{Int32,1}(undef, 12)#array of int values from matlab script
+    #
+    # io = open(data_folder * "pa.bin", "r")
+    # read!(io, dpa)
+    # read!(io, ipa)
+    #
+    # ipar = 1
+    # Lx, ipar = read_par(dpa, ipar)
+    # Ly, ipar = read_par(dpa, ipar)
+    # lam_r_rhoCp, ipar = read_par(dpa, ipar)
+    # lam_m_rhoCp, ipar = read_par(dpa, ipar)
+    # L_Cp, ipar = read_par(dpa, ipar)
+    # T_top, ipar = read_par(dpa, ipar)
+    # T_bot, ipar = read_par(dpa, ipar)
+    # T_magma, ipar = read_par(dpa, ipar)
+    # tsh, ipar = read_par(dpa, ipar)
+    # gamma, ipar = read_par(dpa, ipar)
+    # Ly_eruption, ipar = read_par(dpa, ipar)
+    # nu, ipar = read_par(dpa, ipar)
+    # G, ipar = read_par(dpa, ipar)
+    # dt, ipar = read_par(dpa, ipar)
+    # dx, ipar = read_par(dpa, ipar)
+    # dy, ipar = read_par(dpa, ipar)
+    # eiter, ipar = read_par(dpa, ipar)
+    # pic_amount, ipar = read_par(dpa, ipar)
+    # tfin, ipar = read_par(dpa, ipar)
+    #
+    # ipar = 1
+    #
+    # pmlt, ipar = read_par(ipa, ipar)
+    # nx, ipar = read_par(ipa, ipar)
+    # ny, ipar = read_par(ipa, ipar)
+    # nl, ipar = read_par(ipa, ipar)
+    # nt, ipar = read_par(ipa, ipar)
+    # niter, ipar = read_par(ipa, ipar)
+    # nout, ipar = read_par(ipa, ipar)
+    # nsub, ipar = read_par(ipa, ipar)
+    # nerupt, ipar = read_par(ipa, ipar)
+    # npartcl, ipar = read_par(ipa, ipar)
+    # nmarker, ipar = read_par(ipa, ipar)
+    # nSample, ipar = read_par(ipa, ipar)
+    #
+    # close(io)
+    #
     #Lx = 4000
     #Lx = 5000
-    xs = 0:dx:Lx
-    ys = 0:dy:Ly
+    # xs = 0:dx:Lx
+    # ys = 0:dy:Ly
 
     #    fid = h5open(data_folder * "julia_grid.40001.h5", "r")
-    fid = h5open(data_folder * "julia_grid.60.h5", "r")
-    T = read(fid, "T")
-    C = read(fid, "C")
-    close(fid)
-
-    l = @layout [[grid(1, 2)]
-        a]
+    # fid = h5open(data_folder * "julia_grid.60.h5", "r")
+    # T = read(fid, "T")
+    # C = read(fid, "C")
+    # close(fid)
+    #
+    # l = @layout [[grid(1, 2)]
+    #     a]
 
     #=
     	campi_calc = Int32[10000, 20000, 25000, 26000]
@@ -84,43 +86,74 @@ function dykes_graph()
     	close(file)
     =#
 
-    fz = filesize(data_folder * "eruptions.bin")
-    fz_int = Int32(floor(fz / sizeof(Int32)))
+    # fz = filesize(data_folder * "eruptions.bin")
+    # fz_int = Int32(floor(fz / sizeof(Int32)))
+    #
+    # println(fz / sizeof(Int32))
+    # if (fz_int <= 1)
+    #     println("No eruptions!!!")
+    #     campi_calc_fake = Int32[10000, 20000, 25000, 26000]
+    #     println(typeof(campi_calc_fake))
+    #     file = open(data_folder * "eruptions.bin", "w")
+    #     write(file, campi_calc_fake)
+    #     close(file)
+    #
+    # end
+    # campi_calc = Array{Int32,1}(undef, fz_int)#array of int values from matlab script
+    # read!(data_folder * "eruptions.bin", campi_calc)
+    #
+    # campi_calc = @view campi_calc[2:end]
+    #
+    # println(campi_calc)
+    # tyear = 365 * 24 * 3600#seconds in year
+    # tfin = (tfin / tyear) / 1.e3
+    # campi_calc = -(1 .- campi_calc ./ nt) .* (tfin)
+    # println(campi_calc)
+    # display(campi_calc)
+    # campi_real = -vcat(39.8, 14.9, 14.3, 13, 12, 12.8, 11.8, 11, 11.5, 11, 10.6, 9.6, 9.3, 5.1, 4.9, 4.5, 4.3, 4.2, 4.2, 4.2, 4.1, 3.9, 0.5)
 
-    println(fz / sizeof(Int32))
-    if (fz_int <= 1)
-        println("No eruptions!!!")
-        campi_calc_fake = Int32[10000, 20000, 25000, 26000]
-        println(typeof(campi_calc_fake))
-        file = open(data_folder * "eruptions.bin", "w")
-        write(file, campi_calc_fake)
-        close(file)
 
-    end
-    campi_calc = Array{Int32,1}(undef, fz_int)#array of int values from matlab script
-    read!(data_folder * "eruptions.bin", campi_calc)
+    A_x = range(699.2355, 1186.2385, 51);
 
-    campi_calc = @view campi_calc[2:end]
 
-    println(campi_calc)
-    tyear = 365 * 24 * 3600#seconds in year
-    tfin = (tfin / tyear) / 1.e3
-    campi_calc = -(1 .- campi_calc ./ nt) .* (tfin)
-    println(campi_calc)
-    display(campi_calc)
-    campi_real = -vcat(39.8, 14.9, 14.3, 13, 12, 12.8, 11.8, 11, 11.5, 11, 10.6, 9.6, 9.3, 5.1, 4.9, 4.5, 4.3, 4.2, 4.2, 4.2, 4.1, 3.9, 0.5)
 
-    p = Plots.scatter(campi_real, zeros(length(campi_real)), markersize=7,
-        markershape=:circle, color=:red, legend=true,
-        framestyle=:origin, yaxis=false, grid=false, aspect_ratio=1.0, label="real campi", xlimits=(min(minimum(campi_real), minimum(campi_calc)) - 10, 0))
+    p_rock = PlotlyJS.scatter(x=A_x, y=d2dm_mf_rock(A_x), mode="lines", name="mf, rock", marker_color="rgba(255, 0, 0, 1)")
+    # p_rock = plot(A_x, d2dm_mf_rock(A_x), markersize=7,
+    #     markershape=:circle, color=:red, legend=true,
+    #     framestyle=:origin, yaxis=false, grid=false, aspect_ratio=1.0, label="mf, rock")
 
-    p = Plots.scatter!(campi_calc, zeros(length(campi_calc)), markersize=4,
-        markershape=:circle, color=:blue, legend=true,
-        framestyle=:origin, yaxis=false, grid=false, aspect_ratio=1.0, label="calc campi", markeralpha=0.5)
+    p_magma = PlotlyJS.scatter(x=A_x, y=d2dm_mf_magma.(A_x), mode="lines", name="mf, magma", marker_color="rgba(0, 0, 255, 1)")
+    # p_magma = plot(A_x, d2dm_mf_magma.(A_x), markersize=7,
+    #     markershape=:circle, color=:red, legend=true,
+    #     framestyle=:origin, yaxis=false, grid=false, aspect_ratio=1.0, label="mf, magma")
+    #
+    #
 
-    T = reshape(T, (length(xs), length(ys)))
-    C = reshape(C, (length(xs), length(ys)))
-    p1 = Plots.plot(Plots.heatmap(ys, xs, transpose(T)), Plots.heatmap(ys, xs, transpose(C)), p, layout=l)
+# Example DataFrame
+df = DataFrame(mf_rock_x = A_x, mf_rock_y = d2dm_mf_rock(A_x), mf_magma_x = A_x, mf_magma_y = d2dm_mf_magma.(A_x))
 
-    display(p1)
+# Save the DataFrame to a CSV file
+# CSV.write("d2dm_crystalisation.csv", df)
+    data = [p_rock, p_magma]
+
+    layout = Layout(title="Crystalisation graph",
+        xaxis=attr(title="T, (°C)"),
+        yaxis=attr(title="mf"))
+
+
+    p = PlotlyJS.plot(data, layout)
+
+
+    # p = Plots.scatter!(campi_calc, zeros(length(campi_calc)), markersize=4,
+    #     markershape=:circle, color=:blue, legend=true,
+    #     framestyle=:origin, yaxis=false, grid=false, aspect_ratio=1.0, label="calc campi", markeralpha=0.5)
+
+    # T = reshape(T, (length(xs), length(ys)))
+    # C = reshape(C, (length(xs), length(ys)))
+    # p1 = Plots.plot(Plots.heatmap(ys, xs, transpose(T)), Plots.heatmap(ys, xs, transpose(C)), p, layout=l)
+
+    display(p)
+
+    savefig(p, "array_plot.png")
+    # return p
 end

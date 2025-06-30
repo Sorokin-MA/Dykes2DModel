@@ -123,7 +123,7 @@ function d2dm_dmf_rock(T)
 end
 
 function d2dm_mf_rock(T)
-    return cuitp(T)
+    return itp(T)
     #return mf_rhyolite(T)
 end
 
