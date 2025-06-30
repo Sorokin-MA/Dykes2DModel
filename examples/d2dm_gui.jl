@@ -22,8 +22,8 @@ descr_Ly = "Ly\n\nThe size of the area along the y axis\n\nDimension: [m]"
 descr_Lz = "Lz\n\nThe size of the area along the z axis\n\nDimension: [m]"
 
 
-global_EruptionVolumesVec = Vector{Float64}([100, 154  ,   10 ,    10,     10,   10,   220,  45 ,   16,   50,   0.5,  0.02, 0.64, 0.02  , 0.02, 0.7, 0.201, 0.06, 0.05, 0.02, 0.07, 0.930, 0.018, 0.12 , 0.661, 0.016, 0.02 , 0.029])
-global_EruptionTimesVec = Vector{Float64}([157.4, 109.3, 105.6, 102.5, 101.2 , 91.8, 39.8 , 39.7, 29.3, 14.9, 14.3 , 13   ,   12,   12.8, 11.8, 11 ,  10.6,  9.6,  9.3,  5.1,  4.7,  4.9 ,   4.5,   4.3,  4.2 ,   4.1,   3.9,  0.5])
+global_EruptionVolumesVec = Vector{Float64}([10, 10, 10, 10, 10, 10, 220, 45, 16, 50, 0.5, 0.02, 0.64, 0.02, 0.02, 0.7, 0.201, 0.06, 0.05, 0.02, 0.07, 0.930, 0.018, 0.12, 0.661, 0.016, 0.02, 0.029])
+global_EruptionTimesVec = Vector{Float64}([160.2, 109.3, 105.6, 102.5, 101.2, 91.8, 39.8, 39.7, 29.3, 14.9, 14.3, 13, 12, 12.8, 11.8, 11, 10.6, 9.6, 9.3, 5.1, 4.7, 4.9, 4.5, 4.3, 4.2, 4.1, 3.9, 0.5])
 
 
 str_time_spend::Float64 = 0;
@@ -33,7 +33,7 @@ data_folder = "..\\d2dm_data\\"
 path_to_snap = "c:\\"
 
 
-FLAG_make_snapshot::Bool = false
+FLAG_make_snapshot::Bool = true
 
 start_flag::Bool = false
 flag_break::Bool = false
@@ -41,8 +41,7 @@ G_FLAG_INIT::Bool = true
 
 D2DM_STARTED::Bool = false
 D2DM_STOPED::Bool = true
-
-D2DM_MARKERS::Bool = true
+D2DM_MARKERS::Bool = false
 
 buf = "\n\nWelcome to Dykes2DModel!\n 1.Set parameters and upload history of eruptions \n 2. Generate dykes \n 3. Start calculations\n"
 time_of_loop::Float64 = 0
@@ -289,8 +288,8 @@ function dykes_gui()
         html_button("Show current chambers", id="show-cur-chambers-but", disabled=false),
         html_div(style=Dict("columnCount" => 2)) do
             html_div(id="T-graph"),
-            html_div(id="mf-graph"),
             html_div(id="C-graph"),
+            html_div(id="mf-graph"),
             html_div(id="dmf-graph"),
             html_div(id="chambers-graph")
         end
@@ -559,31 +558,35 @@ function dykes_gui()
     end
 
     callback!(app, [Output("mf-graph", "children")], [Input("show-cur-mf-but", "n_clicks")], prevent_initial_call=true) do n_clicks
-        println("show-cur-mf-but clicked")
+        println("show-cur-dmf-but clicked")
         if (vp.dx == 0.0)
             return nothing
         end
         xs = 0:vp.dx:vp.Lx
         ys = 0:vp.dy:vp.Ly
 
-        h_T = Array{Float64,1}(undef, vp.nx * vp.ny)#array of double values from matlab script
-        copyto!(h_T, gp.T)
+        dmf = CuArray{Float64,1}(undef, vp.nx * vp.ny)
+        h_dmf = Array{Float64,1}(undef, vp.nx * vp.ny)
 
-        h_C = Array{Float64,1}(undef, vp.nx * vp.ny)#array of double values from matlab script
-        copyto!(h_C, gp.C)
+        # h_T = Array{Float64,1}(undef, vp.nx * vp.ny)#array of double values from matlab script
+        # copyto!(h_T, gp.T)
 
-        mf = d2dm_mf_magma.(h_T) .* h_C + itp.(h_T) .* (1.0 .- h_C)
-		# mf[mf .> 0.75] .= 1 
-		# mf[mf .<= 0.75] .= 0 
+        # h_C = Array{Float64,1}(undef, vp.nx * vp.ny)#array of double values from matlab script
+        # copyto!(h_C, gp.C)
 
-        title_string = "Melt fraction (mf), (time, " * string(-(vp.nt - vp.it) / vp.nt * init_vp.calc_years / 1000) * " ka)"
+        CUDA.allowscalar(true)
+        dmf = d2dm_dmf_magma.(gp.T) .* gp.C + only.(Interpolations.gradient.(Ref(cuitp), gp.T)).* (1.0 .- gp.C)
+        CUDA.allowscalar(false)
+        copyto!(h_dmf, dmf)
+
+        title_string = "Derivative of melt fraction (dmf), (time, " * string(-(vp.nt - vp.it) / vp.nt * init_vp.calc_years / 1000) * " ka)"
         layout_inner = Layout(title=title_string)
 
-        p = Plot(PlotlyJS.heatmap(x=xs, y=ys, z=collect(eachrow(reshape(mf, (vp.nx, vp.ny))))), layout_inner)
+        p = Plot(PlotlyJS.heatmap(x=xs, y=ys, z=collect(eachrow(reshape(h_dmf, (vp.nx, vp.ny))))), layout_inner)
 
         return [
-            html_div(id="dykes_figures_mf", className="row") do
-                dcc_graph(id="mf_graph", figure=p)
+            html_div(id="dykes_figures_dmf", className="row") do
+                dcc_graph(id="dmf_graph", figure=p)
             end
         ]
     end
@@ -604,16 +607,14 @@ function dykes_gui()
 
         # h_C = Array{Float64,1}(undef, vp.nx * vp.ny)#array of double values from matlab script
         # copyto!(h_C, gp.C)
+
         CUDA.allowscalar(true)
         dmf = d2dm_dmf_magma.(gp.T) .* gp.C + only.(Interpolations.gradient.(Ref(cuitp), gp.T)).* (1.0 .- gp.C)
         CUDA.allowscalar(false)
+        copyto!(h_dmf, dmf)
 
-
-        title_string = "Vs (m/s), (time, " * string(-(vp.nt - vp.it) / vp.nt * init_vp.calc_years / 1000) * " ka)"
+        title_string = "Derivative of melt fraction (dmf), (time, " * string(-(vp.nt - vp.it) / vp.nt * init_vp.calc_years / 1000) * " ka)"
         layout_inner = Layout(title=title_string)
-
-        #title_string = "Derivative of melt fraction (dmf), (time, " * string(-(vp.nt - vp.it) / vp.nt * init_vp.calc_years / 1000) * " ka)"
-        #layout_inner = Layout(title=title_string)
 
         p = Plot(PlotlyJS.heatmap(x=xs, y=ys, z=collect(eachrow(reshape(h_dmf, (vp.nx, vp.ny))))), layout_inner)
 
@@ -773,20 +774,17 @@ function dykes_gui()
     callback!(app, [Output("cumul-timeline", "children")], [Input("interval-component", "n_intervals")]) do n_intervals
 
         #campi_cumulut = [-(vp.nt .- gp.cumulutive_time)./vp.nt.*init_vp.calc_years/1000];
-        campi_cumulut = -(vp.nt .- gp.cumulutive_time) ./ vp.nt .* init_vp.calc_years / 1000
         campi_calc = -(vp.nt .- gp.eruptionSteps) ./ vp.nt .* init_vp.calc_years / 1000
-        campi_real = -vcat(init_vp.critVolTime)
+        campi_cumulut = -(vp.nt .- gp.cumulutive_time) ./ vp.nt .* init_vp.calc_years / 1000
 
         #show num cumulutive volume
         campi_cumulut_graph = PlotlyJS.scatter(x=campi_cumulut, y=gp.cumulutive_calc, mode="lines", color=1, name="cumulative volume calc", marker_color="rgba(0, 0, 255, 1)")
         #show real cumulutive volume
         campi_next_eruption = PlotlyJS.scatter(x=campi_cumulut, y=gp.cumulutive_real, mode="lines", color=2, name="cumulutive volume real", marker_color="rgba(255, 0, 0, 1)")
-        #points of calc eruptions
-        campi_cal_graph = PlotlyJS.scatter(x=campi_calc, y=zeros(length(campi_calc)), mode="markers", name="eruptions, calc", showlegend=true, marker_size=14, marker_color="rgba(0, 0, 255, 1)")
-        #points of real eruptions
-        campi_real_graph = PlotlyJS.scatter(x=campi_real, y=zeros(length(campi_real)), marker_color="rgba(255, 0, 0, 1)", mode="markers", color=2, name="eruptions, real", showlegend=true, marker_size=10)
+        #points of eruptions
+        campi_cal_graph = PlotlyJS.scatter(x=campi_calc, y=zeros(length(campi_calc)), mode="markers", name="campi_calc", showlegend=true, marker_size=14, marker_color="rgba(0, 0, 255, 1)")
 
-        data = [campi_next_eruption, campi_cumulut_graph, campi_cal_graph, campi_real_graph]
+        data = [campi_next_eruption, campi_cal_graph, campi_cumulut_graph]
 
         layout = Layout(title="Cumulutive volume graph",
             xaxis=attr(title="time, (ka)"),
@@ -1199,8 +1197,8 @@ function dykes_gui()
     end
 
 
-    #run_server(app)
-    run_server(app, "0.0.0.0", 8050)
+    run_server(app)
+    #run_server(app, "0.0.0.0", 8050)
 end
 
 
@@ -1210,6 +1208,8 @@ function main_test_gui(gp::GridParams, vp::VarParams, init_vp::InitVarParams, FL
     CUDA.device!(0)
     Random.seed!(1234)
     checker = Array{Float64}(undef, 1)
+
+    filename = Array{Char,1}(undef, 1024)
 
     #print_gpu_properties()
     if FLAG_init == true
@@ -1230,12 +1230,14 @@ function main_test_gui(gp::GridParams, vp::VarParams, init_vp::InitVarParams, FL
         log_to_buffer(@sprintf("%s initialization			  ", bar1))
 
         d2dm_init(gp, vp, D2DM_MARKERS)
+
         global G_FLAG_INIT = false
+
+        filename = data_folder * "julia_grid." * string(vp.it) *  ".h5"
+        d2dm_make_snapshot(vp, gp, filename, true)
     end
 
-    filename = Array{Char,1}(undef, 1024)
     eruption_counter::Int64 = 1
-    real_eruption_counter::Int64 = 1
 
     total_time = @elapsed begin
         #main loop
@@ -1278,7 +1280,7 @@ function main_test_gui(gp::GridParams, vp::VarParams, init_vp::InitVarParams, FL
 
 
                     #in reality
-                    if (vp.iSample_real <= length(global_EruptionTimesVec))
+                    if (vp.iSample <= length(global_EruptionTimesVec))
                         if (-vcat(global_EruptionTimesVec)[vp.iSample_real] <= -(vp.nt .- vp.it) / vp.nt * init_vp.calc_years / 1000)
                             vp.sum_erupted_real = vp.sum_erupted_real + gp.critVol[vp.iSample_real]
                             vp.iSample_real = vp.iSample_real + 1
