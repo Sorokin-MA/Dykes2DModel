@@ -288,9 +288,9 @@ function dykes_gui()
         html_button("Show current chambers", id="show-cur-chambers-but", disabled=false),
         html_div(style=Dict("columnCount" => 2)) do
             html_div(id="T-graph"),
+            html_div(id="mf-graph"),
             html_div(id="C-graph"),
             html_div(id="dmf-graph"),
-            html_div(id="mf-graph"),
             html_div(id="chambers-graph")
         end
     end
@@ -572,7 +572,7 @@ function dykes_gui()
         copyto!(h_C, gp.C)
 
 
-        mf = d2dm_mf_magma.(h_T) .* h_C + cuitp.(h_T) .* (1.0 .- h_C)
+        mf = d2dm_mf_magma.(h_T) .* h_C + itp.(h_T) .* (1.0 .- h_C)
 
         title_string = "Melt fraction (mf), (time, " * string(-(vp.nt - vp.it) / vp.nt * init_vp.calc_years / 1000) * " ka)"
         layout_inner = Layout(title=title_string)
@@ -605,12 +605,12 @@ function dykes_gui()
         CUDA.allowscalar(true)
         dmf = d2dm_dmf_magma.(gp.T) .* gp.C + only.(Interpolations.gradient.(Ref(cuitp), gp.T)).* (1.0 .- gp.C)
         CUDA.allowscalar(false)
-        copyto!(h_dmf, dmf)
+        copyto!(h_dmf, gp.T_old)
 
-        title_string = "Derivative of melt fraction (dmf), (time, " * string(-(vp.nt - vp.it) / vp.nt * init_vp.calc_years / 1000) * " ka)"
+        title_string = "Vs (m/s), (time, " * string(-(vp.nt - vp.it) / vp.nt * init_vp.calc_years / 1000) * " ka)"
         layout_inner = Layout(title=title_string)
 
-        p = Plot(PlotlyJS.heatmap(x=xs, y=ys, z=collect(eachrow(reshape(h_dmf, (vp.nx, vp.ny))))), layout_inner)
+        p = Plot(PlotlyJS.heatmap(x=xs, y=ys, z=collect(eachrow(reshape(h_dmf, (vp.nx, vp.ny)))), reversescale=true), layout_inner)
 
         return [
             html_div(id="dykes_figures_dmf", className="row") do
@@ -1337,7 +1337,7 @@ function main_test_gui(gp::GridParams, vp::VarParams, init_vp::InitVarParams, FL
                         #dmf_rock_c = cuitp.(gp.T)
                         #dmf_rock_c = only.(Interpolations.gradient.(Ref(cuitp), gp.T))
                         #dmf_rock_c = d2dm_dmf_rock.(gp.T)
-                        
+
                         dmf_rock_arr = CuArray{Float64,1}(undef, vp.nx * vp.ny)
                         dmf_rock_arr = only.(Interpolations.gradient.(Ref(cuitp), gp.T))
 
