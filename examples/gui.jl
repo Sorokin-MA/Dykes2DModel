@@ -321,6 +321,9 @@ function dykes_gui()
                     simple_imput("T_magma", init_vp.T_magma),
                     simple_imput("T_ch", init_vp.T_ch),
                     simple_imput("Qv", init_vp.Qv),
+                    simple_imput("dyke_x_W", init_vp.dyke_x_W),
+                    simple_imput("dyke_y_rng_bot", init_vp.dyke_y_rng_bot),
+                    simple_imput("dyke_y_rng_top", init_vp.dyke_y_rng_top),
                     simple_imput("Ly_eruption", init_vp.Ly_eruption),
                     simple_imput("dT", init_vp.dT),
                     simple_imput("E", init_vp.E),
@@ -501,7 +504,7 @@ function dykes_gui()
 
         new_plot = Plot([
                 PlotlyJS.scatter(x=h_px_dykes[1:d2d_limit_gap:d2d_limit], y=h_py_dykes[1:d2d_limit_gap:d2d_limit], mode="markers", line_width=0.001)
-            ], Layout(title="Dash Data Visualization", xaxis_range=[1, 20000], yaxis_range=[1, 20000]))
+            ], Layout(title="Dash Data Visualization", xaxis_range=[1, Lx], yaxis_range=[1, Ly]))
 
         #	layout = Layout(xaxis_range=[1, 20000], yaxis_range=[1, 20000])
 
@@ -525,6 +528,13 @@ function dykes_gui()
 
         h_T = Array{Float64,1}(undef, vp.nx * vp.ny)#array of double values from matlab script
         copyto!(h_T, gp.T)
+
+
+		h_T[h_T .> 800] .= 1 
+		h_T[h_T .<= 800] .= 0 
+
+		non_zero_count = count(x -> x != 0, h_T)
+		println(non_zero_count)
 
         title_string = "T, (time, " * string(-(vp.nt - vp.it) / vp.nt * init_vp.calc_years / 1000) * " ka)"
         layout_inner = Layout(title=title_string)
@@ -574,9 +584,17 @@ function dykes_gui()
         copyto!(h_C, gp.C)
 
         mf = d2dm_mf_magma.(h_T) .* h_C + itp.(h_T) .* (1.0 .- h_C)
-		# mf[mf .> 0.75] .= 1 
-		# mf[mf .<= 0.75] .= 0 
+		mf[mf .> 0.1] .= 1 
+		mf[mf .<= 0.1] .= 0 
 
+		dxl = vp.dx * vp.nl
+		dyl = vp.dy * vp.nl
+
+		non_zero_count = count(x -> x != 0, mf)
+        #i guess 1.e4 here is z
+		real_vol_2 = (non_zero_count * (vp.dx * vp.dy) / 1.e9) * 1.e4 * (1 )
+
+		println("accomulated material" * string(real_vol_2) * "km^3")
 
         title_string = "Melt fraction (mf), (time, " * string(-(vp.nt - vp.it) / vp.nt * init_vp.calc_years / 1000) * " ka)"
         layout_inner = Layout(title=title_string)
@@ -940,6 +958,21 @@ function dykes_gui()
             return [init_vp.Qv]
         end
 
+		callback!(app, [Output("dyke_x_W", "value")], [Input("dyke_x_W", "value")]) do input_value
+            init_vp.dyke_x_W = input_value
+            return [init_vp.dyke_x_W]
+        end
+
+		callback!(app, [Output("dyke_y_rng_bot", "value")], [Input("dyke_y_rng_bot", "value")]) do input_value
+            init_vp.dyke_y_rng_bot = input_value
+            return [init_vp.dyke_y_rng_bot]
+        end
+
+		callback!(app, [Output("dyke_y_rng_top", "value")], [Input("dyke_y_rng_top", "value")]) do input_value
+            init_vp.dyke_y_rng_top = input_value
+            return [init_vp.dyke_y_rng_top]
+        end
+
         callback!(app, [Output("Ly_eruption", "value")], [Input("Ly_eruption", "value")]) do input_value
             init_vp.Ly_eruption = input_value
             return [init_vp.Ly_eruption]
@@ -1259,15 +1292,67 @@ function main_test_gui(gp::GridParams, vp::VarParams, init_vp::InitVarParams, FL
                     mf_rock_arr = CuArray{Float64,1}(undef, vp.nx * vp.ny)
                     mf_rock_arr = cuitp.(gp.T)
 
+                    dxl = vp.dx * vp.nl
+                    dyl = vp.dy * vp.nl
+
+					tsh_tmp = vp.tsh
+                    
+
                     #calculating maxVol
-                    maxVol, maxIdx = d2dm_check_melt_fracton(gp, vp, mf_rock_arr)
+                    sumVol = 0
+                    vp.tsh = 0.01
+                    maxVol, maxIdx, sumVol = d2dm_check_melt_fracton(gp, vp, mf_rock_arr)
+					sumVol = (sumVol * (dxl * dyl) / 1.e9) * 1.e4 * (1 - vp.gamma)
+                    append!(gp.cum_mf_01, sumVol)
+
+#=
+                    sumVol = 0
+                    vp.tsh = 0.05
+                    maxVol, maxIdx, sumVol = d2dm_check_melt_fracton(gp, vp, mf_rock_arr)
+					sumVol = (sumVol * (dxl * dyl) / 1.e9) * 1.e4 * (1 - vp.gamma)
+                    append!(gp.cum_mf_05, sumVol)
+=#
+
+                    sumVol = 0
+                    vp.tsh = 0.1
+                    maxVol, maxIdx, sumVol = d2dm_check_melt_fracton(gp, vp, mf_rock_arr)
+					sumVol = (sumVol * (dxl * dyl) / 1.e9) * 1.e4 * (1 - vp.gamma)
+                    append!(gp.cum_mf_10, sumVol)
+
+#=
+                    sumVol = 0
+                    vp.tsh = 0.25
+                    maxVol, maxIdx, sumVol = d2dm_check_melt_fracton(gp, vp, mf_rock_arr)
+					sumVol = (sumVol * (dxl * dyl) / 1.e9) * 1.e4 * (1 - vp.gamma)
+                    append!(gp.cum_mf_25, sumVol)
+
+                    sumVol = 0
+                    vp.tsh = 0.50
+                    maxVol, maxIdx, sumVol = d2dm_check_melt_fracton(gp, vp, mf_rock_arr)
+					sumVol = (sumVol * (dxl * dyl) / 1.e9) * 1.e4 * (1 - vp.gamma)
+                    append!(gp.cum_mf_50, sumVol)
+
+                    sumVol = 0
+                    vp.tsh = 0.75
+                    maxVol, maxIdx, sumVol = d2dm_check_melt_fracton(gp, vp, mf_rock_arr)
+					sumVol = (sumVol * (dxl * dyl) / 1.e9) * 1.e4 * (1 - vp.gamma)
+                    append!(gp.cum_mf_75, sumVol)
+
+                    =#
+                    sumVol = 0
+                    vp.tsh = 0.85
+                    maxVol, maxIdx, sumVol = d2dm_check_melt_fracton(gp, vp, mf_rock_arr)
+					sumVol = (sumVol * (dxl * dyl) / 1.e9) * 1.e4 * (1 - vp.gamma)
+                    append!(gp.cum_mf_85, sumVol)
+
+                    vp.tsh = tsh_tmp
+                    sumVol = 0
+                    maxVol, maxIdx, sumVol = d2dm_check_melt_fracton(gp, vp, mf_rock_arr)
 
                     if maxVol == -1
                         return 0
                     end
 
-                    dxl = vp.dx * vp.nl
-                    dyl = vp.dy * vp.nl
 
                     real_vol = (maxVol * (dxl * dyl) / 1.e9) * 1.e4 * vp.gamma
                     real_vol_2 = (maxVol * (dxl * dyl) / 1.e9) * 1.e4 * (1 - vp.gamma)

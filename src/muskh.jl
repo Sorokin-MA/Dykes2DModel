@@ -209,6 +209,13 @@ function calc_cent_of_next_dyke(dyke_param, Sxx, Syy, Sxy, XX, YY, y_limit, Y_ri
             tmp, l_vecs = get_sigma2(xpoints[1], ypoints[1], XX, YY, Sxx, Syy, Sxy)
             return x_new, y_new, xpoints, ypoints, l_vecs
         end
+		if (xpoints[i] >= X_lim) || (xpoints[i] <= 0)
+            println("REACHED BOUNDARY!")
+            #_, l_vecs = get_sigma2(x_new, y_new, XX, YY, Sxx, Syy, Sxy)
+            tmp, l_vecs = get_sigma2(xpoints[1], ypoints[1], XX, YY, Sxx, Syy, Sxy)
+            return x_new, y_new, xpoints, ypoints, l_vecs
+        end
+
     end
 
     #println(xpoints)
