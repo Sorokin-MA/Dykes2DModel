@@ -43,7 +43,6 @@ function interp1(xpt, ypt, x; method="linear", extrapvalue=nothing)
     if method == "linear"
         intf = interpolate((xpt,), ypt, Gridded(Linear()))
         y[idx] = intf[x[idx]]
-
     elseif method == "cubic"
         itp = interpolate(ypt, BSpline(Cubic(Natural())), OnGrid())
         intf = scale(itp, xpt)
@@ -87,7 +86,7 @@ function dykes_rand_param(init_vp::InitVarParams)
     dyke_x_rng_n = [(Lx - dyke_x_Wn) / 2, (Lx + dyke_x_Wn) / 2]
 
     #TODO: make this as parameter
-    dyke_y_rng = [2000, 15000] #dykes y distribution area
+    dyke_y_rng = [init_vp.dyke_y_rng_bot, init_vp.dyke_y_rng_top] #dykes y distribution area
     dyke_t_rng = [0.95 * pi / 2, 1.05 * pi / 2] #dykes angle distribution
     dyke_to_sill = init_vp.dyke_to_sill#boundary where dykes turn yourself to sill, m
     dz = init_vp.Lz#z dimension? i guess, m
@@ -162,6 +161,7 @@ function dykes_rand_param(init_vp::InitVarParams)
 
 
     println(critVol)
+	critVol[critVol_size[1]+1] = 100000
     #critVol(1:24) = critVol_hist(1:end);
     critVol = 10^9 * critVol / dz / (1 - gamma)
 
@@ -252,24 +252,35 @@ function dykes_rand_param(init_vp::InitVarParams)
     dyke_t = Array{Float64}(undef, 0)
     dyke_v = []
     Vtot = q * nt_erupt * dt
-    Q_tsh = 0.5 * Vtot
+
+	#For Elbrus calculations we decrease area of dykes intruded, to make accamulation easier
+    #Make Q_tsh_coef = 1 to disable this feature, Make Q_tsh_coef = 0.5 for Elbrus
+
+	Q_tsh_coef = 1
+    Q_tsh = Q_tsh_coef * Vtot
+
+	#"Normal", "Uniform", "LogNormal"
+    x_dist_type = "Normal"
+    y_dist_type = "LogNormal"
+    a_dist_type = "Uniform"
+    b_dist_type = "Uniform"
 
     #log_to_buffer("Generating dykes...\n")
     tmp_rnd_a = 0.5
     tmp_rnd_b = 0.1
     while Q < Vtot
         #dyke_a = [dyke_a dyke_a_rng[1] + diff(dyke_a_rng)*rand];
-        append!(dyke_a, dyke_a_rng[1] .+ diff(dyke_a_rng, dims=1) .* rand_limited_2(init_vp.dyke_nu, init_vp.dyke_dev, 2))
+        append!(dyke_a, dyke_a_rng[1] .+ diff(dyke_a_rng, dims=1) .* rand_limited_2(init_vp.dyke_nu, init_vp.dyke_dev, a_dist_type))
         #dyke_b = [dyke_b dyke_b_rng[1] + diff(dyke_b_rng)*rand];
-        append!(dyke_b, dyke_b_rng[1] .+ diff(dyke_b_rng, dims=1) .* rand_limited_2(init_vp.dyke_nu, init_vp.dyke_dev, 2))
+        append!(dyke_b, dyke_b_rng[1] .+ diff(dyke_b_rng, dims=1) .* rand_limited_2(init_vp.dyke_nu, init_vp.dyke_dev, b_dist_type))
         if Q < Q_tsh
             #dyke_x = [dyke_x dyke_x_rng[1] + diff(dyke_x_rng)*rand];
-            append!(dyke_x, dyke_x_rng[1] .+ diff(dyke_x_rng, dims=1) .* rand_limited_2(tmp_rnd_a, tmp_rnd_b, 1))
+            append!(dyke_x, dyke_x_rng[1] .+ diff(dyke_x_rng, dims=1) .* rand_limited_2(tmp_rnd_a, tmp_rnd_b, x_dist_type))
         else
-            append!(dyke_x, dyke_x_rng_n[1] .+ diff(dyke_x_rng_n, dims=1) .* rand_limited_2(tmp_rnd_a, tmp_rnd_b, 1))
+            append!(dyke_x, dyke_x_rng_n[1] .+ diff(dyke_x_rng_n, dims=1) .* rand_limited_2(tmp_rnd_a, tmp_rnd_b, x_dist_type))
         end
-        dyke_y = append!(dyke_y, dyke_y_rng[1] .+ diff(dyke_y_rng, dims=1) .* (1-rand_limited_2(-1, 0.4, 3)))
-        dyke_t = append!(dyke_t, dyke_t_rng[1] .+ diff(dyke_t_rng, dims=1) .* rand_limited_2(init_vp.dyke_nu, init_vp.dyke_dev, 2))
+        dyke_y = append!(dyke_y, dyke_y_rng[1] .+ diff(dyke_y_rng, dims=1) .* (1-rand_limited_2(-1, 0.4, y_dist_type)))
+        dyke_t = append!(dyke_t, dyke_t_rng[1] .+ diff(dyke_t_rng, dims=1) .* rand_limited_2(init_vp.dyke_nu, init_vp.dyke_dev, "Uniform"))
         dyke_v = append!(dyke_v, pi * last(dyke_a) * last(dyke_b)) #area of ellipsis
         Q = Q + last(dyke_v)
     end
@@ -388,7 +399,7 @@ function dykes_rand_param(init_vp::InitVarParams)
 
     #log_to_buffer("Writing results to output files...\n")
     fid = open(particles_file_name, "w")
-    println(typeof(Lx), typeof(Ly), typeof(lam_r_rhoCp), typeof(lam_m_rhoCp), typeof(L_Cp), typeof(T_top), typeof(T_bot), typeof(T_magma), typeof(tsh), typeof(gamma), typeof(Ly_eruption), typeof(nu), typeof(G), typeof(dt_diff), typeof(dx), typeof(dy), typeof(eiter), typeof(pic_amount))
+    println(typeof(Lx), typeof(Ly), typeof(lam_r_rhoCp), typeof(lam_m_rhoCp), typeof(L_Cp), typeof(T_top), typeof(T_bot), typeof(T_magma), typeof(tsh), typeof(gamma), typeof(Ly_eruption), typeof(nu), typeof(G), typeof(dt_diff), typeof(dx), typeof(dy), typeof(eiter), typeof(pic_amount), typeof(mx), typeof(mT))
     write(fid, Lx, Ly, lam_r_rhoCp, lam_m_rhoCp, L_Cp, T_top, T_bot, T_magma, tsh, gamma, Ly_eruption, nu, G, dt_diff, dx, dy, eiter, pic_amount, tfin)
     println(typeof(pmlt), typeof(nx), typeof(ny), typeof(nl), typeof(nt), typeof(niter), typeof(nout), typeof(nsub), typeof(nerupt), typeof(npartcl), typeof(nmarker), typeof(Nsample))
     write(fid, pmlt, nx, ny, nl, nt, niter, nout, nsub, nerupt, npartcl, nmarker, Nsample)

@@ -37,7 +37,7 @@ function set_init_sigma_cald_yy( S, g, rhp_r, dx, Lx::Float32, Ly::Float32, nx, 
 	a = Lx/3.0;
 	x::Float32 = ix * dx - Lx /2;
 	y::Float32 = Ly-((Ly) * (Float32(iy+1)/Float32(ny)))
-	p_0 = -40.0;
+	p_0 = 5.0;
 	S[idc(ix, iy, nx)] = S[idc(ix, iy, nx)] + ( - p_0/pi*(atan((x+a)/y) - atan((x-a)/y)) );
 	return 
 end
@@ -49,7 +49,7 @@ function set_init_sigma_cald_xx( S, g, rhp_r, dx, Lx::Float32, Ly::Float32, nx, 
 	a = Lx/3.0;
 	x::Float32 = ix * dx - Lx /2;
 	y::Float32 = Ly-((Ly) * (Float32(iy+1)/Float32(ny)))
-	p_0 = -40.0;
+	p_0 = 5.0;
 	S[idc(ix, iy, nx)] = S[idc(ix, iy, nx)] + ( - p_0/pi*((atan((x+a)/y) - atan((x-a)/y)) + (y*(x + a)/(y^2 +(x+a)^2)) - (y*(x-a))/(y^2 + (x-a)^2)));
 	return 
 end
@@ -62,7 +62,7 @@ function set_init_sigma_cald_xy( S, g, rhp_r, dx, Lx::Float32, Ly::Float32, nx, 
 	a = Lx/3.0;
 	x::Float32 = ix * dx - Lx /2;
 	y::Float32 = Ly-((Ly) * (Float32(iy+1)/Float32(ny)))
-	p_0 = -40.0;
+	p_0 = 5.0;
 	S[idc(ix, iy, nx)] = S[idc(ix, iy, nx)] + ( p_0/pi* log((y^2 + (x + a)^2)/(y^2 + (x - a)^2)));
 	return 
 end
@@ -73,7 +73,7 @@ function d2dm_pres_test()
     #init phase
 
 
-	Random.seed!(2234)
+	Random.seed!(1234)
 
     #grid params
     Lx = 20000
@@ -157,7 +157,7 @@ function d2dm_pres_test()
 	@cuda blocks = gridSize[1], gridSize[2] threads = blockSize[1], blockSize[2]  set_init_sigma_cald_xx( Sxx_gpu, 9.8, 0.0265, dx, Float32(X_right_lim), Float32(Y_right_lim), nx, ny)
 	@cuda blocks = gridSize[1], gridSize[2] threads = blockSize[1], blockSize[2]  set_init_sigma_cald_xy( Sxy_gpu, 9.8, 0.0265, dx, Float32(X_right_lim), Float32(Y_right_lim), nx, ny)
 
-    for i in 1:8
+    for i in 1:25
 
         @time begin
             @cuda blocks = gridSize[1], gridSize[2] threads = blockSize[1], blockSize[2] insert_dyke_gpu!(Sxx_gpu, Syy_gpu, Sxy_gpu,
@@ -178,9 +178,10 @@ function d2dm_pres_test()
             dyke_param = DykeParam(x=next_point_x, y=next_point_y, phi=phi_tmp)
         end
     end
-        copyto!(Sxx, Sxx_gpu)
-        copyto!(Syy, Syy_gpu)
-        copyto!(Sxy, Sxy_gpu)
+
+	copyto!(Sxx, Sxx_gpu)
+	copyto!(Syy, Syy_gpu)
+	copyto!(Sxy, Sxy_gpu)
 
 
     println(typeof(l_vecs))
@@ -195,7 +196,7 @@ function d2dm_pres_test()
 
     display(P_plot)
 
-	savefig(P_plot, "d2dm_muskh.svg")
+	#Plots.savefig(P_plot, "d2dm_muskh.png")
 
     println("Success!!!")
 end

@@ -156,7 +156,7 @@ Solve heat equasion
 """
 function d2dm_update_T!(T, T_old, T_top, T_bot, C, lam_r_rhoCp, lam_m_rhoCp, L_Cp, dx, dy, dt, nx, ny, dmf_rock_arr)
     ix = (blockIdx().x - 1) * blockDim().x + threadIdx().x - 1
-    iy = (blockIdx().y - 1) * blockDim().y + threadIdx().y - 1
+    ay = (blockIdx().y - 1) * blockDim().y + threadIdx().y - 1
 
     if (ix > nx - 1) || (iy > (ny - 1))
         return
@@ -584,7 +584,7 @@ function advect_particles_eruption(px, py, idx, gamma, dxl, dyl, npartcl, ncells
     for i = 0:ncells-1
         ic = idx[i+1]
         icx = ic % nxl
-        icy = ic ÷ nxl
+        icy = ic ÷ nyl
 
         xl = icx * dxl
         yl = icy * dyl
@@ -773,6 +773,28 @@ function init_particles_T(pT, T_magma, npartcl)
     pT[ip] = T_magma
     return
 end
+
+"""
+	init_particles_T(pT, T_magma, npartcl)
+
+initing particles out of defined particles as magma particles
+
+# Arguments
+- `pT`: Temperature of particles, [°C]
+- `T_magma`: Temperature of intruding magma, [°C]
+- `npartcl`: maximal number of particles
+"""
+function init_particles_T_magma(pT, T_magma, npartcl)
+    ip = (blockIdx().x - 1) * blockDim().x + threadIdx().x
+
+    if (ip > (npartcl))
+        return
+    end
+
+    pT[ip] = T_magma
+    return
+end
+
 
 
 """
@@ -986,8 +1008,7 @@ function mailbox_out(filename, T, pT, C, mT, staging, L, nx, ny, nxl, nyl, max_n
 end
 
 
-function rand_limited(u, d)
-    ans::Float64 = -1
+function rand_limited(u, d, dyke_type::String)
     while ((ans <= 0) || (ans >= 1))
         ans = rand(Normal(u, d), 1)[1]
     end
@@ -995,14 +1016,14 @@ function rand_limited(u, d)
     return ans
 end
 
-function rand_limited_2(u, d, dyke_type::Int64)
+function rand_limited_2(u, d, dyke_type::String)
     ans::Float64 = -1
     while ((ans <= 0) || (ans >= 1))
-        if (dyke_type == 1)
+        if (dyke_type == "Normal")
             ans = rand(Normal(u, d), 1)[1]
-        elseif (dyke_type == 2)
+        elseif (dyke_type == "Uniform")
             ans = rand(Uniform(), 1)[1]
-        elseif (dyke_type == 3)
+        elseif (dyke_type == "LogNormal")
             ans = rand(LogNormal(u, d), 1)[1]
         end
     end
@@ -1184,15 +1205,14 @@ function d2dm_read_params(gp::GridParams, vp::VarParams, data_folder)
 
     close(fid)
 
-    #=
     		#process markers
-    		fid = h5open("data/markers.h5", "r")
+    		fid = h5open(data_folder * "markers.h5", "r")
 
     		obj = fid["0"]
 
-    		gp.h_mx = Array{Float64,1}(undef, max_nmarker)
-    		gp.h_my = Array{Float64,1}(undef, max_nmarker)
-    		gp.h_mT = Array{Float64,1}(undef, max_nmarker)
+    		gp.h_mx = Array{Float64,1}(undef, vp.max_nmarker)
+    		gp.h_my = Array{Float64,1}(undef, vp.max_nmarker)
+    		gp.h_mT = Array{Float64,1}(undef, vp.max_nmarker)
 
     		gp.h_mx = read(obj, "mx")
     		gp.h_my = read(obj, "my")
@@ -1200,11 +1220,9 @@ function d2dm_read_params(gp::GridParams, vp::VarParams, data_folder)
 
     		close(fid)
 
-    		#copyto!(mx, h_mx)
-    		#copyto!(my, h_my)
-    		#copyto!(mT, h_mT)
-
-    	=#
+    		copyto!(gp.mx, gp.h_mx)
+    		copyto!(gp.my, gp.h_my)
+    		copyto!(gp.mT, gp.h_mT)
 
 
     NDIGITS = Int32(floor(log10(vp.nt))) + 1
@@ -1253,6 +1271,7 @@ function d2dm_init(gp::GridParams, vp::VarParams, markers_flag)
     println(vp.max_nmarker)
     println(vp.nmarker)
 
+    #initin temerature of all markers that will appear with magma Temperature
     if (markers_flag)
         #processing all markers 
         gridSize1D = Int64(floor((vp.max_nmarker - vp.nmarker + blockSize1D - 1) / blockSize1D))
@@ -1317,10 +1336,12 @@ function d2dm_check_melt_fracton(gp::GridParams, vp::VarParams, mf_rock_c)
         maxVol = -1
         maxIdx = -1
 
+        sumVol = 0
 
 
         #searching for max vol
         for (idx, vol) in volumes
+			sumVol = sumVol + vol
             if vol > maxVol
                 maxVol = vol
                 maxIdx = idx
@@ -1337,7 +1358,7 @@ function d2dm_check_melt_fracton(gp::GridParams, vp::VarParams, mf_rock_c)
 
     end
 
-    return maxVol, maxIdx
+    return maxVol, maxIdx, sumVol
 end
 
 function d2dm_eruption_advection(gp::GridParams, vp::VarParams, maxVol, maxIdx, it, markers_flag::Bool)
@@ -1357,9 +1378,35 @@ function d2dm_eruption_advection(gp::GridParams, vp::VarParams, maxVol, maxIdx, 
             end
         end
 
-
         dxl = vp.dx * vp.nl
         dyl = vp.dy * vp.nl
+
+		#here i can find center of eruptions
+        #i can find min/max of idx and find median
+        cell_idx_x_max = 0.0
+        cell_idx_x_min = vp.nxl * dxl
+        cell_idx_y_max = 0.0
+        cell_idx_y_min = vp.nyl * dyl
+		for val in cell_idx_host
+			if val != 0
+				val_x = (val % vp.nxl) * dxl
+				val_y = (val ÷ vp.nyl) * dyl
+
+				cell_idx_x_max = max(val_x,cell_idx_x_max)
+				cell_idx_x_min = min(val_x,cell_idx_x_min)
+				cell_idx_y_max = max(val_y,cell_idx_y_max)
+				cell_idx_y_min = min(val_y,cell_idx_y_min)
+			end
+		end
+
+println("Eruption center")
+println((cell_idx_x_max + cell_idx_x_min)/2.0)
+println((cell_idx_y_max + cell_idx_y_min)/2.0)
+
+		append!(gp.erupt_x, (cell_idx_x_max + cell_idx_x_min)/2.0)
+		append!(gp.erupt_y, (cell_idx_y_max + cell_idx_y_min)/2.0)
+
+
 
         copyto!(cell_idx, cell_idx_host)
 

@@ -8,6 +8,17 @@ Base.@kwdef mutable struct GridParams
     next_cumulutive_erupt = Vector{Float64}()
     next_cumulutive_vol = Vector{Float64}()
 
+    erupt_x = Vector{Float64}()
+    erupt_y = Vector{Float64}()
+
+    cum_mf_01 = Vector{Float64}()
+    cum_mf_05 = Vector{Float64}()
+    cum_mf_10 = Vector{Float64}()
+    cum_mf_25 = Vector{Float64}()
+    cum_mf_50 = Vector{Float64}()
+    cum_mf_75 = Vector{Float64}()
+    cum_mf_85 = Vector{Float64}()
+
     cumulutive_time = Vector{Float64}()
     critVol::Array{Float64,1} = Array{Float64,1}(undef, 0)
     ndykes::Array{Int32,1} = Array{Int32,1}(undef, 0)
@@ -168,6 +179,9 @@ Base.@kwdef mutable struct InitVarParams
     # dyke_dev::Float64 = 0.1
     dyke_nu::Float64 = -1
     dyke_dev::Float64 = 0.4
+
+    dyke_y_rng_bot::Float64 = 2000
+    dyke_y_rng_top::Float64 = 15000
 
     dyke_type::Int64 = 3
 
