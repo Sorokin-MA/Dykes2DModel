@@ -196,7 +196,7 @@ function d2dm_markers_graph()
     #close(fid)
 
     #println(mx)
-    
+
     A_x = range(699.2355, 1186.2385, 51);
 
 	println(typeof(mx))
@@ -224,7 +224,7 @@ end
 
 
 	p_final = Plots.plot(p2)
-    
+
 	#Plots.savefig(p_final, "markers.png")
     #return p_final
 
@@ -243,7 +243,7 @@ end
 
     # savefig(p, "array_plot.png")
     # return p
-
+end
 
 
 function d2dm_mf_graph()
@@ -280,7 +280,7 @@ function d2dm_mf_graph()
 	Plots.plot!(cumulutive_time, cum_mf_85, label="85%")
 
 	p_final = Plots.plot(p2)
-    
+
 	#Plots.savefig(p_final, "markers.png")
     #return p_final
 
@@ -328,7 +328,7 @@ function d2dm_Q_graph()
     cumulutive_calc_minus20= read(fid_minus_20, "cumulutive_calc")
 
 
-    
+
 	cumulutive_time_true = -(nt .- cumulutive_time_true) ./ nt .* calc_years / 1000
 	cumulutive_time_plus10 = -(nt_plus10 .- cumulutive_time_plus10) ./ nt_plus10 .* calc_years / 1000
 	cumulutive_time_plus20 = -(nt_plus20 .- cumulutive_time_plus20) ./ nt_plus20 .* calc_years / 1000
@@ -342,9 +342,9 @@ function d2dm_Q_graph()
 	Plots.plot!(cumulutive_time_plus20, cumulutive_calc_plus20, label="+20%")
 	Plots.plot!(cumulutive_time_minus10, cumulutive_calc_minus10, label="-10%")
 	Plots.plot!(cumulutive_time_minus20, cumulutive_calc_minus20, label="-20%")
-	
+
 	p_final = Plots.plot(p2)
-    
+
 	#Plots.savefig(p_final, "markers.png")
     #return p_final
 
@@ -381,10 +381,10 @@ function d2dm_resol_graph()
     cumulutive_calc_real= read(fid_after, "cumulutive_real")
     cumulutive_calc_hr= read(fid_after_hr, "cumulutive_calc")
 
-    
+
 	cumulutive_time_true = -(nt .- cumulutive_time_true) ./ nt .* calc_years / 1000
 	cumulutive_time_hr = -(nt_hr .- cumulutive_time_hr) ./ nt_hr .* calc_years / 1000
-	
+
 	#campi_calc = -(nt .- gp.eruptionSteps) ./ vp.nt .* init_vp.calc_years / 1000
 	#campi_real = -vcat(init_vp.critVolTime)
 
@@ -401,9 +401,9 @@ function d2dm_resol_graph()
 	p2 = Plots.plot(cumulutive_time_true, cumulutive_calc_true, xlabel="time (ka)", ylabel="Cum. erupt. volume, km^3", title="Compartion of different resolutions", label="10m")
 	Plots.plot!(cumulutive_time_hr, cumulutive_calc_hr, label="5m")
 	Plots.plot!(cumulutive_time_true, cumulutive_calc_real, label="real")
-		
+
 	p_final = Plots.plot(p2)
-    
+
 	#Plots.savefig(p_final, "markers.png")
     #return p_final
 

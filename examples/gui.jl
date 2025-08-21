@@ -530,8 +530,8 @@ function dykes_gui()
         copyto!(h_T, gp.T)
 
 
-		h_T[h_T .> 800] .= 1 
-		h_T[h_T .<= 800] .= 0 
+		h_T[h_T .> 800] .= 1
+		h_T[h_T .<= 800] .= 0
 
 		non_zero_count = count(x -> x != 0, h_T)
 		println(non_zero_count)
@@ -584,8 +584,8 @@ function dykes_gui()
         copyto!(h_C, gp.C)
 
         mf = d2dm_mf_magma.(h_T) .* h_C + itp.(h_T) .* (1.0 .- h_C)
-		mf[mf .> 0.1] .= 1 
-		mf[mf .<= 0.1] .= 0 
+		mf[mf .> 0.1] .= 1
+		mf[mf .<= 0.1] .= 0
 
 		dxl = vp.dx * vp.nl
 		dyl = vp.dy * vp.nl
@@ -1296,7 +1296,7 @@ function main_test_gui(gp::GridParams, vp::VarParams, init_vp::InitVarParams, FL
                     dyl = vp.dy * vp.nl
 
 					tsh_tmp = vp.tsh
-                    
+
 
                     #calculating maxVol
                     sumVol = 0

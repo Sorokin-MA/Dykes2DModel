@@ -826,7 +826,7 @@ function dykes_gui()
 
     # #cumulut
     # callback!(app, [Output("cumul-timeline", "children")], [Input("interval-component", "n_intervals")]) do n_intervals
-    # 	
+    #
     # 	campi_calc = -(vp.nt .- gp.eruptionSteps)./vp.nt.*init_vp.calc_years/1000;
     # 	campi_real = -vcat(init_vp.critVolTime);
     # 	campi_now = [-(vp.nt - vp.it)/vp.nt*init_vp.calc_years/1000];
@@ -1348,7 +1348,7 @@ function main_test_gui(gp::GridParams, vp::VarParams, init_vp::InitVarParams, FL
                         #dmf_rock_c = cuitp.(gp.T)
                         #dmf_rock_c = only.(Interpolations.gradient.(Ref(cuitp), gp.T))
                         #dmf_rock_c = d2dm_dmf_rock.(gp.T)
-                        
+
                         dmf_rock_arr = CuArray{Float64,1}(undef, vp.nx * vp.ny)
                         dmf_rock_arr = only.(Interpolations.gradient.(Ref(cuitp), gp.T))
 

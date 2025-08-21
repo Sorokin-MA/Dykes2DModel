@@ -27,7 +27,7 @@ function set_init_sigma( S, g, rhp_r, depth::Float32, nx, ny)
     iy = (blockIdx().y - 1) * blockDim().y + threadIdx().y - 1
 
 	S[idc(ix, iy, nx)] = S[idc(ix, iy, nx)]+ rhp_r	* g * (depth - (depth) * (Float32(iy)/Float32(ny)));
-	return 
+	return
 end
 
 function set_init_sigma_cald_yy( S, g, rhp_r, dx, Lx::Float32, Ly::Float32, nx, ny)
@@ -39,7 +39,7 @@ function set_init_sigma_cald_yy( S, g, rhp_r, dx, Lx::Float32, Ly::Float32, nx, 
 	y::Float32 = Ly-((Ly) * (Float32(iy+1)/Float32(ny)))
 	p_0 = 5.0;
 	S[idc(ix, iy, nx)] = S[idc(ix, iy, nx)] + ( - p_0/pi*(atan((x+a)/y) - atan((x-a)/y)) );
-	return 
+	return
 end
 
 function set_init_sigma_cald_xx( S, g, rhp_r, dx, Lx::Float32, Ly::Float32, nx, ny)
@@ -51,7 +51,7 @@ function set_init_sigma_cald_xx( S, g, rhp_r, dx, Lx::Float32, Ly::Float32, nx, 
 	y::Float32 = Ly-((Ly) * (Float32(iy+1)/Float32(ny)))
 	p_0 = 5.0;
 	S[idc(ix, iy, nx)] = S[idc(ix, iy, nx)] + ( - p_0/pi*((atan((x+a)/y) - atan((x-a)/y)) + (y*(x + a)/(y^2 +(x+a)^2)) - (y*(x-a))/(y^2 + (x-a)^2)));
-	return 
+	return
 end
 
 
@@ -64,7 +64,7 @@ function set_init_sigma_cald_xy( S, g, rhp_r, dx, Lx::Float32, Ly::Float32, nx, 
 	y::Float32 = Ly-((Ly) * (Float32(iy+1)/Float32(ny)))
 	p_0 = 5.0;
 	S[idc(ix, iy, nx)] = S[idc(ix, iy, nx)] + ( p_0/pi* log((y^2 + (x + a)^2)/(y^2 + (x - a)^2)));
-	return 
+	return
 end
 
 
@@ -123,7 +123,7 @@ function d2dm_pres_test()
 
 
 	#TODO: change initial preassure rho_r * g * z
-	
+
     Sxx_gpu = CUDA.zeros(Float64, nx * ny)
     Syy_gpu = CUDA.zeros(Float64, nx * ny)
     Sxy_gpu = CUDA.zeros(Float64, nx * ny)
@@ -141,14 +141,14 @@ function d2dm_pres_test()
     println(size(Sxx_gpu))
 
     #Sxx_gpu = CuArray([x::Float64 for x in Sxx])
-    #Syy_gpu =CuArray([x::Float64 for x in Syy]) 
-    #Sxy_gpu =CuArray([x::Float64 for x in Sxy]) 
+    #Syy_gpu =CuArray([x::Float64 for x in Syy])
+    #Sxy_gpu =CuArray([x::Float64 for x in Sxy])
 
     blockSize = (16, 16)
     gridSize = (Int64(floor((nx + blockSize[1] - 1) ÷ blockSize[1])), Int64(floor((ny + blockSize[2] - 1) ÷ blockSize[2])))
 
 	#@cuda blocks = gridSize[1], gridSize[2] threads = blockSize[1], blockSize[2] set_init_sigma( Sxy_gpu, 9.8, 0.02650, Float32(y_limit), nx, ny)
-	
+
 	@cuda blocks = gridSize[1], gridSize[2] threads = blockSize[1], blockSize[2] set_init_sigma( Sxx_gpu, 9.8, 0.02650, Float32(Y_right_lim), nx, ny)
 	@cuda blocks = gridSize[1], gridSize[2] threads = blockSize[1], blockSize[2] set_init_sigma( Syy_gpu, 9.8, 0.02650, Float32(Y_right_lim), nx, ny)
 

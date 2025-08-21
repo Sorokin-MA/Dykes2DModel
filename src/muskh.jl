@@ -40,7 +40,7 @@ function insert_dyke_gpu!(Sxx, Syy, Sxy, XX, YY, nx, ny,
 
     Z_real = rho * exp(1im * upsilon)
 
-    #FIXME why 1/2? 
+    #FIXME why 1/2?
     R = 1 / 2
 
     #Reverse Zhoukovski
@@ -68,7 +68,7 @@ function insert_dyke_gpu!(Sxx, Syy, Sxy, XX, YY, nx, ny,
         # Syy[cur_index] = Syy[cur_index] - 1/2*(((2*Rho.^2+1+Rho.^4).*Srr+(-Rho.^4+2*Rho.^2-1).*Stt).*cos(2*alpha)+(-2*Rho.^2-1-Rho.^4).*Srr+(-Rho.^4+2*Rho.^2-1).*Stt+(-2*Rho.^4*sin(2*alpha)+2*sin(2*alpha)).*Srt)./(-2*Rho.^2*cos(2*alpha)+Rho.^4+1);
         # Sxy[cur_index] = Sxy[cur_index] + 1/2*((2+2*Rho.^4).*Srt.*cos(2*alpha)+(-sin(2*alpha)+Rho.^4*sin(2*alpha)).*Srr+(sin(2*alpha)-Rho.^4*sin(2*alpha)).*Stt-4*Srt.*Rho.^2)./(-2*Rho.^2*cos(2*alpha)+Rho.^4+1)
 
-        #dSxx = 
+        #dSxx =
         #CUDA.atomic_add!(pointer(Sxx, idc(ix1, iy1, nx)), k11 * pT[ip])
 
         Sxx[cur_index] = Sxx[cur_index] + 1 / 2 * (((-2 * Rho .^ 2 + 1 + Rho .^ 4) .* Srr + (-2 * Rho .^ 2 - 1 - Rho .^ 4) .* Stt) .* cos(2 * alpha) + (-2 * Rho .^ 2 + 1 + Rho .^ 4) .* Srr + (2 * Rho .^ 2 + 1 + Rho .^ 4) .* Stt + (-2 * Rho .^ 4 * sin(2 * alpha) + 2 * sin(2 * alpha)) .* Srt) ./ (-2 * Rho .^ 2 * cos(2 * alpha) + Rho .^ 4 + 1)

@@ -17,12 +17,12 @@ Maybe will be fixed in the future.
 - `nx::Integer`: x dimension size.
 ...
 """
-function idc(ix, iy, nx)
-    return ((iy) * nx + ix + 1)
+function idc(ix::Integer, iy::Integer, nx::Integer)
+    return iy * nx + ix + 1
 end
 
-dev_thread = CUDA.attribute(CUDA.device(), CUDA.DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK)
-maximum_threads = dev_thread*30 #total of 40 blocks, only going to use 30
+#count max threads to avoid cuda errors
+dev_th::Integerread = CUDA.attribute(CUDA.device(), CUDA.DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK)
 
 
 #helper function which helps to read from IO stream
@@ -206,7 +206,7 @@ end
 initing particles out of defined particles as magma particles
 
 # Arguments
-- `pPh`: ? 
+- `pPh`: ?
 - `ph`: ?
 - `npartcl`: ?
 """
@@ -243,7 +243,7 @@ end
 #TODO:specify description
 """
 
-	rot2d(x, y, sb, cb)	
+	rot2d(x, y, sb, cb)
 
 HZ
 
@@ -269,7 +269,7 @@ end
 
 #TODO:specify description
 """
-	disp_inf_stress(s, st, ct, c, nu, G, shxi, chxi, seta, ceta)	
+	disp_inf_stress(s, st, ct, c, nu, G, shxi, chxi, seta, ceta)
 
 HZ
 
@@ -488,7 +488,7 @@ end
 
 #TODO: describe function
 """
-	cwLabel!(L, nx, ny)	
+	cwLabel!(L, nx, ny)
 
 I have no idea what this function do.
 """
@@ -722,7 +722,7 @@ function ccl(mf, L, tsh, nx, ny)
     CUDA.@sync begin
         @cuda blocks = gridSize2D threads = blockSize2D assignUniqueLables(mf, L, tsh, nx, ny)
     end
-    blockSize1D = dev_thread 
+    blockSize1D = dev_thread
     gridSize1D = (ny + blockSize1D - 1) ÷ blockSize1D
 
     #merge labels in components horisotally
@@ -799,7 +799,7 @@ end
 
 """
 	mf_magma(T)
-	
+
 # Arguments
 - `T`: Temperature variable, [°C]
 """
@@ -823,14 +823,14 @@ function average(mfl, T, C, nl, nx, ny)
 
 	avg = 0.0
 
-	#for (int ix = ixl * nl; ix < (ixl + 1) * nl; ++ix) 
+	#for (int ix = ixl * nl; ix < (ixl + 1) * nl; ++ix)
 	for ix = (ixl*nl):((ixl+1)*nl)
 
 		if (ix > nx - 1)
 			break
 		end
 
-		#for (int iy = iyl * nl; iy < (iyl + 1) * nl; ++iy) 
+		#for (int iy = iyl * nl; iy < (iyl + 1) * nl; ++iy)
 		for iy = (iyl*nl):(iy<(iyl+1)*nl)
 			if (iy > ny - 1)
 				break
@@ -838,7 +838,7 @@ function average(mfl, T, C, nl, nx, ny)
 			vf = C[idc(ix, iy, nx)]
 			avg +=
 				mf_magma(T[idc(ix, iy, nx)]) * vf + mf_rock(T[idc(ix, iy, nx)]) * (1 - vf)
-			#=  
+			#=
 			avg += mf_magma(T[idc(ix, iy, nx)]) * vf + mf_rock(T[idc(ix, iy, nx)]) * (1 - vf);
 			=#
 		end
@@ -1246,7 +1246,7 @@ function d2dm_init(gp::GridParams, vp::VarParams, markers_flag)
     pic_amount_tmp = vp.pic_amount
     vp.pic_amount = 1.0
 
-    blockSize1D = dev_thread 
+    blockSize1D = dev_thread
     gridSize1D = convert(Int64, floor((vp.npartcl + blockSize1D - 1) / blockSize1D))
 
     #NOTE:
@@ -1273,7 +1273,7 @@ function d2dm_init(gp::GridParams, vp::VarParams, markers_flag)
 
     #initin temerature of all markers that will appear with magma Temperature
     if (markers_flag)
-        #processing all markers 
+        #processing all markers
         gridSize1D = Int64(floor((vp.max_nmarker - vp.nmarker + blockSize1D - 1) / blockSize1D))
         mTs = @view gp.mT[vp.nmarker+1:end]
         @cuda blocks = gridSize1D threads = blockSize1D init_particles_T(mTs, vp.T_magma, vp.max_nmarker - vp.nmarker)
@@ -1301,7 +1301,7 @@ function d2dm_check_melt_fracton(gp::GridParams, vp::VarParams, mf_rock_c)
         #CUDA.device!(0)
         #copyto!(mf_rock_c, gp.T)
 
-        #Усредняется mf 
+        #Усредняется mf
         @cuda blocks = gridSizel threads = blockSizel average!(gp.mfl, gp.T, gp.C, vp.nl, vp.nx, vp.ny, mf_rock_c)
 
         synchronize()
@@ -1410,7 +1410,7 @@ println((cell_idx_y_max + cell_idx_y_min)/2.0)
 
         copyto!(cell_idx, cell_idx_host)
 
-        local blockSize1D = dev_thread 
+        local blockSize1D = dev_thread
         local gridSize1D = (vp.npartcl + blockSize1D - 1) ÷ blockSize1D
 
         #advect particles
@@ -1528,7 +1528,7 @@ end
 
 function d2dm_particles_injection(gp::GridParams, vp::VarParams)
     @time begin
-        blockSize1D = dev_thread 
+        blockSize1D = dev_thread
         gridSize1D = (vp.npartcl + blockSize1D - 1) ÷ blockSize1D
 
         blockSize = (28, 32)

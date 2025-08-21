@@ -161,7 +161,7 @@ function dykes_rand_param(init_vp::InitVarParams)
 
 
     println(critVol)
-	critVol[critVol_size[1]+1] = 100000
+    critVol[critVol_size[1]+1] = 100000
     #critVol(1:24) = critVol_hist(1:end);
     critVol = 10^9 * critVol / dz / (1 - gamma)
 
@@ -253,13 +253,13 @@ function dykes_rand_param(init_vp::InitVarParams)
     dyke_v = []
     Vtot = q * nt_erupt * dt
 
-	#For Elbrus calculations we decrease area of dykes intruded, to make accamulation easier
+    #For Elbrus calculations we decrease area of dykes intruded, to make accamulation easier
     #Make Q_tsh_coef = 1 to disable this feature, Make Q_tsh_coef = 0.5 for Elbrus
 
-	Q_tsh_coef = 1
+    Q_tsh_coef = 1
     Q_tsh = Q_tsh_coef * Vtot
 
-	#"Normal", "Uniform", "LogNormal"
+    #"Normal", "Uniform", "LogNormal"
     x_dist_type = "Normal"
     y_dist_type = "LogNormal"
     a_dist_type = "Uniform"
@@ -279,7 +279,7 @@ function dykes_rand_param(init_vp::InitVarParams)
         else
             append!(dyke_x, dyke_x_rng_n[1] .+ diff(dyke_x_rng_n, dims=1) .* rand_limited_2(tmp_rnd_a, tmp_rnd_b, x_dist_type))
         end
-        dyke_y = append!(dyke_y, dyke_y_rng[1] .+ diff(dyke_y_rng, dims=1) .* (1-rand_limited_2(-1, 0.4, y_dist_type)))
+        dyke_y = append!(dyke_y, dyke_y_rng[1] .+ diff(dyke_y_rng, dims=1) .* (1 - rand_limited_2(-1, 0.4, y_dist_type)))
         dyke_t = append!(dyke_t, dyke_t_rng[1] .+ diff(dyke_t_rng, dims=1) .* rand_limited_2(init_vp.dyke_nu, init_vp.dyke_dev, "Uniform"))
         dyke_v = append!(dyke_v, pi * last(dyke_a) * last(dyke_b)) #area of ellipsis
         Q = Q + last(dyke_v)
