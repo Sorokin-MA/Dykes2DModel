@@ -297,6 +297,7 @@ function dykes_gui()
     end
 
     #table for input params
+    #
     callback!(app, [Output("tabs-content-example-graph", "children")],
         [Input("tabs-example-graph", "value")]) do tab
         if tab == "tab-1-example-graph"
@@ -826,7 +827,7 @@ function dykes_gui()
 
     # #cumulut
     # callback!(app, [Output("cumul-timeline", "children")], [Input("interval-component", "n_intervals")]) do n_intervals
-    # 	
+    #
     # 	campi_calc = -(vp.nt .- gp.eruptionSteps)./vp.nt.*init_vp.calc_years/1000;
     # 	campi_real = -vcat(init_vp.critVolTime);
     # 	campi_now = [-(vp.nt - vp.it)/vp.nt*init_vp.calc_years/1000];

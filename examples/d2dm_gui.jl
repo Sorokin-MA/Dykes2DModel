@@ -183,7 +183,7 @@ function dykes_gui()
     vp = VarParams()#scalar params
     init_vp = InitVarParams()#params for generate random
 
-    num_columns = 5 #number of columns in params part
+    local num_columns = 5 #number of columns in params part
 
     #init default eruption history
     init_vp.critVol = global_EruptionVolumesVec
