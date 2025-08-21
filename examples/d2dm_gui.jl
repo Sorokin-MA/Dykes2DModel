@@ -575,7 +575,7 @@ function dykes_gui()
         # copyto!(h_C, gp.C)
 
         CUDA.allowscalar(true)
-        dmf = d2dm_dmf_magma.(gp.T) .* gp.C + only.(Interpolations.gradient.(Ref(cuitp), gp.T)).* (1.0 .- gp.C)
+        dmf = d2dm_dmf_magma.(gp.T) .* gp.C + only.(Interpolations.gradient.(Ref(cuitp), gp.T)) .* (1.0 .- gp.C)
         CUDA.allowscalar(false)
         copyto!(h_dmf, dmf)
 
@@ -609,7 +609,7 @@ function dykes_gui()
         # copyto!(h_C, gp.C)
 
         CUDA.allowscalar(true)
-        dmf = d2dm_dmf_magma.(gp.T) .* gp.C + only.(Interpolations.gradient.(Ref(cuitp), gp.T)).* (1.0 .- gp.C)
+        dmf = d2dm_dmf_magma.(gp.T) .* gp.C + only.(Interpolations.gradient.(Ref(cuitp), gp.T)) .* (1.0 .- gp.C)
         CUDA.allowscalar(false)
         copyto!(h_dmf, dmf)
 
@@ -1233,7 +1233,7 @@ function main_test_gui(gp::GridParams, vp::VarParams, init_vp::InitVarParams, FL
 
         global G_FLAG_INIT = false
 
-        filename = data_folder * "julia_grid." * string(vp.it) *  ".h5"
+        filename = data_folder * "julia_grid." * string(vp.it) * ".h5"
         d2dm_make_snapshot(vp, gp, filename, true)
     end
 

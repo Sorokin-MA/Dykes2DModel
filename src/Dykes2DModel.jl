@@ -3,13 +3,13 @@ module Dykes2DModel
 
 #Main funcs
 export d2dm_init, d2dm_read_params, d2dm_check_melt_fracton,
-       d2dm_update_T!, d2dm_make_snapshot, d2dm_update_T_NG!,
-       d2dm_particles_injection,
-       d2dm_g2p!, d2dm_p2g_interpolation,
-       d2dm_inserting_dykes,
-       d2dm_mf_rock, d2dm_dmf_rock,
-       d2dm_mf_magma, d2dm_dmf_magma,
-       d2dm_eruption_advection
+    d2dm_update_T!, d2dm_make_snapshot, d2dm_update_T_NG!,
+    d2dm_particles_injection,
+    d2dm_g2p!, d2dm_p2g_interpolation,
+    d2dm_inserting_dykes,
+    d2dm_mf_rock, d2dm_dmf_rock,
+    d2dm_mf_magma, d2dm_dmf_magma,
+    d2dm_eruption_advection
 
 #Structs
 export InitVarParams, GridParams, VarParams

@@ -17,54 +17,54 @@ function meshgrid(x, y)
 end
 
 
- function idc(ix, iy, nx)
-     return ((iy) * nx + ix + 1)
- end
-
-
-function set_init_sigma( S, g, rhp_r, depth::Float32, nx, ny)
-    ix = (blockIdx().x - 1) * blockDim().x + threadIdx().x - 1
-    iy = (blockIdx().y - 1) * blockDim().y + threadIdx().y - 1
-
-	S[idc(ix, iy, nx)] = S[idc(ix, iy, nx)]+ rhp_r	* g * (depth - (depth) * (Float32(iy)/Float32(ny)));
-	return
-end
-
-function set_init_sigma_cald_yy( S, g, rhp_r, dx, Lx::Float32, Ly::Float32, nx, ny)
-    ix = (blockIdx().x - 1) * blockDim().x + threadIdx().x - 1
-    iy = (blockIdx().y - 1) * blockDim().y + threadIdx().y - 1
-
-	a = Lx/3.0;
-	x::Float32 = ix * dx - Lx /2;
-	y::Float32 = Ly-((Ly) * (Float32(iy+1)/Float32(ny)))
-	p_0 = 5.0;
-	S[idc(ix, iy, nx)] = S[idc(ix, iy, nx)] + ( - p_0/pi*(atan((x+a)/y) - atan((x-a)/y)) );
-	return
-end
-
-function set_init_sigma_cald_xx( S, g, rhp_r, dx, Lx::Float32, Ly::Float32, nx, ny)
-    ix = (blockIdx().x - 1) * blockDim().x + threadIdx().x - 1
-    iy = (blockIdx().y - 1) * blockDim().y + threadIdx().y - 1
-
-	a = Lx/3.0;
-	x::Float32 = ix * dx - Lx /2;
-	y::Float32 = Ly-((Ly) * (Float32(iy+1)/Float32(ny)))
-	p_0 = 5.0;
-	S[idc(ix, iy, nx)] = S[idc(ix, iy, nx)] + ( - p_0/pi*((atan((x+a)/y) - atan((x-a)/y)) + (y*(x + a)/(y^2 +(x+a)^2)) - (y*(x-a))/(y^2 + (x-a)^2)));
-	return
+function idc(ix, iy, nx)
+    return ((iy) * nx + ix + 1)
 end
 
 
-function set_init_sigma_cald_xy( S, g, rhp_r, dx, Lx::Float32, Ly::Float32, nx, ny)
+function set_init_sigma(S, g, rhp_r, depth::Float32, nx, ny)
     ix = (blockIdx().x - 1) * blockDim().x + threadIdx().x - 1
     iy = (blockIdx().y - 1) * blockDim().y + threadIdx().y - 1
 
-	a = Lx/3.0;
-	x::Float32 = ix * dx - Lx /2;
-	y::Float32 = Ly-((Ly) * (Float32(iy+1)/Float32(ny)))
-	p_0 = 5.0;
-	S[idc(ix, iy, nx)] = S[idc(ix, iy, nx)] + ( p_0/pi* log((y^2 + (x + a)^2)/(y^2 + (x - a)^2)));
-	return
+    S[idc(ix, iy, nx)] = S[idc(ix, iy, nx)] + rhp_r * g * (depth - (depth) * (Float32(iy) / Float32(ny)))
+    return
+end
+
+function set_init_sigma_cald_yy(S, g, rhp_r, dx, Lx::Float32, Ly::Float32, nx, ny)
+    ix = (blockIdx().x - 1) * blockDim().x + threadIdx().x - 1
+    iy = (blockIdx().y - 1) * blockDim().y + threadIdx().y - 1
+
+    a = Lx / 3.0
+    x::Float32 = ix * dx - Lx / 2
+    y::Float32 = Ly - ((Ly) * (Float32(iy + 1) / Float32(ny)))
+    p_0 = 5.0
+    S[idc(ix, iy, nx)] = S[idc(ix, iy, nx)] + (-p_0 / pi * (atan((x + a) / y) - atan((x - a) / y)))
+    return
+end
+
+function set_init_sigma_cald_xx(S, g, rhp_r, dx, Lx::Float32, Ly::Float32, nx, ny)
+    ix = (blockIdx().x - 1) * blockDim().x + threadIdx().x - 1
+    iy = (blockIdx().y - 1) * blockDim().y + threadIdx().y - 1
+
+    a = Lx / 3.0
+    x::Float32 = ix * dx - Lx / 2
+    y::Float32 = Ly - ((Ly) * (Float32(iy + 1) / Float32(ny)))
+    p_0 = 5.0
+    S[idc(ix, iy, nx)] = S[idc(ix, iy, nx)] + (-p_0 / pi * ((atan((x + a) / y) - atan((x - a) / y)) + (y * (x + a) / (y^2 + (x + a)^2)) - (y * (x - a)) / (y^2 + (x - a)^2)))
+    return
+end
+
+
+function set_init_sigma_cald_xy(S, g, rhp_r, dx, Lx::Float32, Ly::Float32, nx, ny)
+    ix = (blockIdx().x - 1) * blockDim().x + threadIdx().x - 1
+    iy = (blockIdx().y - 1) * blockDim().y + threadIdx().y - 1
+
+    a = Lx / 3.0
+    x::Float32 = ix * dx - Lx / 2
+    y::Float32 = Ly - ((Ly) * (Float32(iy + 1) / Float32(ny)))
+    p_0 = 5.0
+    S[idc(ix, iy, nx)] = S[idc(ix, iy, nx)] + (p_0 / pi * log((y^2 + (x + a)^2) / (y^2 + (x - a)^2)))
+    return
 end
 
 
@@ -73,7 +73,7 @@ function d2dm_pres_test()
     #init phase
 
 
-	Random.seed!(1234)
+    Random.seed!(1234)
 
     #grid params
     Lx = 20000
@@ -99,8 +99,8 @@ function d2dm_pres_test()
 
     XX = range(X_left_lim, X_right_lim, nx)
     YY = range(Y_left_lim, Y_right_lim, ny)
-	dx = (X_right_lim - X_left_lim) / nx
-	dy = (Y_right_lim - Y_left_lim) / ny
+    dx = (X_right_lim - X_left_lim) / nx
+    dy = (Y_right_lim - Y_left_lim) / ny
     X_rec, Y_rec = meshgrid(XX, YY)
 
 
@@ -122,7 +122,7 @@ function d2dm_pres_test()
     Sxx_cpu = Array{Float64}(undef, nx * ny)
 
 
-	#TODO: change initial preassure rho_r * g * z
+    #TODO: change initial preassure rho_r * g * z
 
     Sxx_gpu = CUDA.zeros(Float64, nx * ny)
     Syy_gpu = CUDA.zeros(Float64, nx * ny)
@@ -130,7 +130,7 @@ function d2dm_pres_test()
 
 
 
-	#Sxx_gpu[i + ny * (y-1)] = rhp_r	* g * y;
+    #Sxx_gpu[i + ny * (y-1)] = rhp_r	* g * y;
 
 
     # Sxx_gpu = CuArray{Float64}(undef, nx*ny)
@@ -147,15 +147,15 @@ function d2dm_pres_test()
     blockSize = (16, 16)
     gridSize = (Int64(floor((nx + blockSize[1] - 1) ÷ blockSize[1])), Int64(floor((ny + blockSize[2] - 1) ÷ blockSize[2])))
 
-	#@cuda blocks = gridSize[1], gridSize[2] threads = blockSize[1], blockSize[2] set_init_sigma( Sxy_gpu, 9.8, 0.02650, Float32(y_limit), nx, ny)
+    #@cuda blocks = gridSize[1], gridSize[2] threads = blockSize[1], blockSize[2] set_init_sigma( Sxy_gpu, 9.8, 0.02650, Float32(y_limit), nx, ny)
 
-	@cuda blocks = gridSize[1], gridSize[2] threads = blockSize[1], blockSize[2] set_init_sigma( Sxx_gpu, 9.8, 0.02650, Float32(Y_right_lim), nx, ny)
-	@cuda blocks = gridSize[1], gridSize[2] threads = blockSize[1], blockSize[2] set_init_sigma( Syy_gpu, 9.8, 0.02650, Float32(Y_right_lim), nx, ny)
+    @cuda blocks = gridSize[1], gridSize[2] threads = blockSize[1], blockSize[2] set_init_sigma(Sxx_gpu, 9.8, 0.02650, Float32(Y_right_lim), nx, ny)
+    @cuda blocks = gridSize[1], gridSize[2] threads = blockSize[1], blockSize[2] set_init_sigma(Syy_gpu, 9.8, 0.02650, Float32(Y_right_lim), nx, ny)
 
 
-	@cuda blocks = gridSize[1], gridSize[2] threads = blockSize[1], blockSize[2]  set_init_sigma_cald_yy( Syy_gpu, 9.8, 0.0265, dx, Float32(X_right_lim), Float32(Y_right_lim), nx, ny)
-	@cuda blocks = gridSize[1], gridSize[2] threads = blockSize[1], blockSize[2]  set_init_sigma_cald_xx( Sxx_gpu, 9.8, 0.0265, dx, Float32(X_right_lim), Float32(Y_right_lim), nx, ny)
-	@cuda blocks = gridSize[1], gridSize[2] threads = blockSize[1], blockSize[2]  set_init_sigma_cald_xy( Sxy_gpu, 9.8, 0.0265, dx, Float32(X_right_lim), Float32(Y_right_lim), nx, ny)
+    @cuda blocks = gridSize[1], gridSize[2] threads = blockSize[1], blockSize[2] set_init_sigma_cald_yy(Syy_gpu, 9.8, 0.0265, dx, Float32(X_right_lim), Float32(Y_right_lim), nx, ny)
+    @cuda blocks = gridSize[1], gridSize[2] threads = blockSize[1], blockSize[2] set_init_sigma_cald_xx(Sxx_gpu, 9.8, 0.0265, dx, Float32(X_right_lim), Float32(Y_right_lim), nx, ny)
+    @cuda blocks = gridSize[1], gridSize[2] threads = blockSize[1], blockSize[2] set_init_sigma_cald_xy(Sxy_gpu, 9.8, 0.0265, dx, Float32(X_right_lim), Float32(Y_right_lim), nx, ny)
 
     for i in 1:25
 
@@ -179,9 +179,9 @@ function d2dm_pres_test()
         end
     end
 
-	copyto!(Sxx, Sxx_gpu)
-	copyto!(Syy, Syy_gpu)
-	copyto!(Sxy, Sxy_gpu)
+    copyto!(Sxx, Sxx_gpu)
+    copyto!(Syy, Syy_gpu)
+    copyto!(Sxy, Sxy_gpu)
 
 
     println(typeof(l_vecs))
@@ -196,7 +196,7 @@ function d2dm_pres_test()
 
     display(P_plot)
 
-	#Plots.savefig(P_plot, "d2dm_muskh.png")
+    #Plots.savefig(P_plot, "d2dm_muskh.png")
 
     println("Success!!!")
 end

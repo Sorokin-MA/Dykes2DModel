@@ -1,11 +1,29 @@
-#include("d2dm_init.jl")
+"""
+File where all main functions for now for d2dm project
+"""
 
+#count max threads to avoid cuda errors
+dev_thread::Integer= CUDA.attribute(CUDA.device(), CUDA.DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK)
+
+# These arrays contain data on dyke crystalinity and temperature respectively.
+# dykes_crystalinity: A vector of Float64 representing the crystalinity of dykes over a series of measurements.
+# dykes_temp: A vector of Float64 representing the temperature of these dykes during the same measurement points.
+# NOTE: dykes_temp crystalinity taken uniformly in range of dykes_temp for interpolation purposes
+# - Forni F, Degruyter W, Bachmann O, De Astis G, Mollo S. Long-term magmatic evolution reveals the beginning of a new caldera cycle at Campi Flegrei. Sci Adv. 2018 Nov 14;4(11):eaat9401. doi: 10.1126/sciadv.aat9401. PMID: 30788429; PMCID: PMC6371846.
+dykes_crystalinity = 1 .- Vector{Float64}([1, 0.9978, 0.9955, 0.9918, 0.9881, 0.9401, 0.9273, 0.9231, 0.9189, 0.9029, 0.8859, 0.8532, 0.7972, 0.6777, 0.371, 0.2195, 0.1545, 0.1184, 0.1111, 0.1038, 0.0965, 0.0892, 0.0819, 0.0769, 0.0721, 0.0672, 0.0624, 0.0573, 0.0516, 0.0459, 0.0402, 0.0338, 0.0265, 0.0192, 0.0143, 0.0143, 0.0143, 0.0143, 0.0121, 0.0099, 0.0076, 0.006, 0.0056, 0.0051, 0.0047, 0.0043, 0.0037, 0.0028, 0.0019, 0.0009, 0])
+dykes_temp = Vector{Float64}([699.2355, 708.9755, 718.7156, 728.4557, 738.1957, 747.9358, 757.6758, 767.4159, 777.156, 786.896, 796.6361, 806.3761, 816.1162, 825.8563, 835.5963, 845.3364, 855.0765, 864.8165, 874.5566, 884.2966, 894.0367, 903.7768, 913.5168, 923.2569, 932.9969, 942.737, 952.4771, 962.2171, 971.9572, 981.6972, 991.4373, 1001.1774, 1010.9174, 1020.6575, 1030.3976, 1040.1376, 1049.8777, 1059.6177, 1069.3578, 1079.0979, 1088.8379, 1098.578, 1108.318, 1118.0581, 1127.7982, 1137.5382, 1147.2783, 1157.0183, 1166.7584, 1176.4985, 1186.2385])
+
+A_x = range(699.2355, 1186.2385, 51);
+itp = interpolate(dykes_crystalinity, BSpline(Cubic(Line(OnGrid()))))
+itp = Interpolations.scale(itp, A_x)
+itp = extrapolate(itp, Flat())
+
+cuitp = adapt(CuArray{eltype(dykes_temp)}, itp);
 
 
 """
 Function to count 1D index based on 2D indexes.
 
-NOTE:
 2D indexes start with 0
 1D indexes start with 1
 It's all due to translation from CUDA code.
@@ -21,18 +39,41 @@ function idc(ix::Integer, iy::Integer, nx::Integer)
     return iy * nx + ix + 1
 end
 
-#count max threads to avoid cuda errors
-dev_th::Integerread = CUDA.attribute(CUDA.device(), CUDA.DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK)
+"""
+Reads a parameter from an array and returns the parameter value and the next index.
 
+# Arguments:
+- `par_val`: An array containing parameter values.
+- `par_index`: The current index in the `par` array.
 
-#helper function which helps to read from IO stream
-function read_par(par, ipar)
-    par_name_2 = par[ipar]
-    ipar_2 = ipar + 1
-    return par_name_2, ipar_2
+# Returns:
+- A tuple containing the parameter value at the current index and the next index.
+"""
+function read_par(par_val, par_index::Integer)
+    par_val = par_val[par_index]
+    par_index_next = par_index + 1
+    return par_val, par_index_next
 end
 
-#Averaging grid to particle
+
+"""
+blerp is a bilinear interpolation function used to estimate the value of a two-dimensional
+function at an arbitrary point within a given rectangle.
+
+The function takes 4 known values of the function (f11, f12, f21, f22) at the four corners
+of a rectangle defined by points (x1, y1), (x1, y2), (x2, y1), (x2, y2) and the target point (x, y). It returns
+an estimated value based on these known points.
+
+# Arguments
+- `x1`, `y1`: Coordinates of the first corner of the rectangle.
+- `x2`, `y2`: Coordinates of the opposite corner of the rectangle.
+- `f11`, `f12`, `f21`, `f22`: Values of the function at the corners (x1, y1), (x1, y2), (x2, y1), and (x2, y2) respectively.
+- `x`, `y`: Coordinates of the point where the interpolated value is needed.
+
+# Returns
+- The estimated value of the function at the point (x, y) using bilinear interpolation.
+
+"""
 function blerp(x1, x2, y1, y2, f11, f12, f21, f22, x, y)
     invDxDy = 1.0 / ((x2 - x1) * (y2 - y1))
 
@@ -45,27 +86,37 @@ function blerp(x1, x2, y1, y2, f11, f12, f21, f22, x, y)
     return invDxDy * (f11 * dx2 * dy2 + f12 * dx2 * dy1 + f21 * dx1 * dy2 + f22 * dx1 * dy1)
 end
 
-#Forni F, Degruyter W, Bachmann O, De Astis G, Mollo S. Long-term magmatic evolution reveals the beginning of a new caldera cycle at Campi Flegrei. Sci Adv. 2018 Nov 14;4(11):eaat9401. doi: 10.1126/sciadv.aat9401. PMID: 30788429; PMCID: PMC6371846.
-dykes_crystalinity = 1 .- Vector{Float64}([1, 0.9978, 0.9955, 0.9918, 0.9881, 0.9401, 0.9273, 0.9231, 0.9189, 0.9029, 0.8859, 0.8532, 0.7972, 0.6777, 0.371, 0.2195, 0.1545, 0.1184, 0.1111, 0.1038, 0.0965, 0.0892, 0.0819, 0.0769, 0.0721, 0.0672, 0.0624, 0.0573, 0.0516, 0.0459, 0.0402, 0.0338, 0.0265, 0.0192, 0.0143, 0.0143, 0.0143, 0.0143, 0.0121, 0.0099, 0.0076, 0.006, 0.0056, 0.0051, 0.0047, 0.0043, 0.0037, 0.0028, 0.0019, 0.0009, 0])
-dykes_temp = Vector{Float64}([699.2355, 708.9755, 718.7156, 728.4557, 738.1957, 747.9358, 757.6758, 767.4159, 777.156, 786.896, 796.6361, 806.3761, 816.1162, 825.8563, 835.5963, 845.3364, 855.0765, 864.8165, 874.5566, 884.2966, 894.0367, 903.7768, 913.5168, 923.2569, 932.9969, 942.737, 952.4771, 962.2171, 971.9572, 981.6972, 991.4373, 1001.1774, 1010.9174, 1020.6575, 1030.3976, 1040.1376, 1049.8777, 1059.6177, 1069.3578, 1079.0979, 1088.8379, 1098.578, 1108.318, 1118.0581, 1127.7982, 1137.5382, 1147.2783, 1157.0183, 1166.7584, 1176.4985, 1186.2385])
 
-#d2dm_campi_rhyolite::Interpolations.MonotonicInterpolation = interpolate(dykes_temp, dykes_crystalinity, SteffenMonotonicInterpolation())
+"""
+Calculate the melt fraction for rhyolite based on temperature.
 
-A_x = range(699.2355, 1186.2385, 51);
-itp = interpolate(dykes_crystalinity, BSpline(Cubic(Line(OnGrid()))))
-itp = Interpolations.scale(itp, A_x)
-itp = extrapolate(itp, Flat())
+This function computes the melt fraction for rhyolite rock sample as a function of its temperature.
+NOTE: source unknown
 
-cuitp = adapt(CuArray{eltype(dykes_temp)}, itp);
+# Arguments
+- `T`: Temperature of the rock sample in degrees Celsius.
 
-
-
+# Returns
+- Melt fraction for rhyolite rock sample.
+"""
 function mf_rhyolite(T)
     t2 = T * T
     t7 = exp(0.961026371384066e3 - 0.3590508961e1 * T + 0.4479483398e-2 * t2 - 0.1866187556e-5 * t2 * T)
     return 0.1e1 / (0.1e1 + t7)
 end
 
+"""
+Calculates the derivative of melt fraction (dmf) for rhyolite rock as a function of temperature T.
+This function uses a polynomial and exponential fit to approximate the behavior of dmf with temperature.
+NOTE: source unknown
+
+# Arguments
+- `T`: Temperature in degrees Celsius
+
+# Returns
+- The calculated value of the derivative of melt fraction (dmf) for rhyolite rock at the given temperature T.
+
+"""
 function dmf_rhyolite(T)
     t1 = T * T
     t9 = exp(0.961026e3 - 0.186618e-5 * t1 * T + t1 * 0.447948e-2 + T * (-0.359050e1))
@@ -73,13 +124,33 @@ function dmf_rhyolite(T)
     return 0.559856e-5 / t12 * t9 * (t1 - 0.160022e4 * T + 0.641326e6)
 end
 
+"""
+Calculate the melt fraction for basalt rocks, based on temperature.
+NOTE: source unknown
 
+# Arguments
+- `T`: Temperature of the rock sample in degrees Celsius.
+
+# Returns
+- Melt fraction for basalt rock sample.
+"""
 function mf_basalt(T)
     t2 = T * T
     t7 = exp(960 - 3.554 * T + 0.4468e-2 * t2 - 1.907e-06 * t2 * T)
     return 0.1e1 / (0.1e1 + t7)
 end
 
+"""
+Calculates the derivative of melt fraction (dmf) for basalt rock as a function of temperature T.
+NOTE: source unknown
+
+# Arguments
+- `T`: Temperature in degrees Celsius
+
+# Returns
+- The calculated value of the derivative of melt fraction (dmf) for basalt rock at the given temperature T.
+
+"""
 function dmf_basalt(T)
     t1 = T * T
     t11 = exp(0.143636887899999948e3 - 0.2214446257e-6 * t1 * T + t1 * 0.572468110399999928e-3 + T * (-0.494427718499999891e0))
@@ -88,30 +159,64 @@ function dmf_basalt(T)
 end
 
 
+"""
+    dmf_magma(T)
 
+Calculate the derivative of melt fraction with respect to temperature for magma.
 
-#coefficient which involved in heat equasion
+# Arguments:
+- `T`: Temperature in degrees Celsius.
+
+# Returns:
+The derivative of melt fraction at temperature T.
+"""
 function dmf_magma(T)
     return dmf_basalt(T)
 end
 
+"""
+    mf_magma(T)
 
-#melt fraction of magma
+Calculate melt fraction with respect to temperature for magma.
+
+# Arguments:
+- `T`: Temperature in degrees Celsius.
+
+# Returns:
+The melt fraction at temperature T.
+"""
 function mf_magma(T)
     return mf_basalt(T)
 end
 
-#coefficient which involved in heat equasion
+
+"""
+    mf_magma(T)
+
+Calculate melt fraction with respect to temperature for host rocks.
+
+# Arguments:
+- `T`: Temperature in degrees Celsius.
+
+# Returns:
+The melt fraction at temperature T.
+"""
 function dmf_rock(T)
     return only.(Interpolations.gradient.(Ref(cuitp), T))
 end
 
-#melt fraction of host rocks
+"""
+This function calculates melt fraction of host rocks.
+
+Arguments:
+- T: Temperature (in degrees Celsius)
+
+Returns:
+- melt fraction value.
+"""
 function mf_rock(T)
     return cuitp(T)
-    #return mf_rhyolite(T)
 end
-
 
 
 function d2dm_dmf_rock(T)
@@ -1205,24 +1310,24 @@ function d2dm_read_params(gp::GridParams, vp::VarParams, data_folder)
 
     close(fid)
 
-    		#process markers
-    		fid = h5open(data_folder * "markers.h5", "r")
+    #process markers
+    fid = h5open(data_folder * "markers.h5", "r")
 
-    		obj = fid["0"]
+    obj = fid["0"]
 
-    		gp.h_mx = Array{Float64,1}(undef, vp.max_nmarker)
-    		gp.h_my = Array{Float64,1}(undef, vp.max_nmarker)
-    		gp.h_mT = Array{Float64,1}(undef, vp.max_nmarker)
+    gp.h_mx = Array{Float64,1}(undef, vp.max_nmarker)
+    gp.h_my = Array{Float64,1}(undef, vp.max_nmarker)
+    gp.h_mT = Array{Float64,1}(undef, vp.max_nmarker)
 
-    		gp.h_mx = read(obj, "mx")
-    		gp.h_my = read(obj, "my")
-    		gp.h_mT = read(obj, "mT")
+    gp.h_mx = read(obj, "mx")
+    gp.h_my = read(obj, "my")
+    gp.h_mT = read(obj, "mT")
 
-    		close(fid)
+    close(fid)
 
-    		copyto!(gp.mx, gp.h_mx)
-    		copyto!(gp.my, gp.h_my)
-    		copyto!(gp.mT, gp.h_mT)
+    copyto!(gp.mx, gp.h_mx)
+    copyto!(gp.my, gp.h_my)
+    copyto!(gp.mT, gp.h_mT)
 
 
     NDIGITS = Int32(floor(log10(vp.nt))) + 1
@@ -1341,7 +1446,7 @@ function d2dm_check_melt_fracton(gp::GridParams, vp::VarParams, mf_rock_c)
 
         #searching for max vol
         for (idx, vol) in volumes
-			sumVol = sumVol + vol
+            sumVol = sumVol + vol
             if vol > maxVol
                 maxVol = vol
                 maxIdx = idx
@@ -1381,30 +1486,30 @@ function d2dm_eruption_advection(gp::GridParams, vp::VarParams, maxVol, maxIdx, 
         dxl = vp.dx * vp.nl
         dyl = vp.dy * vp.nl
 
-		#here i can find center of eruptions
+        #here i can find center of eruptions
         #i can find min/max of idx and find median
         cell_idx_x_max = 0.0
         cell_idx_x_min = vp.nxl * dxl
         cell_idx_y_max = 0.0
         cell_idx_y_min = vp.nyl * dyl
-		for val in cell_idx_host
-			if val != 0
-				val_x = (val % vp.nxl) * dxl
-				val_y = (val ÷ vp.nyl) * dyl
+        for val in cell_idx_host
+            if val != 0
+                val_x = (val % vp.nxl) * dxl
+                val_y = (val ÷ vp.nyl) * dyl
 
-				cell_idx_x_max = max(val_x,cell_idx_x_max)
-				cell_idx_x_min = min(val_x,cell_idx_x_min)
-				cell_idx_y_max = max(val_y,cell_idx_y_max)
-				cell_idx_y_min = min(val_y,cell_idx_y_min)
-			end
-		end
+                cell_idx_x_max = max(val_x, cell_idx_x_max)
+                cell_idx_x_min = min(val_x, cell_idx_x_min)
+                cell_idx_y_max = max(val_y, cell_idx_y_max)
+                cell_idx_y_min = min(val_y, cell_idx_y_min)
+            end
+        end
 
-println("Eruption center")
-println((cell_idx_x_max + cell_idx_x_min)/2.0)
-println((cell_idx_y_max + cell_idx_y_min)/2.0)
+        println("Eruption center")
+        println((cell_idx_x_max + cell_idx_x_min) / 2.0)
+        println((cell_idx_y_max + cell_idx_y_min) / 2.0)
 
-		append!(gp.erupt_x, (cell_idx_x_max + cell_idx_x_min)/2.0)
-		append!(gp.erupt_y, (cell_idx_y_max + cell_idx_y_min)/2.0)
+        append!(gp.erupt_x, (cell_idx_x_max + cell_idx_x_min) / 2.0)
+        append!(gp.erupt_y, (cell_idx_y_max + cell_idx_y_min) / 2.0)
 
 
 

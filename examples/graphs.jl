@@ -114,7 +114,7 @@ function dykes_graph()
     # campi_real = -vcat(39.8, 14.9, 14.3, 13, 12, 12.8, 11.8, 11, 11.5, 11, 10.6, 9.6, 9.3, 5.1, 4.9, 4.5, 4.3, 4.2, 4.2, 4.2, 4.1, 3.9, 0.5)
 
 
-    A_x = range(699.2355, 1186.2385, 51);
+    A_x = range(699.2355, 1186.2385, 51)
 
 
 
@@ -130,11 +130,11 @@ function dykes_graph()
     #
     #
 
-# Example DataFrame
-df = DataFrame(mf_rock_x = A_x, mf_rock_y = d2dm_mf_rock(A_x), mf_magma_x = A_x, mf_magma_y = d2dm_mf_magma.(A_x))
+    # Example DataFrame
+    df = DataFrame(mf_rock_x=A_x, mf_rock_y=d2dm_mf_rock(A_x), mf_magma_x=A_x, mf_magma_y=d2dm_mf_magma.(A_x))
 
-# Save the DataFrame to a CSV file
-# CSV.write("d2dm_crystalisation.csv", df)
+    # Save the DataFrame to a CSV file
+    # CSV.write("d2dm_crystalisation.csv", df)
     data = [p_rock, p_magma]
 
     layout = Layout(title="Crystalisation graph",
@@ -162,7 +162,7 @@ end
 function d2dm_markers_graph()
     fid_after = h5open(data_folder * "julia_grid.22001.h5", "r")
     #fid_after = h5open(data_folder * "julia_grid.6382.after_eruption.h5", "r")
-    fid_before= h5open(data_folder * "markers.h5", "r")
+    fid_before = h5open(data_folder * "markers.h5", "r")
 
     mx_before = read(fid_before, "/0/mx")
     my_before = read(fid_before, "/0/my")
@@ -187,45 +187,45 @@ function d2dm_markers_graph()
     erupt_x = erupt_x[erupt_x.>0]
     erupt_y = erupt_y[erupt_y.>0]
 
-	println(erupt_x)
-	println(erupt_y)
+    println(erupt_x)
+    println(erupt_y)
 
-	println("Minimum value: ", minimum(my))
-	println("Maximum value: ", maximum(my))
+    println("Minimum value: ", minimum(my))
+    println("Maximum value: ", maximum(my))
 
     #close(fid)
 
     #println(mx)
 
-    A_x = range(699.2355, 1186.2385, 51);
+    A_x = range(699.2355, 1186.2385, 51)
 
-	println(typeof(mx))
+    println(typeof(mx))
 
-	#mx = range(0, 10, length=100)
-	#my = sin.(mx)
+    #mx = range(0, 10, length=100)
+    #my = sin.(mx)
     #plotik = Plots.scatter(x=mx, y=my, xlims=(-10000, 20000), ylims=(-10000, 20000))
     #Plots.plot(x=mx, y=my, xlims=(-10000, 20000), ylims=(-10000, 20000))
     # Plots.scatter!(plotik, x=A_x, y=d2dm_mf_magma.(A_x), mode="lines", name="mf, magma", marker_color="rgba(0, 0, 255, 1)")
 
 
-	colors = 1:length(erupt_x)  # Color by order of points
+    colors = 1:length(erupt_x)  # Color by order of points
 
     l = @layout [[grid(1, 3)]]
 
-	x = range(0, 10, length=100)
-	y = sin.(x)
-	Plots.plot(mx_before, my_before, xlims=(0, 20000), ylims=(0, 20000), xlabel='x', ylabel='y', title="Downlift on Campi Flegrei", label="Init")
-	Plots.scatter!(erupt_x, erupt_y, xlims=(0, 20000), ylims=(0, 20000), label="Eruption Centers")
-for i in 1:length(erupt_x)
-    Plots.annotate!(erupt_x[i], erupt_y[i], text(string(i), 3, :black))  # Adding labels with index numbers
-end
-	p2 = Plots.scatter!(mx, my, xlims=(0, 20000), ylims=(0, 20000), label="Final")
-	# p3 = Plots.scatter(mT_before)
+    x = range(0, 10, length=100)
+    y = sin.(x)
+    Plots.plot(mx_before, my_before, xlims=(0, 20000), ylims=(0, 20000), xlabel='x', ylabel='y', title="Downlift on Campi Flegrei", label="Init")
+    Plots.scatter!(erupt_x, erupt_y, xlims=(0, 20000), ylims=(0, 20000), label="Eruption Centers")
+    for i in 1:length(erupt_x)
+        Plots.annotate!(erupt_x[i], erupt_y[i], text(string(i), 3, :black))  # Adding labels with index numbers
+    end
+    p2 = Plots.scatter!(mx, my, xlims=(0, 20000), ylims=(0, 20000), label="Final")
+    # p3 = Plots.scatter(mT_before)
 
 
-	p_final = Plots.plot(p2)
+    p_final = Plots.plot(p2)
 
-	#Plots.savefig(p_final, "markers.png")
+    #Plots.savefig(p_final, "markers.png")
     #return p_final
 
     # p = Plots.plot(data, layout)
@@ -261,27 +261,27 @@ function d2dm_mf_graph()
     cum_mf_75 = read(fid_after, "cum_mf_75")
     cum_mf_85 = read(fid_after, "cum_mf_85")
 
-	cumulutive_time = -(nt .- cumulutive_time) ./ nt .* calc_years / 1000
+    cumulutive_time = -(nt .- cumulutive_time) ./ nt .* calc_years / 1000
 
 
-	p2 = Plots.plot(cumulutive_time, cum_mf_01, xlabel="time (ka)", ylabel="volume, km^3", title="Accomulated melt fraction under CF", label="1%")
-#=
-	Plots.plot!(cumulutive_time, cum_mf_05, label="5%")
-=#
+    p2 = Plots.plot(cumulutive_time, cum_mf_01, xlabel="time (ka)", ylabel="volume, km^3", title="Accomulated melt fraction under CF", label="1%")
+    #=
+    	Plots.plot!(cumulutive_time, cum_mf_05, label="5%")
+    =#
 
-	Plots.plot!(cumulutive_time, cum_mf_10, label="10%")
+    Plots.plot!(cumulutive_time, cum_mf_10, label="10%")
 
-#=
-	Plots.plot!(cumulutive_time, cum_mf_25, label="25%")
-	Plots.plot!(cumulutive_time, cum_mf_50, label="50%")
-	Plots.plot!(cumulutive_time, cum_mf_75, label="75%")
+    #=
+    	Plots.plot!(cumulutive_time, cum_mf_25, label="25%")
+    	Plots.plot!(cumulutive_time, cum_mf_50, label="50%")
+    	Plots.plot!(cumulutive_time, cum_mf_75, label="75%")
 
-=#
-	Plots.plot!(cumulutive_time, cum_mf_85, label="85%")
+    =#
+    Plots.plot!(cumulutive_time, cum_mf_85, label="85%")
 
-	p_final = Plots.plot(p2)
+    p_final = Plots.plot(p2)
 
-	#Plots.savefig(p_final, "markers.png")
+    #Plots.savefig(p_final, "markers.png")
     #return p_final
 
     # p = Plots.plot(data, layout)
@@ -321,31 +321,31 @@ function d2dm_Q_graph()
 
     calc_years = 220000
     cumulutive_calc_true = read(fid_after, "cumulutive_calc")
-    cumulutive_calc_real= read(fid_after, "cumulutive_real")
-    cumulutive_calc_plus10= read(fid_plus_10, "cumulutive_calc")
-    cumulutive_calc_plus20= read(fid_plus_20, "cumulutive_calc")
-    cumulutive_calc_minus10= read(fid_minus_10, "cumulutive_calc")
-    cumulutive_calc_minus20= read(fid_minus_20, "cumulutive_calc")
+    cumulutive_calc_real = read(fid_after, "cumulutive_real")
+    cumulutive_calc_plus10 = read(fid_plus_10, "cumulutive_calc")
+    cumulutive_calc_plus20 = read(fid_plus_20, "cumulutive_calc")
+    cumulutive_calc_minus10 = read(fid_minus_10, "cumulutive_calc")
+    cumulutive_calc_minus20 = read(fid_minus_20, "cumulutive_calc")
 
 
 
-	cumulutive_time_true = -(nt .- cumulutive_time_true) ./ nt .* calc_years / 1000
-	cumulutive_time_plus10 = -(nt_plus10 .- cumulutive_time_plus10) ./ nt_plus10 .* calc_years / 1000
-	cumulutive_time_plus20 = -(nt_plus20 .- cumulutive_time_plus20) ./ nt_plus20 .* calc_years / 1000
-	cumulutive_time_minus10 = -(nt .- cumulutive_time_minus10) ./ nt .* calc_years / 1000
-	cumulutive_time_minus20 = -(nt .- cumulutive_time_minus20) ./ nt .* calc_years / 1000
+    cumulutive_time_true = -(nt .- cumulutive_time_true) ./ nt .* calc_years / 1000
+    cumulutive_time_plus10 = -(nt_plus10 .- cumulutive_time_plus10) ./ nt_plus10 .* calc_years / 1000
+    cumulutive_time_plus20 = -(nt_plus20 .- cumulutive_time_plus20) ./ nt_plus20 .* calc_years / 1000
+    cumulutive_time_minus10 = -(nt .- cumulutive_time_minus10) ./ nt .* calc_years / 1000
+    cumulutive_time_minus20 = -(nt .- cumulutive_time_minus20) ./ nt .* calc_years / 1000
 
 
-	p2 = Plots.plot(cumulutive_time_true, cumulutive_calc_true, lw=4, xlabel="time (ka)", ylabel="Cum. erupt. volume, km^3", title="Compartion of different Q", label="4.4e-3km^3/y")
-	Plots.plot!(cumulutive_time_true, cumulutive_calc_real, label="real", lw=4)
-	Plots.plot!(cumulutive_time_plus10, cumulutive_calc_plus10, label="+10%")
-	Plots.plot!(cumulutive_time_plus20, cumulutive_calc_plus20, label="+20%")
-	Plots.plot!(cumulutive_time_minus10, cumulutive_calc_minus10, label="-10%")
-	Plots.plot!(cumulutive_time_minus20, cumulutive_calc_minus20, label="-20%")
+    p2 = Plots.plot(cumulutive_time_true, cumulutive_calc_true, lw=4, xlabel="time (ka)", ylabel="Cum. erupt. volume, km^3", title="Compartion of different Q", label="4.4e-3km^3/y")
+    Plots.plot!(cumulutive_time_true, cumulutive_calc_real, label="real", lw=4)
+    Plots.plot!(cumulutive_time_plus10, cumulutive_calc_plus10, label="+10%")
+    Plots.plot!(cumulutive_time_plus20, cumulutive_calc_plus20, label="+20%")
+    Plots.plot!(cumulutive_time_minus10, cumulutive_calc_minus10, label="-10%")
+    Plots.plot!(cumulutive_time_minus20, cumulutive_calc_minus20, label="-20%")
 
-	p_final = Plots.plot(p2)
+    p_final = Plots.plot(p2)
 
-	#Plots.savefig(p_final, "markers.png")
+    #Plots.savefig(p_final, "markers.png")
     #return p_final
 
     # p = Plots.plot(data, layout)
@@ -378,33 +378,33 @@ function d2dm_resol_graph()
 
     calc_years = 220000
     cumulutive_calc_true = read(fid_after, "cumulutive_calc")
-    cumulutive_calc_real= read(fid_after, "cumulutive_real")
-    cumulutive_calc_hr= read(fid_after_hr, "cumulutive_calc")
+    cumulutive_calc_real = read(fid_after, "cumulutive_real")
+    cumulutive_calc_hr = read(fid_after_hr, "cumulutive_calc")
 
 
-	cumulutive_time_true = -(nt .- cumulutive_time_true) ./ nt .* calc_years / 1000
-	cumulutive_time_hr = -(nt_hr .- cumulutive_time_hr) ./ nt_hr .* calc_years / 1000
+    cumulutive_time_true = -(nt .- cumulutive_time_true) ./ nt .* calc_years / 1000
+    cumulutive_time_hr = -(nt_hr .- cumulutive_time_hr) ./ nt_hr .* calc_years / 1000
 
-	#campi_calc = -(nt .- gp.eruptionSteps) ./ vp.nt .* init_vp.calc_years / 1000
-	#campi_real = -vcat(init_vp.critVolTime)
+    #campi_calc = -(nt .- gp.eruptionSteps) ./ vp.nt .* init_vp.calc_years / 1000
+    #campi_real = -vcat(init_vp.critVolTime)
 
-	#show num cumulutive volume
-	#campi_cumulut_graph = PlotlyJS.scatter(x=campi_cumulut, y=gp.cumulutive_calc, mode="lines", color=1, name="cumulative volume calc", marker_color="rgba(0, 0, 255, 1)")
-	#show real cumulutive volume
-	#campi_next_eruption = PlotlyJS.scatter(x=campi_cumulut, y=gp.cumulutive_real, mode="lines", color=2, name="cumulutive volume real", marker_color="rgba(255, 0, 0, 1)")
-	#points of calc eruptions
-	#campi_cal_graph = PlotlyJS.scatter(x=campi_calc, y=zeros(length(campi_calc)), mode="markers", name="eruptions, calc", showlegend=true, marker_size=14, marker_color="rgba(0, 0, 255, 1)")
-	#points of real eruptions
-	#campi_real_graph = PlotlyJS.scatter(x=campi_real, y=zeros(length(campi_real)), marker_color="rgba(255, 0, 0, 1)", mode="markers", color=2, name="eruptions, real", showlegend=true, marker_size=10)
+    #show num cumulutive volume
+    #campi_cumulut_graph = PlotlyJS.scatter(x=campi_cumulut, y=gp.cumulutive_calc, mode="lines", color=1, name="cumulative volume calc", marker_color="rgba(0, 0, 255, 1)")
+    #show real cumulutive volume
+    #campi_next_eruption = PlotlyJS.scatter(x=campi_cumulut, y=gp.cumulutive_real, mode="lines", color=2, name="cumulutive volume real", marker_color="rgba(255, 0, 0, 1)")
+    #points of calc eruptions
+    #campi_cal_graph = PlotlyJS.scatter(x=campi_calc, y=zeros(length(campi_calc)), mode="markers", name="eruptions, calc", showlegend=true, marker_size=14, marker_color="rgba(0, 0, 255, 1)")
+    #points of real eruptions
+    #campi_real_graph = PlotlyJS.scatter(x=campi_real, y=zeros(length(campi_real)), marker_color="rgba(255, 0, 0, 1)", mode="markers", color=2, name="eruptions, real", showlegend=true, marker_size=10)
 
 
-	p2 = Plots.plot(cumulutive_time_true, cumulutive_calc_true, xlabel="time (ka)", ylabel="Cum. erupt. volume, km^3", title="Compartion of different resolutions", label="10m")
-	Plots.plot!(cumulutive_time_hr, cumulutive_calc_hr, label="5m")
-	Plots.plot!(cumulutive_time_true, cumulutive_calc_real, label="real")
+    p2 = Plots.plot(cumulutive_time_true, cumulutive_calc_true, xlabel="time (ka)", ylabel="Cum. erupt. volume, km^3", title="Compartion of different resolutions", label="10m")
+    Plots.plot!(cumulutive_time_hr, cumulutive_calc_hr, label="5m")
+    Plots.plot!(cumulutive_time_true, cumulutive_calc_real, label="real")
 
-	p_final = Plots.plot(p2)
+    p_final = Plots.plot(p2)
 
-	#Plots.savefig(p_final, "markers.png")
+    #Plots.savefig(p_final, "markers.png")
     #return p_final
 
     # p = Plots.plot(data, layout)
