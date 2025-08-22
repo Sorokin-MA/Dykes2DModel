@@ -8,7 +8,7 @@ dev_thread::Integer= CUDA.attribute(CUDA.device(), CUDA.DEVICE_ATTRIBUTE_MAX_THR
 # These arrays contain data on dyke crystalinity and temperature respectively.
 # dykes_crystalinity: A vector of Float64 representing the crystalinity of dykes over a series of measurements.
 # dykes_temp: A vector of Float64 representing the temperature of these dykes during the same measurement points.
-# NOTE: dykes_temp crystalinity taken uniformly in range of dykes_temp for interpolation purposes
+#NOTE: dykes_temp crystalinity taken uniformly in range of dykes_temp for interpolation purposes
 # - Forni F, Degruyter W, Bachmann O, De Astis G, Mollo S. Long-term magmatic evolution reveals the beginning of a new caldera cycle at Campi Flegrei. Sci Adv. 2018 Nov 14;4(11):eaat9401. doi: 10.1126/sciadv.aat9401. PMID: 30788429; PMCID: PMC6371846.
 dykes_crystalinity = 1 .- Vector{Float64}([1, 0.9978, 0.9955, 0.9918, 0.9881, 0.9401, 0.9273, 0.9231, 0.9189, 0.9029, 0.8859, 0.8532, 0.7972, 0.6777, 0.371, 0.2195, 0.1545, 0.1184, 0.1111, 0.1038, 0.0965, 0.0892, 0.0819, 0.0769, 0.0721, 0.0672, 0.0624, 0.0573, 0.0516, 0.0459, 0.0402, 0.0338, 0.0265, 0.0192, 0.0143, 0.0143, 0.0143, 0.0143, 0.0121, 0.0099, 0.0076, 0.006, 0.0056, 0.0051, 0.0047, 0.0043, 0.0037, 0.0028, 0.0019, 0.0009, 0])
 dykes_temp = Vector{Float64}([699.2355, 708.9755, 718.7156, 728.4557, 738.1957, 747.9358, 757.6758, 767.4159, 777.156, 786.896, 796.6361, 806.3761, 816.1162, 825.8563, 835.5963, 845.3364, 855.0765, 864.8165, 874.5566, 884.2966, 894.0367, 903.7768, 913.5168, 923.2569, 932.9969, 942.737, 952.4771, 962.2171, 971.9572, 981.6972, 991.4373, 1001.1774, 1010.9174, 1020.6575, 1030.3976, 1040.1376, 1049.8777, 1059.6177, 1069.3578, 1079.0979, 1088.8379, 1098.578, 1108.318, 1118.0581, 1127.7982, 1137.5382, 1147.2783, 1157.0183, 1166.7584, 1176.4985, 1186.2385])
@@ -205,6 +205,7 @@ function dmf_rock(T)
     return only.(Interpolations.gradient.(Ref(cuitp), T))
 end
 
+
 """
 This function calculates melt fraction of host rocks.
 
@@ -219,29 +220,49 @@ function mf_rock(T)
 end
 
 
-function d2dm_dmf_rock(T)
-    ##FIXME: bad interpolation
-    return only.(Interpolations.gradient.(Ref(cuitp), T))
-    #return dmf_campi_rhyolite(T)
-
-    #return dmf_rhyolite(T)
-end
+#TODO: fix this export, probably duplicate
 
 function d2dm_mf_rock(T)
     return itp(T)
-    #return mf_rhyolite(T)
 end
 
-function d2dm_dmf_magma(T)
-    return dmf_magma(T)
+function d2dm_dmf_rock(T)
+    #FIXME: bad interpolation?
+    return only.(Interpolations.gradient.(Ref(cuitp), T))
 end
 
 function d2dm_mf_magma(T)
     return mf_magma(T)
 end
 
+function d2dm_dmf_magma(T)
+    return dmf_magma(T)
+end
 
 
+
+"""
+    d2dm_update_T_NG!(T, T_old, T_top, T_bot, C, lam_r_rhoCp, lam_m_rhoCp, L_Cp, dx, dy, dt, nx, ny, dmf_rock_arr)
+
+Update temperature field `T` using the Newell-Georgiadis method. This function utilizes CUDA for parallel computation.
+
+# Arguments
+- `T`: Temperature field to be updated.
+- `T_old`: Previous state of the temperature field.
+- `T_top`: Boundary condition at the top boundary.
+- `T_bot`: Boundary condition at the bottom boundary.
+- `C`: Thermal conductivity of the material.
+- `lam_r_rhoCp`: Coefficient related to rock properties and specific heat capacity.
+- `lam_m_rhoCp`: Coefficient related to material properties and specific heat capacity.
+- `L_Cp`: Length scale for thermal diffusion.
+- `dx`, `dy`: Grid spacing in x and y directions.
+- `dt`: Time step.
+- `nx`, `ny`: Dimensions of the grid.
+- `dmf_rock_arr`: Array containing rock-specific information.
+
+# Returns
+- Nothing: The function updates the temperature field `T` in place.
+"""
 function d2dm_update_T_NG!(T, T_old, T_top, T_bot, C, lam_r_rhoCp, lam_m_rhoCp, L_Cp, dx, dy, dt, nx, ny, dmf_rock_arr)
     #println("Debug - entered d2dm_update_T_NG")
     # dmf_rock_arr = CuArray{Float64,1}(undef, nx * ny)
@@ -255,13 +276,32 @@ function d2dm_update_T_NG!(T, T_old, T_top, T_bot, C, lam_r_rhoCp, lam_m_rhoCp, 
 end
 
 """
-	update_T!(T,  T_old, T_top, T_bot, C, lam_r_rhoCp, lam_m_rhoCp, L_Cp, dx, dy, dt, nx, ny)
+`d2dm_update_T!(T, T_old, T_top, T_bot, C, lam_r_rhoCp, lam_m_rhoCp, L_Cp, dx, dy, dt, nx, ny, dmf_rock_arr)`
 
-Solve heat equasion
+Update the temperature field `T` at each grid point using finite differences.
+The function takes into account the thermal conductivity and material properties to compute the heat fluxes in the x and y directions.
+Boundary conditions for the top and bottom boundaries are applied.
+
+# Arguments
+- `T`: Array of temperatures.
+- `T_old`: Not used but included for compatibility with other functions.
+- `T_top`: Temperature at the top boundary.
+- `T_bot`: Temperature at the bottom boundary.
+- `C`: Array of material fractions.
+- `lam_r_rhoCp`: Thermal conductivity and density times specific heat capacity for rock.
+- `lam_m_rhoCp`: Thermal conductivity and density times specific heat capacity for magma.
+- `L_Cp`: representing the effect of material properties on thermal diffusivity.
+- `dx`, `dy`: Grid spacing in x and y directions.
+- `dt`: Time step.
+- `nx`, `ny`: Number of grid points in the x and y directions.
+- `dmf_rock_arr`: Array of melt fractions for rocks.
+
+# Notes
+The function assumes that `idc` is a predefined function to index into 1D arrays using `(ix, iy, nx)`.
 """
 function d2dm_update_T!(T, T_old, T_top, T_bot, C, lam_r_rhoCp, lam_m_rhoCp, L_Cp, dx, dy, dt, nx, ny, dmf_rock_arr)
     ix = (blockIdx().x - 1) * blockDim().x + threadIdx().x - 1
-    ay = (blockIdx().y - 1) * blockDim().y + threadIdx().y - 1
+    iy = (blockIdx().y - 1) * blockDim().y + threadIdx().y - 1
 
     if (ix > nx - 1) || (iy > (ny - 1))
         return
@@ -305,15 +345,22 @@ function d2dm_update_T!(T, T_old, T_top, T_bot, C, lam_r_rhoCp, lam_m_rhoCp, L_C
     return
 end
 
-"""
-	init_particles_Ph(pPh, ph, npartcl)
 
-initing particles out of defined particles as magma particles
+"""
+    init_particles_Ph(pPh::AbstractVector{T}, ph::T, npartcl::Int) where T
+
+Initializes particles in an array `pPh` with a value `ph` for the first `npartcl` elements.
 
 # Arguments
-- `pPh`: ?
-- `ph`: ?
-- `npartcl`: ?
+- `pPh`: An abstract vector of type `T`.
+- `ph`: The value to be initialized into each element of `pPh`.
+- `npartcl`: Number of particles or elements in `pPh` to initialize.
+
+# Example
+```julia
+init_particles_Ph(fill(0.0, 10), 5.0, 5)
+```
+This will set the first five elements of an array of length 10 to 5.0.
 """
 function init_particles_Ph(pPh, ph, npartcl)
     ip = (blockIdx().x - 1) * blockDim().x + threadIdx().x
@@ -326,18 +373,38 @@ function init_particles_Ph(pPh, ph, npartcl)
     return
 end
 
-#WARN:unneccesary function?
+"""
+`sign(val)`: Returns the sign of a `val`.
+
+# Arguments
+- `val`: The number to determine the sign of.
+
+# Returns
+- 1 if `val` is greater than zero, -1 if `val` is less than zero, and 0 if `val` is exactly zero.
+"""
 function sign(val)
     return (val > zero(val)) - (val < zero(val))
 end
 
-#TODO:specify description, wht if 'f'?
 """
+Converts Cartesian coordinates to elliptic coordinates.
 
-	cart2ellipt(f, x, y)
+This function takes a focal distance `f`, and Cartesian coordinates `(x, y)`,
+and returns the corresponding elliptic coordinates `(xi, eta)`.
 
-Convert cartesian coordinates to elliptical
+# Arguments
+- `f`: The focal distance of the ellipse.
+- `x`: The x-coordinate in Cartesian space.
+- `y`: The y-coordinate in Cartesian space.
 
+# Returns
+- `Tuple{Float64, Float64}`: A tuple containing the elliptic coordinates `(xi, eta)`.
+
+# Examples
+```julia
+xi, eta = cart2ellipt(1.0, 0.5, 0.5)
+println(xi, ", ", eta)  # Output will depend on the input values
+```
 """
 function cart2ellipt(f, x, y)
     xi_eta_1 = acosh(max(0.5 / f * (sqrt((x + f) * (x + f) + y * y) + sqrt((x - f) * (x - f) + y * y)), 1.0))
@@ -345,25 +412,28 @@ function cart2ellipt(f, x, y)
     return xi_eta_1, xi_eta_2
 end
 
-#TODO:specify description
 """
+    rot2d(x, y, sb, cb)
 
-	rot2d(x, y, sb, cb)
-
-HZ
-
+Rotates a point `(x, y)` by an angle using the sine (`sb`) and cosine (`cb`) of the angle.
 """
 function rot2d(x, y, sb, cb)
     return x * cb - y * sb, x * sb + y * cb
 end
 
-#TODO:specify description
 """
+Calculate parameters related to a crack in a material.
 
-	crack_params(a, b, nu, G)
+# Arguments
+- `a::Float64`: Length of the crack.
+- `b::Float64`: Breadth of the crack.
+- `nu::Float64`: Poisson's ratio of the material.
+- `G::Float64`: Shear modulus of the material.
 
-HZ
-
+# Returns
+- A tuple containing two values:
+  - The first value is a scalar representing some calculated parameter based on the input parameters.
+  - The second value is another scalar calculated from the input parameters.
 """
 function crack_params(a, b, nu, G)
 
@@ -372,12 +442,22 @@ function crack_params(a, b, nu, G)
     return (-2 * b * G / f, 0.5 * f / (nu - 1))
 end
 
-#TODO:specify description
 """
-	disp_inf_stress(s, st, ct, c, nu, G, shxi, chxi, seta, ceta)
+disp_inf_stress(s, st, ct, c, nu, G, shxi, chxi, seta, ceta)
 
-HZ
+Calculate the displacement components u_v at infinity due to stress state (s, st, ct) in a material with properties (c, nu, G).
 
+# Arguments:
+- `s`: Normal stress.
+- `st`: Shear stress.
+- `ct`: Tangential stress.
+- `c`: Poisson's ratio.
+- `nu`: Young's modulus.
+- `G`: Shear modulus.
+- `shxi`, `chxi`, `seta`, `ceta`: Coordinates and angles for the transformation.
+
+# Returns:
+- Tuple of displacement components u_v.
 """
 function disp_inf_stress(s, st, ct, c, nu, G, shxi, chxi, seta, ceta)
     e2xi0 = 1.0
@@ -401,12 +481,22 @@ function disp_inf_stress(s, st, ct, c, nu, G, shxi, chxi, seta, ceta)
     return u_v[1], u_v[2]
 end
 
-#TODO:specify description
 """
-	displacements(st, ct, p, s1, s3, f, x, y, nu, G	)
+displacements(st, ct, p, s1, s3, f, x, y, nu, G)
 
-Functions which displacements
+Calculate the displacements at a point `(x, y)` in a material under stress.
 
+Arguments:
+- `st`, `ct`: The sine and cosine of the angle between the normal to the surface and the direction of loading.
+- `p`: Pressure applied on the surface.
+- `s1`, `s3`: Principal stresses.
+- `f`: Radius of the material.
+- `x, y`: Coordinates of the point where displacement is calculated.
+- `nu`: Poisson's ratio of the material.
+- `G`: Shear modulus of the material.
+
+Returns:
+- The displacements `(u_v_1, u_v_2)` at the given point, rotated back to the original coordinate system.
 """
 function displacements(st, ct, p, s1, s3, f, x, y, nu, G)
     x_y_1, x_y_2 = rot2d(x, y, -st, ct)
@@ -436,9 +526,25 @@ function displacements(st, ct, p, s1, s3, f, x, y, nu, G)
 end
 
 """
-	advect_particles_intrusion(px, py, a, b, x, y, theta, nu, G, ndykes, npartcl)
+advect_particles_intrusion(px, py, a, b, x, y, theta, nu, G, ndykes, npartcl)
 
-Functions which calculate advection when particles intruded
+Advects particles in an intrusion model based on given parameters and displacements.
+
+# Arguments
+- `px::Array{Float64}`: Array of particle x-coordinates.
+- `py::Array{Float64}`: Array of particle y-coordinates.
+- `a::Float64`: Parameter related to the geometry of the dyke.
+- `b::Float64`: Parameter related to the geometry of the dyke.
+- `x::Float64`: X-coordinate of the intrusion point.
+- `y::Float64`: Y-coordinate of the intrusion point.
+- `theta::Float64`: Angle of the dyke.
+- `nu::Float64`: Viscosity parameter.
+- `G::Float64`: Gravitational acceleration.
+- `ndykes::Int64`: Number of dykes.
+- `npartcl::Int64`: Total number of particles.
+
+# Returns
+- `nothing`: The function updates the particle positions in place and returns nothing.
 """
 function advect_particles_intrusion(px, py, a, b, x, y, theta, nu, G, ndykes, npartcl)
     ip = (blockIdx().x - 1) * blockDim().x + threadIdx().x
@@ -457,10 +563,23 @@ function advect_particles_intrusion(px, py, a, b, x, y, theta, nu, G, ndykes, np
     return nothing
 end
 
-#TODO:specify description
 """
-	p2g_weight!(T, C, wts, nx, ny)
-HZ
+Applies a weight correction to elements in two arrays, `T` and `C`, based on weights stored in an array `wts`. This function operates in parallel using CUDA threads, where each thread processes a unique element in the arrays.
+
+# Arguments
+- `T::CuArray{Float32}`: The target array to be weight-corrected.
+- `C::CuArray{Float32}`: A second target array to be weight-corrected.
+- `wts::CuArray{Float32}`: An array of weights, where each element is used to divide the corresponding elements in `T` and `C`.
+- `nx::Int`: The number of elements along the x-axis in the arrays.
+- `ny::Int`: The number of elements along the y-axis in the arrays.
+
+# Returns
+- Nothing. The function modifies the input arrays `T` and `C` in place.
+
+# Notes
+- This function assumes that the input arrays are CUDA arrays (CuArray).
+- Each thread is responsible for a unique element, determined by its block and thread indices.
+- Elements outside the bounds of the array dimensions (`nx`, `ny`) or with zero weights are skipped to avoid division by zero errors.
 """
 function p2g_weight!(T, C, wts, nx, ny)
     ix = (blockIdx().x - 1) * blockDim().x + threadIdx().x
@@ -480,10 +599,29 @@ function p2g_weight!(T, C, wts, nx, ny)
     return nothing
 end
 
-#TODO:specify description
 """
-	p2g_project!(T, C, wts, px, py, pT, pPh, dx, dy, nx, ny, npartcl, npartcl0)
-HZ
+p2g_project! - This function projects particles onto a grid using bilinear interpolation. It updates three arrays: T, C, and wts.
+
+# Arguments
+- `T::CuArray{Float64}`: Temperature array to be updated.
+- `C::CuArray{Float64}`: Concentration array to be updated (or set based on pPh).
+- `wts::CuArray{Float64}`: Weight array to be updated.
+- `px::CuArray{Float64}`: x-coordinates of particles.
+- `py::CuArray{Float64}`: y-coordinates of particles.
+- `pT::CuArray{Float64}`: Temperature values at particle positions.
+- `pPh::Union{Nothing, CuArray{Int32}}`: Phase array at particle positions (optional).
+- `dx::Float64`: Grid spacing in x-direction.
+- `dy::Float64`: Grid spacing in y-direction.
+- `nx::Int64`: Number of grid points in x-direction.
+- `ny::Int64`: Number of grid points in y-direction.
+- `npartcl::Int64`: Total number of particles.
+- `npartcl0::Int64`: Number of particles in the initial phase.
+
+# Returns
+- `nothing`
+
+# Description
+This function calculates bilinear interpolation weights for each particle based on its position and applies these weights to update arrays T, C, and wts at grid points. If pPh is provided, it updates C based on the phase information; otherwise, it sets C to 1.0 if the particle index is greater than npartcl0, or 0.0 otherwise.
 """
 function p2g_project!(T, C, wts, px, py, pT, pPh, dx, dy, nx, ny, npartcl, npartcl0)
     ip = (blockIdx().x - 1) * blockDim().x + threadIdx().x
@@ -535,9 +673,22 @@ function p2g_project!(T, C, wts, px, py, pT, pPh, dx, dy, nx, ny, npartcl, npart
 end
 
 """
-	d2dm_g2p!(T, T_old, px, py, pT, dx, dy, pic_amount, nx, ny, npartcl)
+`d2dm_g2p!(T, T_old, px, py, pT, dx, dy, pic_amount, nx, ny, npartcl)`
 
-Grid to particles interpolation
+Updates the temperature of particles in a 2D model based on their position and neighboring grid temperatures. The function interpolates the grid temperature at the particle's position using bilinear interpolation and then updates the particle's temperature based on this interpolated value.
+
+# Arguments
+- `T`: Array containing the current grid temperatures.
+- `T_old`: Array containing the previous grid temperatures.
+- `px`, `py`: Arrays containing the x and y coordinates of each particle, respectively.
+- `pT`: Array containing the current temperatures of each particle. This is updated by the function.
+- `dx`, `dy`: Spacings between grid points in the x and y directions, respectively.
+- `pic_amount`: A factor that determines how much to weight the temperature contribution from the interpolated grid value versus the previous particle temperature.
+- `nx`, `ny`: Dimensions of the grid in the x and y directions, respectively.
+- `npartcl`: Total number of particles.
+
+# Returns
+- `nothing`: The function modifies arrays in place and does not return any values.
 """
 function d2dm_g2p!(T, T_old, px, py, pT, dx, dy, pic_amount, nx, ny, npartcl)
     ip = (blockIdx().x - 1) * blockDim().x + threadIdx().x
@@ -571,9 +722,19 @@ function d2dm_g2p!(T, T_old, px, py, pT, dx, dy, pic_amount, nx, ny, npartcl)
 end
 
 """
-	assignUniqueLables(mf, L, tsh, nx, ny)
+assignUniqueLables(mf, L, tsh, nx, ny)
 
-This function assigning unque lables to each cell if mf value more then trashhold
+Assigns unique labels to each element in the matrix `mf` based on a threshold `tsh`. The function operates within a 2D grid defined by `nx` and `ny`, and uses shared memory for computation. If an element's value in `mf` is greater than or equal to `tsh`, it assigns a unique label; otherwise, it assigns `-1`.
+
+# Arguments:
+- `mf::Vector{Float64}`: Input matrix where each element represents a data point.
+- `L::Vector{Int32}`: Output vector where labels are stored.
+- `tsh::Float64`: Threshold value used to determine if an element should be labeled.
+- `nx::Int32`: Number of elements along the x-axis.
+- `ny::Int32`: Number of elements along the y-axis.
+
+# Returns:
+- Nothing. The function modifies the output vector `L` in place.
 """
 function assignUniqueLables(mf, L, tsh, nx, ny)
     ix = (blockIdx().x - 1) * blockDim().x + threadIdx().x - 1
@@ -591,11 +752,20 @@ function assignUniqueLables(mf, L, tsh, nx, ny)
     return nothing
 end
 
-#TODO: describe function
 """
-	cwLabel!(L, nx, ny)
+    cwLabel!(L::Array{Int, 1}, nx::Int, ny::Int)
 
-I have no idea what this function do.
+This function processes an array `L` representing a label map in a 2D grid of size `nx` x `ny`.
+It iterates over the array in reverse order along the x-axis for each row.
+If two consecutive elements are both greater than or equal to 1, it sets the left element to match the right element.
+
+# Arguments
+- `L::Array{Int, 1}`: A one-dimensional array representing a label map.
+- `nx::Int`: The number of columns in the grid.
+- `ny::Int`: The number of rows in the grid.
+
+# Returns
+- Nothing; modifies `L` in place.
 """
 function cwLabel!(L, nx, ny)
     iy = (blockIdx().x - 1) * blockDim().x + threadIdx().x
@@ -611,11 +781,24 @@ function cwLabel!(L, nx, ny)
     end
 end
 
-#TODO: describe function
 """
-	find_root(L, idx)
+find_root(L, idx)
 
-I have no idea what this function do.
+Given an array `L` and an index `idx`, this function finds the root of the element at index `idx`.
+The root is defined as the index where `L[label] == label - 1`.
+
+# Arguments:
+- L::Array{Int32}: An array of integers.
+- idx::Int32: The index to start from.
+
+# Returns:
+- Int32: The root index found.
+
+# Examples:
+```julia
+julia> find_root([1, 0, 2, 3], 2)
+1
+```
 """
 function find_root(L, idx)
     label::Int32 = idx
@@ -625,11 +808,17 @@ function find_root(L, idx)
     return label - 1
 end
 
-#TODO: describe function
 """
-	merge_labels!(L, div, nx::Int64, ny)
+merge_labels!(L::Array{Int32}, div::Int64, nx::Int64, ny::Int64)
 
-I have no idea what this function do.
+Merges labels in a 2D array `L` along rows based on a division factor `div`. This function is typically used in image processing or grid-based simulations to merge neighboring regions labeled with non-negative integers.
+
+- `L`: A 1D array representing the 2D grid where each element contains a label.
+- `div`: The size of the division along the row axis.
+- `nx`: The number of columns in the grid.
+- `ny`: The number of rows in the grid.
+
+The function iterates over each block and thread, merging labels between neighboring rows if both labels are non-negative. It uses a helper function `find_root` to find the root label for a given index.
 """
 function merge_labels!(L, div, nx, ny)
     iy = (blockIdx().x - 1) * blockDim().x + threadIdx().x - 1
@@ -649,11 +838,23 @@ function merge_labels!(L, div, nx, ny)
     return nothing
 end
 
-#TODO: describe function
 """
-	relabel(L, nx, ny)
+# relabel(L, nx, ny)
 
-I have no idea what this function do.
+Relabels elements in a lattice `L` of size `nx x ny`. This function processes elements in parallel using CUDA's grid and block threading model.
+
+## Arguments:
+- `L::Array{Int64}`: The input lattice as an array of integers.
+- `nx::Int64`: The number of columns in the lattice.
+- `ny::Int64`: The number of rows in the lattice.
+
+## Returns:
+- `nothing`: The function modifies the input lattice `L` in place and does not return any value.
+
+## Notes:
+- The function uses CUDA's grid and block threading model to parallelize the processing of elements in the lattice.
+- Elements with a non-negative value are processed by calling `find_root(L, iy * nx + ix + 1)` to potentially update their values in the lattice.
+- Only elements within valid indices `[0, nx*ny-1]` are considered.
 """
 function relabel(L, nx, ny)
     ix = (blockIdx().x - 1) * blockDim().x + threadIdx().x - 1
@@ -671,10 +872,24 @@ function relabel(L, nx, ny)
 end
 
 """
+Advect particles based on an eruption model.
 
-	advect_particles_eruption(px, py, idx, gamma, dxl, dyl, npartcl, ncells, nxl, nyl)
+This function updates the positions of particles in a 2D grid according to an eruption model. It calculates the velocity components `u` and `v` for each particle, which are then used to update the particle's position.
 
-Advect particles
+# Arguments
+- `px::Array{Float64}`: Array containing the x-coordinates of the particles.
+- `py::Array{Float64}`: Array containing the y-coordinates of the particles.
+- `idx::Array{Int32}`: Index array representing the grid cells.
+- `gamma::Float64`: Eruption parameter that affects the velocity calculation.
+- `dxl::Float64`: Grid spacing in the x-direction.
+- `dyl::Float64`: Grid spacing in the y-direction.
+- `npartcl::Int32`: Number of particles.
+- `ncells::Int32`: Number of grid cells.
+- `nxl::Int32`: Number of grid cells in the x-direction.
+- `nyl::Int32`: Number of grid cells in the y-direction.
+
+# Returns
+- `nothing`: The function updates the positions of particles in place and does not return any value.
 """
 function advect_particles_eruption(px, py, idx, gamma, dxl, dyl, npartcl, ncells, nxl, nyl)
     ip = (blockIdx().x - 1) * blockDim().x + threadIdx().x - 1
@@ -751,9 +966,19 @@ function average!(mfl, T, C, nl, nx, ny, mf_rock_c)
 end
 
 """
-	count_particles!(pcnt, px, py, dx, dy, nx, ny, npartcl)
+count_particles! increments the count of particles in a 2D grid using global coordinates.
 
-Count particles in each cell
+# Arguments
+- `pcnt`: A pointer to the array where particle counts are stored.
+- `px`, `py`: Arrays containing the x and y coordinates of each particle, respectively.
+- `dx`, `dy`: The spatial resolution or bin size in the x and y directions.
+- `nx`, `ny`: The number of bins in the x and y directions.
+- `npartcl`: The total number of particles.
+
+# Returns
+- Nothing
+
+This function is designed to be used with CUDA.jl for parallel processing on GPU.
 """
 function count_particles!(pcnt, px, py, dx, dy, nx, ny, npartcl)
     ip = (blockIdx().x - 1) * blockDim().x + threadIdx().x
@@ -774,9 +999,30 @@ function count_particles!(pcnt, px, py, dx, dy, nx, ny, npartcl)
 end
 
 """
-	inject_particles!(px, py, pT, pPh, npartcl, pcnt, T, C, dx, dy, nx, ny, min_pcount, max_npartcl)
+inject_particles!(px::CuArray{Float32}, py::CuArray{Float32}, pT::CuArray{Float32},
+                pPh::CuArray{Int32}, npartcl::CuDeviceArray{Int32, 1}, pcnt::CuDeviceArray{Int32, 1},
+                T::CuDeviceArray{Float32, 2}, C::CuDeviceArray{Float32, 2}, dx::Float32, dy::Float32,
+                nx::Int32, ny::Int32, min_pcount::Int32, max_npartcl::Int32)
 
-Function which inject particles
+Injects particles into the simulation grid based on certain conditions.
+
+# Arguments
+- `px`: Particle x-coordinates.
+- `py`: Particle y-coordinates.
+- `pT`: Particle temperatures.
+- `pPh`: Particle phases.
+- `npartcl`: Array to store the number of particles.
+- `pcnt`: Array with particle count per grid cell.
+- `T`: Temperature field.
+- `C`: Concentration field.
+- `dx`, `dy`: Grid spacing in x and y directions.
+- `nx`, `ny`: Number of grid points in x and y directions.
+- `min_pcount`: Minimum particle count per grid cell to trigger injection.
+- `max_npartcl`: Maximum number of particles allowed.
+
+# Notes
+- This function is designed for GPU execution using CUDA.jl.
+- It operates within a 2D block and thread hierarchy typical of CUDA grids.
 """
 function inject_particles!(px, py, pT, pPh, npartcl, pcnt, T, C, dx, dy, nx, ny, min_pcount, max_npartcl)
     ix = (blockIdx().x - 1) * blockDim().x + threadIdx().x - 1
@@ -809,15 +1055,19 @@ end
 
 
 """
-	ccl(mf, L, tsh, nx, ny)
+ccl(mf::CuArray{Float32}, L::CuArray{Int32}, tsh::Float32, nx::Int32, ny::Int32)
 
-Function related with lables to
+This function performs connected component labeling (CCL) on a 2D array `mf` using CUDA. The labels are stored in the 2D array `L`. Only points where `mf` exceeds the threshold `tsh` are considered part of components.
+
 # Arguments
-- `mf::CuArray`: Melt fraction grid.
-- `L`: Helper grid.
-- `tsh`: threashhold which describes which cells with which melt fraction to take into account.
-- `nx`: x-axis grid resolution, [1]
-- `ny`: y-axis grid resolution, [1]
+- `mf::CuArray{Float32}`: A 2D array representing the input image data.
+- `L::CuArray{Int32}`: A 2D array to store the labels of connected components.
+- `tsh::Float32`: The threshold value for labeling points in `mf`.
+- `nx::Int32`: The number of columns in the 2D array `mf` and `L`.
+- `ny::Int32`: The number of rows in the 2D array `mf` and `L`.
+
+# Returns
+- Nothing. The labels are stored directly in `L`.
 """
 function ccl(mf, L, tsh, nx, ny)
     blockSize2D = (28, 32)
@@ -857,16 +1107,18 @@ function ccl(mf, L, tsh, nx, ny)
     return nothing
 end
 
-
 """
-	init_particles_T(pT, T_magma, npartcl)
+    init_particles_T(pT, T_magma, npartcl)
 
-initing particles out of defined particles as magma particles
+Initialize particles with a given temperature `T_magma` within an array `pT`.
 
 # Arguments
-- `pT`: Temperature of particles, [°C]
-- `T_magma`: Temperature of intruding magma, [°C]
-- `npartcl`: maximal number of particles
+- `pT`: An array where the temperatures of the particles will be stored.
+- `T_magma`: The temperature to be set for each particle.
+- `npartcl`: The total number of particles.
+
+# Notes
+This function assumes that the thread block and thread ID are correctly set up in the kernel execution environment.
 """
 function init_particles_T(pT, T_magma, npartcl)
     ip = (blockIdx().x - 1) * blockDim().x + threadIdx().x
@@ -880,14 +1132,15 @@ function init_particles_T(pT, T_magma, npartcl)
 end
 
 """
-	init_particles_T(pT, T_magma, npartcl)
-
-initing particles out of defined particles as magma particles
+Initialize particles in `pT` array to a given temperature `T_magma`.
 
 # Arguments
-- `pT`: Temperature of particles, [°C]
-- `T_magma`: Temperature of intruding magma, [°C]
-- `npartcl`: maximal number of particles
+- `pT::Array{T, 1}`: Array where particle temperatures will be stored.
+- `T_magma::T`: Temperature of magma to initialize particles with.
+- `npartcl::Int`: Number of particles in the array.
+
+# Returns
+- Nothing. The function modifies `pT` in place.
 """
 function init_particles_T_magma(pT, T_magma, npartcl)
     ip = (blockIdx().x - 1) * blockDim().x + threadIdx().x
@@ -900,69 +1153,15 @@ function init_particles_T_magma(pT, T_magma, npartcl)
     return
 end
 
-
-
 """
-	mf_magma(T)
+Write data to an HDF5 file.
 
 # Arguments
-- `T`: Temperature variable, [°C]
-"""
-# function mf_magma(T)
-# 	t2 = T * T
-# 	t7 = exp(
-# 		0.961026371384066e3 - 0.3590508961e1 * T + 0.4479483398e-2 * t2 -
-# 		0.1866187556e-5 * t2 * T,
-# 	)
-# 	return 0.1e1 / (0.1e1 + t7)
-# end
+- `filename::String`: The name of the file to write.
+- `data`: The data to write to the file.
 
-#=
-function average(mfl, T, C, nl, nx, ny)
-	ixl = blockIdx().x * blockDim().x + threadIdx().x
-	iyl = blockIdx().y * blockDim().y + threadIdx().y
-
-	if (ixl > (nx / nl - 1) || iyl > (ny / nl - 1))
-		return
-	end
-
-	avg = 0.0
-
-	#for (int ix = ixl * nl; ix < (ixl + 1) * nl; ++ix)
-	for ix = (ixl*nl):((ixl+1)*nl)
-
-		if (ix > nx - 1)
-			break
-		end
-
-		#for (int iy = iyl * nl; iy < (iyl + 1) * nl; ++iy)
-		for iy = (iyl*nl):(iy<(iyl+1)*nl)
-			if (iy > ny - 1)
-				break
-			end
-			vf = C[idc(ix, iy, nx)]
-			avg +=
-				mf_magma(T[idc(ix, iy, nx)]) * vf + mf_rock(T[idc(ix, iy, nx)]) * (1 - vf)
-			#=
-			avg += mf_magma(T[idc(ix, iy, nx)]) * vf + mf_rock(T[idc(ix, iy, nx)]) * (1 - vf);
-			=#
-		end
-	end
-
-	avg /= nl * nl
-	mfl[iyl*(nx/nl)+ixl] = avg
-
-end
-=#
-
-"""
-	write_h5(filename, data)
-
-write data to HDF5 file
-
-# Arguments
-   - `filename`: the number of elements to compute.
-   - `data`: the dimensions along which to perform the computation.
+# Returns
+- None
 """
 function write_h5(filename, data)
     file = joinpath(dir, "$(filename)")
@@ -972,10 +1171,51 @@ function write_h5(filename, data)
 end
 
 """
+    write_h5(filename, data)
 
-	small_mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl,max_nmarker, px,py,mx,my,h_px_dykes,pcnt, mfl)
+Write data to an HDF5 file.
 
-write some variables in 'filename' in h5 format
+# Arguments
+- `filename::String`: The name of the file to write.
+- `data`: Data to be written to the file.
+
+# Examples
+```julia
+write_h5("example.h5", some_data)
+```
+"""
+function write_h5(filename, data)
+    file = joinpath(dir, "$(filename)")
+    open(file, "w") do fid
+        write(fid, data)
+    end
+end
+
+"""
+small_mailbox_out(filename::String, T::Array{Float64}, pT::Array{Float64}, C::Array{Float64}, mT::Array{Float64}, staging::Array{Int32}, L::Array{Float64}, nx::Int32, ny::Int32, nxl::Int32, nyl::Int32, max_npartcl::Int32, max_nmarker::Int32, px::Array{Float64}, py::Array{Float64}, mx::Array{Float64}, my::Array{Float64}, h_px_dykes::Array{Float64}, pcnt::Array{Int32}, mfl::Array{Int32}, dx::Float64, dy::Float64, Lx::Float64, Ly::Float64)
+
+Write the results of a simulation to an HDF5 file. The function takes in arrays and parameters representing various state variables and geometry of the simulation domain.
+
+# Arguments
+- `filename`: Name of the file to write the data to.
+- `T`: Array containing temperature values.
+- `pT`: Array containing pressure values.
+- `C`: Array containing concentration values.
+- `mT`: Array containing mass values.
+- `staging`: Array indicating the staging of particles or markers.
+- `L`: Array containing length values for the domain.
+- `nx`, `ny`: Dimensions of the grid.
+- `nxl`, `nyl`: Lengths along x and y directions in the grid.
+- `max_npartcl`, `max_nmarker`: Maximum number of particles and markers respectively.
+- `px`, `py`: Arrays containing the positions of particles and markers.
+- `mx`, `my`: Arrays containing additional marker properties.
+- `h_px_dykes`: Array containing additional properties related to dykes.
+- `pcnt`, `mfl`: Arrays with particle and marker flags.
+- `dx`, `dy`: Grid spacing in x and y directions.
+- `Lx`, `Ly`: Total length and width of the simulation domain.
+
+# Returns
+- None. The function writes data directly to a file.
 """
 function small_mailbox_out(filename, T, pT, C, mT, staging, L, nx, ny, nxl, nyl, max_npartcl, max_nmarker, px, py, mx, my, h_px_dykes, pcnt, mfl, dx, dy, Lx, Ly)
     @time begin
@@ -1012,6 +1252,27 @@ function small_mailbox_out(filename, T, pT, C, mT, staging, L, nx, ny, nxl, nyl,
     end
 end
 
+"""
+`d2dm_make_snapshot(vp, gp, filename, FLAG_make_snapshot)`
+
+Save the state of variables `vp` and `gp` to an HDF5 file if `FLAG_make_snapshot` is true.
+
+# Arguments
+- `vp`: An object containing velocity model parameters.
+- `gp`: An object containing grid parameters, which may include CuArray fields that need special handling.
+- `filename`: The name of the HDF5 file where the snapshot will be saved.
+- `FLAG_make_snapshot`: A boolean flag indicating whether to create a snapshot.
+
+# Behavior
+If `FLAG_make_snapshot` is true, this function will open an HDF5 file at the specified `filename`, write out all fields from both `vp` and `gp` objects, handling CuArray types appropriately by copying them to CPU memory. Each field's name is used as the dataset name in the HDF5 file.
+
+# Examples
+```julia
+vp = VelocityModel(...)
+gp = GridParameters(...)
+d2dm_make_snapshot(vp, gp, "snapshot.hdf5", true)
+```
+"""
 function d2dm_make_snapshot(vp, gp, filename, FLAG_make_snapshot)
     if (FLAG_make_snapshot)
         #filename_donwload = @sprintf("d2d_snapshot_%d_%s.hdf5",vp.it, Dates.format(now(), "yyyy_mm_dd_HH_MM_SS"))
@@ -1047,10 +1308,34 @@ function d2dm_make_snapshot(vp, gp, filename, FLAG_make_snapshot)
 end
 
 """
+    mailbox_out(filename, T, pT, C, mT, staging, L, nx, ny, nxl, nyl, max_npartcl, max_nmarker, px, py, mx, my, h_px_dykes, pcnt, mfl)
 
-	mailbox_out(filename,T,pT, C, mT, staging,is_eruption,L,nx,ny,nxl,nyl,max_npartcl,max_nmarker, px,py,mx,my,h_px_dykes,pcnt, mfl)
+Write simulation data to an HDF5 file.
 
-write all variables in 'filename' in h5 format
+# Arguments
+- `filename::String`: The name of the file where data will be saved.
+- `T::Array{Float64,1}`: Array containing temperature values.
+- `pT::Array{Float64,1}`: Array containing particle temperature values.
+- `C::Array{Float64,1}`: Array containing concentration values.
+- `mT::Array{Float64,1}`: Array containing marker temperature values.
+- `staging::String`: Staging information.
+- `L::Array{Int32,1}`: Array containing lattice values.
+- `nx::Int32`: Number of grid points in x-direction.
+- `ny::Int32`: Number of grid points in y-direction.
+- `nxl::Int32`: Number of lattice points in x-direction.
+- `nyl::Int32`: Number of lattice points in y-direction.
+- `max_npartcl::Int32`: Maximum number of particles.
+- `max_nmarker::Int32`: Maximum number of markers.
+- `px::Array{Float64,1}`: Array containing x-coordinates of particles.
+- `py::Array{Float64,1}`: Array containing y-coordinates of particles.
+- `mx::Array{Float64,1}`: Array containing x-coordinates of markers.
+- `my::Array{Float64,1}`: Array containing y-coordinates of markers.
+- `h_px_dykes::Float64`: Height of the Dykes in pixels.
+- `pcnt::Array{Int32,1}`: Array containing particle count values.
+- `mfl::Array{Float64,1}`: Array containing marker flow values.
+
+# Description
+This function writes simulation data to an HDF5 file. It first checks if the file exists and removes it if it does. Then, it creates a new HDF5 file and writes various arrays containing simulation data into it.
 """
 function mailbox_out(filename, T, pT, C, mT, staging, L, nx, ny, nxl, nyl, max_npartcl, max_nmarker, px, py, mx, my, h_px_dykes, pcnt, mfl)
     @time begin
@@ -1113,6 +1398,17 @@ function mailbox_out(filename, T, pT, C, mT, staging, L, nx, ny, nxl, nyl, max_n
 end
 
 
+"""
+Generate a random number within a specified range using a normal distribution.
+
+# Arguments:
+- `u`: The mean of the normal distribution.
+- `d`: The standard deviation of the normal distribution.
+- `dyke_type::String`: A string representing the type of dyke, which is not used in the function but included for documentation purposes.
+
+# Returns:
+- A random number drawn from a normal distribution with mean `u` and standard deviation `d`, constrained to be within the range (0, 1).
+"""
 function rand_limited(u, d, dyke_type::String)
     while ((ans <= 0) || (ans >= 1))
         ans = rand(Normal(u, d), 1)[1]
@@ -1121,6 +1417,17 @@ function rand_limited(u, d, dyke_type::String)
     return ans
 end
 
+"""
+Generate a random value within specified limits based on the given distribution type.
+
+# Arguments
+- `u`: The mean or mode of the distribution.
+- `d`: The standard deviation for Normal and LogNormal distributions, scale for Uniform distribution.
+- `dyke_type::String`: The type of distribution to use ("Normal", "Uniform", "LogNormal").
+
+# Returns
+- A random value generated from the specified distribution within the valid range (0, 1).
+"""
 function rand_limited_2(u, d, dyke_type::String)
     ans::Float64 = -1
     while ((ans <= 0) || (ans >= 1))
@@ -1135,6 +1442,21 @@ function rand_limited_2(u, d, dyke_type::String)
     return ans
 end
 
+"""
+`d2dm_read_params(gp::GridParams, vp::VarParams, data_folder) -> Nothing`
+
+Reads parameters from binary and HDF5 files to initialize simulation parameters.
+
+# Arguments:
+- `gp::GridParams`: Structure holding grid-related parameters.
+- `vp::VarParams`: Structure holding variable parameters.
+- `data_folder::String`: Path to the directory containing the input data files.
+
+# Description:
+This function reads various parameters required for a 2D model from binary (`pa.bin`, `dykes.bin`)
+and HDF5 files. It populates structures `gp` and `vp` with these parameters, setting up the initial
+conditions for the simulation.
+"""
 function d2dm_read_params(gp::GridParams, vp::VarParams, data_folder)
 
     dpa = Array{Float64,1}(undef, 19)#array of double values from matlab script
@@ -1347,6 +1669,18 @@ function d2dm_read_params(gp::GridParams, vp::VarParams, data_folder)
 end
 
 
+"""
+d2dm_init(gp::GridParams, vp::VarParams, markers_flag)
+
+Initializes the simulation by setting up grid and particle parameters,
+and updating marker temperatures if `markers_flag` is true.
+- `gp`: Grid parameters containing temperature arrays (`T`, `T_old`) and position arrays (`px`, `py`, `pT`).
+- `vp`: Variable parameters including number of particles, markers, temperature thresholds, etc.
+- `markers_flag`: Boolean flag to determine if marker temperatures should be initialized.
+
+This function updates the simulation grid based on particle positions and initializes new particles or markers
+with specific temperature conditions. It also synchronizes GPU operations for parallel execution.
+"""
 function d2dm_init(gp::GridParams, vp::VarParams, markers_flag)
     pic_amount_tmp = vp.pic_amount
     vp.pic_amount = 1.0
@@ -1390,6 +1724,26 @@ function d2dm_init(gp::GridParams, vp::VarParams, markers_flag)
 
 end
 
+"""
+Function to check melt fraction in a 2D model.
+
+This function calculates the melt fraction based on given grid parameters and variable parameters.
+It also performs volume counting and identifies the largest volume.
+
+# Arguments:
+- `gp::GridParams`: Grid parameters containing necessary grid information.
+- `vp::VarParams`: Variable parameters containing simulation variables.
+- `mf_rock_c::CuArray{Float64,1}`: CUDA array for melt fraction rock values (optional).
+
+# Returns:
+- `maxVol::Int32`: The volume of the largest identified region.
+- `maxIdx::Int32`: The index of the largest identified region.
+- `sumVol::Int32`: The total volume counted.
+
+# Notes:
+- This function uses CUDA for parallel computation if GPU is available.
+- It counts volumes that are larger than a certain boundary defined by `Ly_eruption`.
+"""
 function d2dm_check_melt_fracton(gp::GridParams, vp::VarParams, mf_rock_c)
     @time begin
         nxl = vp.nxl
@@ -1466,6 +1820,24 @@ function d2dm_check_melt_fracton(gp::GridParams, vp::VarParams, mf_rock_c)
     return maxVol, maxIdx, sumVol
 end
 
+"""
+Advances the particles and markers based on the eruption location.
+
+# Arguments
+- `gp::GridParams`: Parameters related to the grid.
+- `vp::VarParams`: Parameters related to variables.
+- `maxVol`: Maximum volume of interest.
+- `maxIdx`: Maximum index of interest.
+- `it`: Current iteration.
+- `markers_flag::Bool`: Flag indicating whether markers should be advected.
+
+# Returns
+- None
+
+This function calculates the center of eruptions, updates the eruption positions,
+advects particles and optionally markers based on the eruption location. It also
+updates sample indices and marks that an eruption has occurred.
+"""
 function d2dm_eruption_advection(gp::GridParams, vp::VarParams, maxVol, maxIdx, it, markers_flag::Bool)
     @time begin
 
@@ -1539,6 +1911,22 @@ function d2dm_eruption_advection(gp::GridParams, vp::VarParams, maxVol, maxIdx, 
 
 end
 
+"""
+d2dm_inserting_dykes(gp::GridParams, vp::VarParams, it, markers_flag)
+
+Inserts dykes into a simulation grid and updates particle and marker positions accordingly.
+
+# Arguments
+- `gp`: Grid parameters including dyke positions and properties.
+- `vp`: Variable parameters including particle and marker details.
+- `it`: Current iteration index indicating the current set of dykes to insert.
+- `markers_flag`: A boolean flag indicating whether markers should also be updated.
+
+# Returns
+- Returns `-1` if the number of particles exceeds the maximum capacity, otherwise proceeds silently.
+
+This function iterates over each dyke specified in `gp.ndykes[it]`, updates the particle and marker positions based on the dyke's intrusion, and adjusts the total number of particles and markers accordingly. If `markers_flag` is true, it also updates marker positions similarly to the particles.
+"""
 function d2dm_inserting_dykes(gp::GridParams, vp::VarParams, it, markers_flag)
     @time begin
         for i = 1:gp.ndykes[it]
@@ -1610,6 +1998,29 @@ function d2dm_inserting_dykes(gp::GridParams, vp::VarParams, it, markers_flag)
     end
 end
 
+"""
+`d2dm_p2g_interpolation(gp::GridParams, vp::VarParams) -> Nothing`
+
+Performs the particle to grid interpolation for a 2D model.
+
+# Arguments:
+- `gp`: A `GridParams` struct containing parameters related to the grid.
+- `vp`: A `VarParams` struct containing variables like particle positions and dimensions.
+
+# Returns:
+- Nothing
+
+This function initializes the temperature (`T`), concentration (`C`), and weights (`wts`) arrays in `gp`.
+It then performs two CUDA kernel calls:
+1. `p2g_project!` to project particles onto the grid.
+2. `p2g_weight!` to calculate weights based on the projected values.
+
+The function measures the execution time using `@time`.
+
+# Notes:
+- The grid and block sizes are dynamically calculated based on the number of particles and dimensions.
+- Synchronization calls (`synchronize()`) ensure that all CUDA operations have completed before proceeding.
+"""
 function d2dm_p2g_interpolation(gp::GridParams, vp::VarParams)
     @time begin
         fill!(gp.T, 0)
@@ -1631,6 +2042,29 @@ function d2dm_p2g_interpolation(gp::GridParams, vp::VarParams)
     end
 end
 
+"""
+    d2dm_particles_injection(gp::GridParams, vp::VarParams)
+
+Inject particles into the simulation grid based on the given parameters.
+
+# Arguments
+- `gp`: A `GridParams` object containing parameters related to the grid.
+- `vp`: A `VarParams` object containing various variables used in the simulation.
+
+# Returns
+- None
+
+This function performs the following steps:
+1. Determines the block and grid sizes for particle counting and injection.
+2. Counts the number of particles in each grid cell using CUDA.
+3. Synchronizes the GPU to ensure all operations are complete.
+4. Injects additional particles where necessary based on the minimum count per cell.
+5. Ensures the total number of particles does not exceed the maximum capacity.
+6. Updates the number of particles if new particles were injected.
+
+# Notes
+- The function uses CUDA for parallel computation, making it suitable for large-scale simulations.
+"""
 function d2dm_particles_injection(gp::GridParams, vp::VarParams)
     @time begin
         blockSize1D = dev_thread
