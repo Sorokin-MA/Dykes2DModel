@@ -200,7 +200,7 @@ function calc_cent_of_next_dyke(dyke_param, Sxx, Syy, Sxy, XX, YY, y_limit, Y_ri
     l_vecs = Matrix{Float64}(undef, 2, 2)
 
     for i in eachindex(ypoints)
-		x_new = X_lim/4 + X_lim/2 * rand()
+        x_new = X_lim / 4 + X_lim / 2 * rand()
         y_new = 3.0
         #println(ypoints)
         if ypoints[i] > y_limit
@@ -209,7 +209,7 @@ function calc_cent_of_next_dyke(dyke_param, Sxx, Syy, Sxy, XX, YY, y_limit, Y_ri
             tmp, l_vecs = get_sigma2(xpoints[1], ypoints[1], XX, YY, Sxx, Syy, Sxy)
             return x_new, y_new, xpoints, ypoints, l_vecs
         end
-		if (xpoints[i] >= X_lim) || (xpoints[i] <= 0)
+        if (xpoints[i] >= X_lim) || (xpoints[i] <= 0)
             println("REACHED BOUNDARY!")
             #_, l_vecs = get_sigma2(x_new, y_new, XX, YY, Sxx, Syy, Sxy)
             tmp, l_vecs = get_sigma2(xpoints[1], ypoints[1], XX, YY, Sxx, Syy, Sxy)
@@ -255,11 +255,11 @@ function calc_cent_of_next_dyke(dyke_param, Sxx, Syy, Sxy, XX, YY, y_limit, Y_ri
         append!(K, 4 / 3 * pi * delta_y * c * sqrt(pi * c))
 
         #NOTE: eliptical
-		#       c = 2*point_dist[i]
-		#       phi = point_angle[i]
-		#       delta_y = (sigma_dif)/(2*c) - rho_m * g *((Y_right_lim-ypoints[i]) - (Y_right_lim-ypoints[i_opposite]))/(2*c)
-		# C_00 = ypoints[i];
-		# append!(K,  C_00/(dyke_param.a*dyke_param.b)*(pi/(dyke_param.a*dyke_param.b))^(1/2)*(dyke_param.a^2*sin(phi)^2 + dyke_param.b^2*cos(phi)^2)^(1.0/4))
+        #       c = 2*point_dist[i]
+        #       phi = point_angle[i]
+        #       delta_y = (sigma_dif)/(2*c) - rho_m * g *((Y_right_lim-ypoints[i]) - (Y_right_lim-ypoints[i_opposite]))/(2*c)
+        # C_00 = ypoints[i];
+        # append!(K,  C_00/(dyke_param.a*dyke_param.b)*(pi/(dyke_param.a*dyke_param.b))^(1/2)*(dyke_param.a^2*sin(phi)^2 + dyke_param.b^2*cos(phi)^2)^(1.0/4))
 
 
         #println("sigma diff - $tmp_sigma_dif")

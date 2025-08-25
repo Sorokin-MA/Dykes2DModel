@@ -22,8 +22,8 @@ descr_Ly = "Ly\n\nThe size of the area along the y axis\n\nDimension: [m]"
 descr_Lz = "Lz\n\nThe size of the area along the z axis\n\nDimension: [m]"
 
 
-global_EruptionVolumesVec = Vector{Float64}([100, 154  ,   10 ,    10,     10,   10,   220,  45 ,   16,   50,   0.5,  0.02, 0.64, 0.02  , 0.02, 0.7, 0.201, 0.06, 0.05, 0.02, 0.07, 0.930, 0.018, 0.12 , 0.661, 0.016, 0.02 , 0.029])
-global_EruptionTimesVec = Vector{Float64}([157.4, 109.3, 105.6, 102.5, 101.2 , 91.8, 39.8 , 39.7, 29.3, 14.9, 14.3 , 13   ,   12,   12.8, 11.8, 11 ,  10.6,  9.6,  9.3,  5.1,  4.7,  4.9 ,   4.5,   4.3,  4.2 ,   4.1,   3.9,  0.5])
+global_EruptionVolumesVec = Vector{Float64}([100, 154, 10, 10, 10, 10, 220, 45, 16, 50, 0.5, 0.02, 0.64, 0.02, 0.02, 0.7, 0.201, 0.06, 0.05, 0.02, 0.07, 0.930, 0.018, 0.12, 0.661, 0.016, 0.02, 0.029])
+global_EruptionTimesVec = Vector{Float64}([157.4, 109.3, 105.6, 102.5, 101.2, 91.8, 39.8, 39.7, 29.3, 14.9, 14.3, 13, 12, 12.8, 11.8, 11, 10.6, 9.6, 9.3, 5.1, 4.7, 4.9, 4.5, 4.3, 4.2, 4.1, 3.9, 0.5])
 
 
 str_time_spend::Float64 = 0;
@@ -271,9 +271,14 @@ function dykes_gui()
             style=Dict("color" => "#000000", "textAlign" => "left"),
         ),
         html_div(className="info", style=Dict("columnCount" => num_columns)) do
-            html_button("Make snapshot", id="save-snapshot-but", disabled=false),
-            html_button("Load snapshot", id="load-snapshot-but", disabled=false)
+            html_button("Make snapshot", id="save-snapshot-but", disabled=false)
+            #html_button("Load snapshot", id="load-snapshot-but", disabled=false),
+            dcc_upload(id="load-snapshot-upload", html_button("Load config", id="load-snapshot-but"))
         end,
+        # html_div() do
+        #     html_button("Load snapshot", id="load-snapshot-but"),
+        #     dcc_upload(id="load-snapshot-upload")
+        # end,
         html_div() do
             html_label(children="Path to snapshot:"),
             html_div(
@@ -530,11 +535,11 @@ function dykes_gui()
         copyto!(h_T, gp.T)
 
 
-		h_T[h_T .> 800] .= 1
-		h_T[h_T .<= 800] .= 0
+        h_T[h_T.>800] .= 1
+        h_T[h_T.<=800] .= 0
 
-		non_zero_count = count(x -> x != 0, h_T)
-		println(non_zero_count)
+        non_zero_count = count(x -> x != 0, h_T)
+        println(non_zero_count)
 
         title_string = "T, (time, " * string(-(vp.nt - vp.it) / vp.nt * init_vp.calc_years / 1000) * " ka)"
         layout_inner = Layout(title=title_string)
@@ -584,17 +589,17 @@ function dykes_gui()
         copyto!(h_C, gp.C)
 
         mf = d2dm_mf_magma.(h_T) .* h_C + itp.(h_T) .* (1.0 .- h_C)
-		mf[mf .> 0.1] .= 1
-		mf[mf .<= 0.1] .= 0
+        mf[mf.>0.1] .= 1
+        mf[mf.<=0.1] .= 0
 
-		dxl = vp.dx * vp.nl
-		dyl = vp.dy * vp.nl
+        dxl = vp.dx * vp.nl
+        dyl = vp.dy * vp.nl
 
-		non_zero_count = count(x -> x != 0, mf)
+        non_zero_count = count(x -> x != 0, mf)
         #i guess 1.e4 here is z
-		real_vol_2 = (non_zero_count * (vp.dx * vp.dy) / 1.e9) * 1.e4 * (1 )
+        real_vol_2 = (non_zero_count * (vp.dx * vp.dy) / 1.e9) * 1.e4 * (1)
 
-		println("accomulated material" * string(real_vol_2) * "km^3")
+        println("accomulated material" * string(real_vol_2) * "km^3")
 
         title_string = "Melt fraction (mf), (time, " * string(-(vp.nt - vp.it) / vp.nt * init_vp.calc_years / 1000) * " ka)"
         layout_inner = Layout(title=title_string)
@@ -625,7 +630,7 @@ function dykes_gui()
         # h_C = Array{Float64,1}(undef, vp.nx * vp.ny)#array of double values from matlab script
         # copyto!(h_C, gp.C)
         CUDA.allowscalar(true)
-        dmf = d2dm_dmf_magma.(gp.T) .* gp.C + only.(Interpolations.gradient.(Ref(cuitp), gp.T)).* (1.0 .- gp.C)
+        dmf = d2dm_dmf_magma.(gp.T) .* gp.C + only.(Interpolations.gradient.(Ref(cuitp), gp.T)) .* (1.0 .- gp.C)
         CUDA.allowscalar(false)
         copyto!(h_dmf, gp.T_old)
 
@@ -958,17 +963,17 @@ function dykes_gui()
             return [init_vp.Qv]
         end
 
-		callback!(app, [Output("dyke_x_W", "value")], [Input("dyke_x_W", "value")]) do input_value
+        callback!(app, [Output("dyke_x_W", "value")], [Input("dyke_x_W", "value")]) do input_value
             init_vp.dyke_x_W = input_value
             return [init_vp.dyke_x_W]
         end
 
-		callback!(app, [Output("dyke_y_rng_bot", "value")], [Input("dyke_y_rng_bot", "value")]) do input_value
+        callback!(app, [Output("dyke_y_rng_bot", "value")], [Input("dyke_y_rng_bot", "value")]) do input_value
             init_vp.dyke_y_rng_bot = input_value
             return [init_vp.dyke_y_rng_bot]
         end
 
-		callback!(app, [Output("dyke_y_rng_top", "value")], [Input("dyke_y_rng_top", "value")]) do input_value
+        callback!(app, [Output("dyke_y_rng_top", "value")], [Input("dyke_y_rng_top", "value")]) do input_value
             init_vp.dyke_y_rng_top = input_value
             return [init_vp.dyke_y_rng_top]
         end
@@ -1115,8 +1120,7 @@ function dykes_gui()
         init_vp.critVol = global_EruptionVolumesVec
         init_vp.critVolTime = global_EruptionTimesVec
 
-        println("config loaded from" * filename)
-        log_to_buffer("config loaded from " * filename)
+        println("config loaded from " * filename)
 
         close(fid)
 
@@ -1183,10 +1187,6 @@ function dykes_gui()
     end
 
 
-    # callback!(app,
-    # 	   [Output("loadsnapshot", "contents")],
-    # 	   [Input("loadsnapshot", "contents")],
-    # 	   [State("loadsnapshot", "filename")], prevent_initial_call=true
     callback!(app,
         [Output("load-snapshot-but", "n_clicks")],
         [Input("load-snapshot-but", "n_clicks")], prevent_initial_call=true
@@ -1218,9 +1218,6 @@ function dykes_gui()
             end
         end
 
-        #vp.tsh = 0.99
-        #global G_FLAG_INIT = false
-        #vp.it = vp.nt
 
         println("snapshot loaded from " * filename)
         log_to_buffer("snapshot loaded from " * filename)
@@ -1295,54 +1292,54 @@ function main_test_gui(gp::GridParams, vp::VarParams, init_vp::InitVarParams, FL
                     dxl = vp.dx * vp.nl
                     dyl = vp.dy * vp.nl
 
-					tsh_tmp = vp.tsh
+                    tsh_tmp = vp.tsh
 
 
                     #calculating maxVol
                     sumVol = 0
                     vp.tsh = 0.01
                     maxVol, maxIdx, sumVol = d2dm_check_melt_fracton(gp, vp, mf_rock_arr)
-					sumVol = (sumVol * (dxl * dyl) / 1.e9) * 1.e4 * (1 - vp.gamma)
+                    sumVol = (sumVol * (dxl * dyl) / 1.e9) * 1.e4 * (1 - vp.gamma)
                     append!(gp.cum_mf_01, sumVol)
 
-#=
-                    sumVol = 0
-                    vp.tsh = 0.05
-                    maxVol, maxIdx, sumVol = d2dm_check_melt_fracton(gp, vp, mf_rock_arr)
-					sumVol = (sumVol * (dxl * dyl) / 1.e9) * 1.e4 * (1 - vp.gamma)
-                    append!(gp.cum_mf_05, sumVol)
-=#
 
-                    sumVol = 0
-                    vp.tsh = 0.1
-                    maxVol, maxIdx, sumVol = d2dm_check_melt_fracton(gp, vp, mf_rock_arr)
-					sumVol = (sumVol * (dxl * dyl) / 1.e9) * 1.e4 * (1 - vp.gamma)
-                    append!(gp.cum_mf_10, sumVol)
+                    #                sumVol = 0
+                    #                vp.tsh = 0.05
+                    #                maxVol, maxIdx, sumVol = d2dm_check_melt_fracton(gp, vp, mf_rock_arr)
+                    # sumVol = (sumVol * (dxl * dyl) / 1.e9) * 1.e4 * (1 - vp.gamma)
+                    #                append!(gp.cum_mf_05, sumVol)
 
-#=
-                    sumVol = 0
-                    vp.tsh = 0.25
-                    maxVol, maxIdx, sumVol = d2dm_check_melt_fracton(gp, vp, mf_rock_arr)
-					sumVol = (sumVol * (dxl * dyl) / 1.e9) * 1.e4 * (1 - vp.gamma)
-                    append!(gp.cum_mf_25, sumVol)
 
-                    sumVol = 0
-                    vp.tsh = 0.50
-                    maxVol, maxIdx, sumVol = d2dm_check_melt_fracton(gp, vp, mf_rock_arr)
-					sumVol = (sumVol * (dxl * dyl) / 1.e9) * 1.e4 * (1 - vp.gamma)
-                    append!(gp.cum_mf_50, sumVol)
+                    #                sumVol = 0
+                    #                vp.tsh = 0.1
+                    #                maxVol, maxIdx, sumVol = d2dm_check_melt_fracton(gp, vp, mf_rock_arr)
+                    # sumVol = (sumVol * (dxl * dyl) / 1.e9) * 1.e4 * (1 - vp.gamma)
+                    #                append!(gp.cum_mf_10, sumVol)
+                    #
+                    #
+                    #                sumVol = 0
+                    #                vp.tsh = 0.25
+                    #                maxVol, maxIdx, sumVol = d2dm_check_melt_fracton(gp, vp, mf_rock_arr)
+                    # sumVol = (sumVol * (dxl * dyl) / 1.e9) * 1.e4 * (1 - vp.gamma)
+                    #                append!(gp.cum_mf_25, sumVol)
+                    #
+                    #                sumVol = 0
+                    #                vp.tsh = 0.50
+                    #                maxVol, maxIdx, sumVol = d2dm_check_melt_fracton(gp, vp, mf_rock_arr)
+                    # sumVol = (sumVol * (dxl * dyl) / 1.e9) * 1.e4 * (1 - vp.gamma)
+                    #                append!(gp.cum_mf_50, sumVol)
+                    #
+                    #                sumVol = 0
+                    #                vp.tsh = 0.75
+                    #                maxVol, maxIdx, sumVol = d2dm_check_melt_fracton(gp, vp, mf_rock_arr)
+                    # sumVol = (sumVol * (dxl * dyl) / 1.e9) * 1.e4 * (1 - vp.gamma)
+                    #                append!(gp.cum_mf_75, sumVol)
 
-                    sumVol = 0
-                    vp.tsh = 0.75
-                    maxVol, maxIdx, sumVol = d2dm_check_melt_fracton(gp, vp, mf_rock_arr)
-					sumVol = (sumVol * (dxl * dyl) / 1.e9) * 1.e4 * (1 - vp.gamma)
-                    append!(gp.cum_mf_75, sumVol)
 
-                    =#
                     sumVol = 0
                     vp.tsh = 0.85
                     maxVol, maxIdx, sumVol = d2dm_check_melt_fracton(gp, vp, mf_rock_arr)
-					sumVol = (sumVol * (dxl * dyl) / 1.e9) * 1.e4 * (1 - vp.gamma)
+                    sumVol = (sumVol * (dxl * dyl) / 1.e9) * 1.e4 * (1 - vp.gamma)
                     append!(gp.cum_mf_85, sumVol)
 
                     vp.tsh = tsh_tmp
