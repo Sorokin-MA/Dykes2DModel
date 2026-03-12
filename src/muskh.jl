@@ -1,11 +1,12 @@
 Base.@kwdef mutable struct DykeParam
-    a::Float64 = 4
-    b::Float64 = 0.5
+    a::Float64 = 500
+    b::Float64 = 20
     x::Float64 = 0
     y::Float64 = 0
     phi::Float64 = 0
-    P_in::Float64 = 1
+    P_in::Float64 = 100000
 end
+
 
 
 function insert_dyke_gpu!(Sxx, Syy, Sxy, XX, YY, nx, ny,
@@ -201,7 +202,7 @@ function calc_cent_of_next_dyke(dyke_param, Sxx, Syy, Sxy, XX, YY, y_limit, Y_ri
 
     for i in eachindex(ypoints)
         x_new = X_lim / 4 + X_lim / 2 * rand()
-        y_new = 3.0
+        y_new = 1000.0
         #println(ypoints)
         if ypoints[i] > y_limit
             println("REACHED SURFACE!")
