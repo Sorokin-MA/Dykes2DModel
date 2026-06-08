@@ -73,7 +73,11 @@ function set_init_sigma_cald_xy(S, g, rhp_r, dx, Lx::Float32, Ly::Float32, nx, n
     S[idc(ix, iy, nx)] = S[idc(ix, iy, nx)] + (p_0 / pi * log((y^2 + (x + a)^2) / (y^2 + (x - a)^2)))
     return
 end
-
+#=
+TODO:
+1. Why dykes laying flat? 
+2. Check pressure in mantolini and matlab code
+=#
 function d2dm_pres_test()
 #Init
 	log_println("Init")
@@ -81,23 +85,26 @@ function d2dm_pres_test()
     Lx = 20000 #x Length of area
     Ly = 20000 #y Length of area
 
-    nx = 20001÷5 #x grid resolution
-    ny = 6001÷5  #y grid resolution
+	val = 5
+
+    nx = (20001÷5) #x grid resolution
+    ny = (6001÷5) #y grid resolution
 
     X_left_lim, X_right_lim = 0, 20000
     Z_left_lim, Z_right_lim = 0, 6000
-    z_limit = 5000 #Surface level (from bottom)
+    z_limit = Z_right_lim - 700 #Surface level (from top)
 
 	#Setup main params
     XX = range(X_left_lim, X_right_lim, nx)
     ZZ = range(Z_left_lim, Z_right_lim, ny)
-    dx = (X_right_lim - X_left_lim) / nx
-    dz = (Z_right_lim - Z_left_lim) / ny
-
 	log_println("length of XX: $(length(XX))", 2)
 	log_println("length of ZZ: $(length(ZZ))", 2)
 
-    dyke_param = DykeParam(x=2000, y=1000, a=500, b=20, phi=pi/2)  #Param of first dyke
+    dx = (X_right_lim - X_left_lim) / nx
+    dz = (Z_right_lim - Z_left_lim) / ny
+
+
+    dyke_param = DykeParam(x=3000, y=2000, phi=pi/2)  #Param of first dyke
 
     xpoints::Vector{Float64} = Vector{Float64}(undef, 1)
     ypoints::Vector{Float64} = Vector{Float64}(undef, 1)
@@ -115,7 +122,6 @@ function d2dm_pres_test()
 	Sxx_file = h5open("Sxx.h5", "r") 
 	Szz_file = h5open("Szz.h5", "r") 
 	Sxz_file = h5open("Sxz.h5", "r") 
-	val = 5
 
 	#Sxx
 	#Read dataset
@@ -197,9 +203,9 @@ function d2dm_pres_test()
     @cuda blocks = gridSize[1], gridSize[2] threads = blockSize[1], blockSize[2] set_init_sigma_cald_xy(Sxy_gpu, 9.8, 0.0265, dx, Float32(X_right_lim), Float32(Y_right_lim), nx, ny)
 	=#
 	
-	copyto!(Sxx_gpu, Sxx_plot)
-	copyto!(Szz_gpu, Szz_plot)
-	copyto!(Sxz_gpu, Sxz_plot)
+	copyto!(Sxx_gpu, Sxx_plot')
+	copyto!(Szz_gpu, Szz_plot')
+	copyto!(Sxz_gpu, Sxz_plot')
 
     log_println("Sxx_gpu  length: $(length(Sxx_gpu))", 2)
     log_println("Sxx_plot length: $(length(Sxx_plot))", 2)
@@ -208,14 +214,17 @@ function d2dm_pres_test()
 	log_println("Main loop", 1)
 	#Grid params for gput kernel calulations
     blockSize = (16, 16)
-    gridSize = (Int64(floor((nx + blockSize[1] - 1) ÷ blockSize[1])), Int64(floor((ny + blockSize[2] - 1) ÷ blockSize[2])))
+	nx = length(Sxz_x_plot)
+	nz = length(Sxz_z_plot)
+	println("Sxz_x_plot - $Sxz_x_plot")
+	println("Sxz_z_plot - $Sxz_z_plot")
+    gridSize = (Int64(floor((nx + blockSize[1] - 1) ÷ blockSize[1])), Int64(floor((nz + blockSize[2] - 1) ÷ blockSize[2])))
 
-    for i in 1:20
+    for i in 1:6
         @time begin
-            @cuda blocks = gridSize[1], gridSize[2] threads = blockSize[1], blockSize[2] insert_dyke_gpu!(Sxx_gpu, Szz_gpu, Sxz_gpu,
-                x_range, z_range,
-                nx, ny,
-                dyke_param.a, dyke_param.b, dyke_param.P_in, dyke_param.x, dyke_param.y, dyke_param.phi)
+            @cuda blocks = gridSize[1], gridSize[2] threads = blockSize[1], blockSize[2] insert_dyke_gpu!(Sxx_gpu, Szz_gpu, Sxz_gpu, x_range, z_range, nx, nz,
+                dyke_param.a, dyke_param.b, dyke_param.P_in, 
+                dyke_param.x, dyke_param.y, dyke_param.phi)
 
             synchronize()
 
@@ -223,11 +232,11 @@ function d2dm_pres_test()
             copyto!(vec(Szz_plot), Szz_gpu)
             copyto!(vec(Sxz_plot), Sxz_gpu)
 
-            next_point_x, next_point_y, xpoints, ypoints, l_vecs = calc_cent_of_next_dyke(dyke_param, Sxx_plot, Szz_plot, Sxz_plot, XX, ZZ, z_limit, Z_right_lim, X_right_lim)
+            next_point_x, next_point_y, xpoints, ypoints, l_vecs = calc_cent_of_next_dyke(dyke_param, Sxx_plot', Szz_plot', Sxz_plot', Sxz_x_plot, Sxz_z_plot, z_limit, Z_right_lim, X_right_lim)
 
 			log_println("Dyke #$i inserted!", 2)
 			log_println("Coordinates - ($next_point_x, $next_point_y) inserted!", 2)
-            #println("$next_point_x, $next_point_y, $xpoints, $ypoints")
+
             _, phi_tmp = d2dm_cart_to_polar(l_vecs[3], l_vecs[4])
             dyke_param = DykeParam(x=next_point_x, y=next_point_y, phi=phi_tmp)
         end
@@ -250,7 +259,8 @@ function d2dm_pres_test()
 	Plots.heatmap!(test_plot, Sxz_x_plot, Sxz_z_plot, Sxz_plot, 
 			title="Sxz", subplot=3,
 			xlabel="X", ylabel="Z")
-    Plots.quiver!(test_plot, [next_point_x, next_point_x], [next_point_y, next_point_y], quiver=([l_vecs[1] l_vecs[2]], [l_vecs[3], l_vecs[4]]), subplot=4, xlimit=[X_left_lim, X_right_lim], ylimit=[Z_left_lim, Z_right_lim])
+    Plots.scatter!(test_plot, xpoints, ypoints, subplot=4, markersize=1, xlimit=[X_left_lim, X_right_lim], ylimit=[Z_left_lim, Z_right_lim], title="last dyke")
+	Plots.quiver!(test_plot, [next_point_x, next_point_x], [next_point_y, next_point_y], quiver=([l_vecs[1] l_vecs[2]], [l_vecs[3], l_vecs[4]]), subplot=4, xlimit=[X_left_lim, X_right_lim], ylimit=[Z_left_lim, Z_right_lim])
     display(test_plot)
 
 #=

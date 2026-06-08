@@ -1,8 +1,8 @@
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.10.5"
+julia_version = "1.10.3"
 manifest_format = "2.0"
-project_hash = "ac3c7d6195b3414a2a9116fa6f02a4112934fa3f"
+project_hash = "37f7789166ee3c1d1c53e6e9ec4954fce62be0e7"
 
 [[deps.ATK_jll]]
 deps = ["Artifacts", "Glib_jll", "JLLWrappers", "Libdl"]
@@ -358,9 +358,9 @@ version = "1.14.10+0"
 
 [[deps.Debugger]]
 deps = ["CodeTracking", "Crayons", "Highlights", "InteractiveUtils", "JuliaInterpreter", "Markdown", "REPL"]
-git-tree-sha1 = "35e6b5a354449f0fbd504d7f9248870b060f177e"
+git-tree-sha1 = "41dc8fb2dc7c85ed9587d75f7ca525ba59a296f2"
 uuid = "31a5f54b-26ea-5ae9-a837-f05ce5417438"
-version = "0.7.10"
+version = "0.7.11"
 
 [[deps.DelimitedFiles]]
 deps = ["Mmap"]
@@ -2117,7 +2117,7 @@ version = "0.15.2+0"
 [[deps.libblastrampoline_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850b90-86db-534c-a0d3-1478176c7d93"
-version = "5.11.0+0"
+version = "5.8.0+1"
 
 [[deps.libdecor_jll]]
 deps = ["Artifacts", "Dbus_jll", "JLLWrappers", "Libdl", "Libglvnd_jll", "Pango_jll", "Wayland_jll", "xkbcommon_jll"]

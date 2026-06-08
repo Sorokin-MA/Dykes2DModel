@@ -1,10 +1,12 @@
+# made boilerplate - Sxx is [z,x] array
+
 Base.@kwdef mutable struct DykeParam
     a::Float64 = 500
     b::Float64 = 20
     x::Float64 = 0
     y::Float64 = 0
     phi::Float64 = 0
-    P_in::Float64 = 100000
+    P_in::Float64 = 2000000 #TODO: dimensions and value
 end
 
 
@@ -25,9 +27,9 @@ function insert_dyke_gpu!(Sxx, Syy, Sxy, XX, YY, nx, ny,
     m::Float64 = (dyke_param_a - dyke_param_b) / (dyke_param_a + dyke_param_b) #Variable in Joukovskiy equasion
     nu::Float64 = 0.3 #poussion coefficient
     eta::Float64 = (1 - 2 * nu) / (1 - nu) / 2
-    rc::Float64 = 20 # rho_*
+    rc::Float64 = 2300 # rho_*
     Pcr::Float64 = dyke_param_P_in # Fluid pressure on cavity
-    Po::Float64 = 3 # Fluid pressure on external boundary
+    Po::Float64 = Pcr/1000 # Fluid pressure on external boundary Pa
 
 
     point_x = XX[ix] - dyke_param_x
@@ -41,8 +43,7 @@ function insert_dyke_gpu!(Sxx, Syy, Sxy, XX, YY, nx, ny,
 
     Z_real = rho * exp(1im * upsilon)
 
-    #FIXME why 1/2?
-    R = 1 / 2
+    R = (dyke_param_a+dyke_param_b)/2
 
     #Reverse Zhoukovski
     if (real(Z_real) >= 0)
@@ -50,6 +51,8 @@ function insert_dyke_gpu!(Sxx, Syy, Sxy, XX, YY, nx, ny,
     else
         Zr_rev_z = Z_real - sqrt(Z_real^2 - m)
     end
+
+	Zr_rev_z = Zr_rev_z/(dyke_param_a+dyke_param_b)
 
     X = real(Zr_rev_z)
     Y = imag(Zr_rev_z)
@@ -76,6 +79,7 @@ function insert_dyke_gpu!(Sxx, Syy, Sxy, XX, YY, nx, ny,
         Syy[cur_index] = Syy[cur_index] - 1 / 2 * (((2 * Rho .^ 2 + 1 + Rho .^ 4) .* Srr + (-Rho .^ 4 + 2 * Rho .^ 2 - 1) .* Stt) .* cos(2 * alpha) + (-2 * Rho .^ 2 - 1 - Rho .^ 4) .* Srr + (-Rho .^ 4 + 2 * Rho .^ 2 - 1) .* Stt + (-2 * Rho .^ 4 * sin(2 * alpha) + 2 * sin(2 * alpha)) .* Srt) ./ (-2 * Rho .^ 2 * cos(2 * alpha) + Rho .^ 4 + 1)
         Sxy[cur_index] = Sxy[cur_index] + 1 / 2 * ((2 + 2 * Rho .^ 4) .* Srt .* cos(2 * alpha) + (-sin(2 * alpha) + Rho .^ 4 * sin(2 * alpha)) .* Srr + (sin(2 * alpha) - Rho .^ 4 * sin(2 * alpha)) .* Stt - 4 * Srt .* Rho .^ 2) ./ (-2 * Rho .^ 2 * cos(2 * alpha) + Rho .^ 4 + 1)
     else
+        #TODO what is inside of dyke
         Sxx[cur_index] = Sxx[cur_index] + 1
         Syy[cur_index] = Syy[cur_index] + 1
         Sxy[cur_index] = Sxy[cur_index] + 1
@@ -112,7 +116,7 @@ end
 
 
 ```
-Get ints on peremeter of ellipsis
+Get points on peremeter of ellipsis
 ```
 function get_points!(dyke_param, num_of_points)
     upsilon = 0:(2*pi)/(num_of_points-1):2*pi
@@ -120,7 +124,7 @@ function get_points!(dyke_param, num_of_points)
 
     Z_real = rho .* exp.(1im * upsilon)
 
-    R = 1 / 2
+    R = (dyke_param.a + dyke_param.b) / 2
     m::Float64 = (dyke_param.a - dyke_param.b) / (dyke_param.a + dyke_param.b) #Variable in Joukovskiy equasion
 
     #Zhoukovski transformation
@@ -206,14 +210,20 @@ function calc_cent_of_next_dyke(dyke_param, Sxx, Syy, Sxy, XX, YY, y_limit, Y_ri
         #println(ypoints)
         if ypoints[i] > y_limit
             println("REACHED SURFACE!")
-            #_, l_vecs = get_sigma2(x_new, y_new, XX, YY, Sxx, Syy, Sxy)
-            tmp, l_vecs = get_sigma2(xpoints[1], ypoints[1], XX, YY, Sxx, Syy, Sxy)
+            _, l_vecs = get_sigma2(x_new, y_new, XX, YY, Sxx, Syy, Sxy)
+            #tmp, l_vecs = get_sigma2(xpoints[1], ypoints[1], XX, YY, Sxx, Syy, Sxy)
             return x_new, y_new, xpoints, ypoints, l_vecs
         end
         if (xpoints[i] >= X_lim) || (xpoints[i] <= 0)
             println("REACHED BOUNDARY!")
-            #_, l_vecs = get_sigma2(x_new, y_new, XX, YY, Sxx, Syy, Sxy)
-            tmp, l_vecs = get_sigma2(xpoints[1], ypoints[1], XX, YY, Sxx, Syy, Sxy)
+            println("x_new - $x_new")
+            println("y_new - $y_new")
+
+			println("Sxx")
+			println(size(Sxx))
+
+            _, l_vecs = get_sigma2(x_new, y_new, XX, YY, Sxx, Syy, Sxy)
+            #tmp, l_vecs = get_sigma2(xpoints[1], ypoints[1], XX, YY, Sxx, Syy, Sxy)
             return x_new, y_new, xpoints, ypoints, l_vecs
         end
 
