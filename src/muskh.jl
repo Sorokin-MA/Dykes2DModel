@@ -6,7 +6,7 @@ Base.@kwdef mutable struct DykeParam
     x::Float64 = 0
     y::Float64 = 0
     phi::Float64 = 0
-    P_in::Float64 = 2000000 #TODO: dimensions and value
+    P_in::Float64 = 20000000 #TODO: dimensions and value
 end
 
 
@@ -161,6 +161,7 @@ end
 Function interpolate point with blerp, interpolate Sxx, Sxy, Syy accordingly
 and then calculating maximal sigma
 ```
+#=
 function get_sigma2(x, y, XX, YY, Sxx, Syy, Sxy)
     x_lf = 0.0
     y_lf = 0.0
@@ -187,6 +188,40 @@ function get_sigma2(x, y, XX, YY, Sxx, Syy, Sxy)
     Sxx_local = d2dm_blerp(XX[x_lf], XX[x_lf+1], YY[y_lf], YY[y_lf+1], Sxx[x_lf, y_lf], Sxx[x_lf, y_lf+1], Sxx[x_lf+1, y_lf], Sxx[x_lf+1, y_lf+1], x + small_dif_x, y + small_dif_y)
     Sxy_local = d2dm_blerp(XX[x_lf], XX[x_lf+1], YY[y_lf], YY[y_lf+1], Sxy[x_lf, y_lf], Sxy[x_lf, y_lf+1], Sxy[x_lf+1, y_lf], Sxy[x_lf+1, y_lf+1], x + small_dif_x, y + small_dif_y)
     Syy_local = d2dm_blerp(XX[x_lf], XX[x_lf+1], YY[y_lf], YY[y_lf+1], Syy[x_lf, y_lf], Syy[x_lf, y_lf+1], Syy[x_lf+1, y_lf], Syy[x_lf+1, y_lf+1], x + small_dif_x, y + small_dif_y)
+
+    mat_local = [Sxx_local Sxy_local; Sxy_local Syy_local]
+
+    l_vecs = eigvecs(mat_local)
+    l_vals = eigvals(mat_local)
+
+    #TODO:check if sorted right
+    return l_vals[2], l_vecs
+end
+=#
+
+function get_sigma2(x, y, XX, YY, Sxx, Syy, Sxy)
+    # Find indices - note the orientation
+    x_idx = findlast(XX .<= x)  # Better than manual loop
+    y_idx = findlast(YY .<= y)
+    
+    if isnothing(x_idx) || isnothing(y_idx) || x_idx >= length(XX) || y_idx >= length(YY)
+        return 0.0, zeros(2,2)
+    end
+    
+    Sxx_local = d2dm_blerp(XX[x_idx], XX[x_idx+1], YY[y_idx], YY[y_idx+1], 
+                          Sxx[x_idx, y_idx], Sxx[x_idx, y_idx+1], 
+                          Sxx[x_idx+1, y_idx], Sxx[x_idx+1, y_idx+1], 
+                          x, y)
+
+    Sxy_local = d2dm_blerp(XX[x_idx], XX[x_idx+1], YY[y_idx], YY[y_idx+1], 
+                          Sxy[x_idx, y_idx], Sxy[x_idx, y_idx+1], 
+                          Sxy[x_idx+1, y_idx], Sxy[x_idx+1, y_idx+1], 
+                          x, y)
+
+    Syy_local = d2dm_blerp(XX[x_idx], XX[x_idx+1], YY[y_idx], YY[y_idx+1], 
+                          Syy[x_idx, y_idx], Syy[x_idx, y_idx+1], 
+                          Syy[x_idx+1, y_idx], Syy[x_idx+1, y_idx+1], 
+                          x, y)
 
     mat_local = [Sxx_local Sxy_local; Sxy_local Syy_local]
 

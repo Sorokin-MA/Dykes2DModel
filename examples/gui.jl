@@ -2,6 +2,7 @@
 GUI implementation for d2dm
 """
 
+using Base64
 using Dykes2DModel
 using Printf
 using Dash
@@ -12,6 +13,8 @@ using Random
 using Interpolations
 using Adapt
 using CUDA
+
+using NativeFileDialog
 
 bar1 = "\n├──"
 bar2 = "\n\t ├──"
@@ -30,8 +33,7 @@ str_time_spend::Float64 = 0;
 str_time_left = Time(0)
 
 data_folder = "..\\d2dm_data\\"
-path_to_snap = "c:\\"
-
+path_to_snap = ""
 
 FLAG_make_snapshot::Bool = false
 
@@ -185,6 +187,7 @@ function dykes_gui()
     init_vp = InitVarParams()#params for generate random
 
     num_columns = 5 #number of columns in params part
+	mf_boundaries = 0.1
 
     #init default eruption history
     init_vp.critVol = global_EruptionVolumesVec
@@ -266,24 +269,34 @@ function dykes_gui()
                 interval=1 * 5000, # in milliseconds
                 n_intervals=1)
         ]),
-        html_h2(
-            "4. Snapshots.",
-            style=Dict("color" => "#000000", "textAlign" => "left"),
+	html_h2(
+		"4. Snapshots.",
+		style=Dict("color" => "#000000", "textAlign" => "left"),
+	),
+	html_div() do
+		html_button(
+			"🔄 Load Snapshot",
+			id="load-snapshot-but",
+			n_clicks=0,
+			style=Dict(
+				"backgroundColor" => "#28a745",
+				"color" => "white",
+				"padding" => "10px 20px",
+				"border" => "none",
+				"borderRadius" => "5px",
+				"cursor" => "pointer",
+				"margin" => "5px"
+			)
         ),
-        html_div(className="info", style=Dict("columnCount" => num_columns)) do
-            html_button("Make snapshot", id="save-snapshot-but", disabled=false)
-            #html_button("Load snapshot", id="load-snapshot-but", disabled=false),
-            dcc_upload(id="load-snapshot-upload", html_button("Load config", id="load-snapshot-but"))
-        end,
-        # html_div() do
-        #     html_button("Load snapshot", id="load-snapshot-but"),
-        #     dcc_upload(id="load-snapshot-upload")
-        # end,
-        html_div() do
-            html_label(children="Path to snapshot:"),
+		html_div(id="load-snapshot-div")
+    end,
+	html_div(id="snapshot-file-display", style=Dict("margin" => "10px 0")),
+	html_div(id="snapshot-status-text", style=Dict("margin" => "10px 0")),
+	html_div(id="snapshot-load-result"), 
+	html_div() do
             html_div(
                 children=[
-                    dcc_input(id="path_to_snap_id", value=path_to_snap, type="text", debounce=true)
+					simple_imput("mf_boundaries", mf_boundaries)
                 ],
             )
         end,
@@ -301,8 +314,55 @@ function dykes_gui()
         end
     end
 
-    #table for input params
-    #
+	callback!(app, 
+		[Output("load-snapshot-div", "children")], 
+		[Input("load-snapshot-but", "n_clicks")],
+		prevent_initial_call=true
+	) do n_clicks
+		# This opens a native OS dialog window to pick a file
+		chosen_path = pick_file() 
+		
+		if isempty(chosen_path)
+			return ["Path is empty"]
+		end
+
+		#filename = @sprintf("d2d_snapshot.hdf5")
+    
+        filename = chosen_path
+    
+        fid = h5open(filename, "r")
+        
+
+        for n in fieldnames(typeof(vp))
+            setfield!(vp, n, read(fid, string(n)))
+            println(getfield(vp, n))
+        end
+        
+        for n in fieldnames(typeof(gp))
+            if (getfield(gp, n) isa CuArray)
+                d2d_cu_type = eltype(getfield(gp, n))
+                nn::CuArray{d2d_cu_type,1} = CuArray{d2d_cu_type,1}(undef, size(getfield(gp, n))[1])
+                nn = read(fid, string(n))
+                setfield!(gp, n, nn)
+                println("GPU")
+                #println(getfield(gp,n))
+            else
+                setfield!(gp, n, read(fid, string(n)))
+                println("CPU")
+                #println(getfield(gp,n))
+            end
+        end
+        
+
+        println("snapshot loaded from " * filename)
+        log_to_buffer("snapshot loaded from " * filename)
+
+        close(fid)
+        
+	 	return ["Path - $chosen_path"]
+	end
+
+
     callback!(app, [Output("tabs-content-example-graph", "children")],
         [Input("tabs-example-graph", "value")]) do tab
         if tab == "tab-1-example-graph"
@@ -327,8 +387,8 @@ function dykes_gui()
                     simple_imput("T_ch", init_vp.T_ch),
                     simple_imput("Qv", init_vp.Qv),
                     simple_imput("dyke_x_W", init_vp.dyke_x_W),
-                    simple_imput("dyke_y_rng_bot", init_vp.dyke_y_rng_bot),
-                    simple_imput("dyke_y_rng_top", init_vp.dyke_y_rng_top),
+                    #simple_imput("dyke_y_rng_bot", init_vp.dyke_y_rng_bot),
+                    #simple_imput("dyke_y_rng_top", init_vp.dyke_y_rng_top),
                     simple_imput("Ly_eruption", init_vp.Ly_eruption),
                     simple_imput("dT", init_vp.dT),
                     simple_imput("E", init_vp.E),
@@ -531,18 +591,25 @@ function dykes_gui()
         xs = 0:vp.dx:vp.Lx
         ys = 0:vp.dy:vp.Ly
 
-        h_T = Array{Float64,1}(undef, vp.nx * vp.ny)#array of double values from matlab script
+        h_T = Array{Float64,1}(undef, vp.nx * vp.ny)
         copyto!(h_T, gp.T)
 
-
+		#=
         h_T[h_T.>800] .= 1
         h_T[h_T.<=800] .= 0
-
         non_zero_count = count(x -> x != 0, h_T)
         println(non_zero_count)
+        =#
 
         title_string = "T, (time, " * string(-(vp.nt - vp.it) / vp.nt * init_vp.calc_years / 1000) * " ka)"
-        layout_inner = Layout(title=title_string)
+        layout_inner = Layout(title=title_string, 
+		yaxis=attr(
+		range=[0, 20],  # Reverse the range: max to min
+			title="Depth (km)",
+			tickvals=0:5:20,
+			ticktext=["0", "5k", "10k", "15k", "20k"])
+        )
+
         p = Plot(PlotlyJS.heatmap(x=xs, y=ys, z=collect(eachrow(reshape(h_T, (vp.nx, vp.ny))))), layout_inner)
 
         return [
@@ -589,8 +656,8 @@ function dykes_gui()
         copyto!(h_C, gp.C)
 
         mf = d2dm_mf_magma.(h_T) .* h_C + itp.(h_T) .* (1.0 .- h_C)
-        mf[mf.>0.1] .= 1
-        mf[mf.<=0.1] .= 0
+        mf[mf.>mf_boundaries] .= 1
+        mf[mf.<=mf_boundaries] .= 0
 
         dxl = vp.dx * vp.nl
         dyl = vp.dy * vp.nl
@@ -599,7 +666,7 @@ function dykes_gui()
         #i guess 1.e4 here is z
         real_vol_2 = (non_zero_count * (vp.dx * vp.dy) / 1.e9) * 1.e4 * (1)
 
-        println("accomulated material" * string(real_vol_2) * "km^3")
+        println("accomulated material " * string(real_vol_2) * " km^3")
 
         title_string = "Melt fraction (mf), (time, " * string(-(vp.nt - vp.it) / vp.nt * init_vp.calc_years / 1000) * " ka)"
         layout_inner = Layout(title=title_string)
@@ -1083,13 +1150,12 @@ function dykes_gui()
         end
     end
 
-    callback!(app, [Output("path_to_snap_id", "value")], [Input("path_to_snap_id", "value")]) do input_value
-        global path_to_snap = input_value
-        return [path_to_snap]
+	callback!(app, [Output("mf_boundaries", "value")], [Input("mf_boundaries", "value")]) do input_value
+            mf_boundaries = input_value
+            return [mf_boundaries]
     end
 
-
-    callback!(app,
+	callback!(app,
         [Output("output-data-upload", "children")],
         [Input("upload-data", "contents")],
         [State("upload-data", "filename"), State("upload-data", "last_modified")],
@@ -1185,47 +1251,14 @@ function dykes_gui()
 
         return [n_clicks]
     end
+#=
+callback!(app, [Output("path_to_snap_id", "value")], [Input("path_to_snap_id", "value")]) do input_value
+    global path_to_snap = input_value
+    println("Path updated to: $path_to_snap")  # Debug line
+    return [path_to_snap]
+end
+=#
 
-
-    callback!(app,
-        [Output("load-snapshot-but", "n_clicks")],
-        [Input("load-snapshot-but", "n_clicks")], prevent_initial_call=true
-    ) do n_clicks
-        #filename = @sprintf("d2d_snapshot.hdf5")
-
-        filename = path_to_snap
-
-        fid = h5open(filename, "r")
-
-
-        for n in fieldnames(typeof(vp))
-            setfield!(vp, n, read(fid, string(n)))
-            println(getfield(vp, n))
-        end
-
-        for n in fieldnames(typeof(gp))
-            if (getfield(gp, n) isa CuArray)
-                d2d_cu_type = eltype(getfield(gp, n))
-                nn::CuArray{d2d_cu_type,1} = CuArray{d2d_cu_type,1}(undef, size(getfield(gp, n))[1])
-                nn = read(fid, string(n))
-                setfield!(gp, n, nn)
-                println("GPU")
-                #println(getfield(gp,n))
-            else
-                setfield!(gp, n, read(fid, string(n)))
-                println("CPU")
-                #println(getfield(gp,n))
-            end
-        end
-
-
-        println("snapshot loaded from " * filename)
-        log_to_buffer("snapshot loaded from " * filename)
-
-        close(fid)
-
-        return [n_clicks]
-    end
 
 
     #run_server(app)
@@ -1323,12 +1356,12 @@ function main_test_gui(gp::GridParams, vp::VarParams, init_vp::InitVarParams, FL
                     # sumVol = (sumVol * (dxl * dyl) / 1.e9) * 1.e4 * (1 - vp.gamma)
                     #                append!(gp.cum_mf_25, sumVol)
                     #
-                    #                sumVol = 0
-                    #                vp.tsh = 0.50
-                    #                maxVol, maxIdx, sumVol = d2dm_check_melt_fracton(gp, vp, mf_rock_arr)
-                    # sumVol = (sumVol * (dxl * dyl) / 1.e9) * 1.e4 * (1 - vp.gamma)
-                    #                append!(gp.cum_mf_50, sumVol)
-                    #
+                                    sumVol = 0
+                                    vp.tsh = 0.50
+                                    maxVol, maxIdx, sumVol = d2dm_check_melt_fracton(gp, vp, mf_rock_arr)
+                     sumVol = (sumVol * (dxl * dyl) / 1.e9) * 1.e4 * (1 - vp.gamma)
+                                    append!(gp.cum_mf_50, sumVol)
+                    
                     #                sumVol = 0
                     #                vp.tsh = 0.75
                     #                maxVol, maxIdx, sumVol = d2dm_check_melt_fracton(gp, vp, mf_rock_arr)
@@ -1336,11 +1369,18 @@ function main_test_gui(gp::GridParams, vp::VarParams, init_vp::InitVarParams, FL
                     #                append!(gp.cum_mf_75, sumVol)
 
 
-                    sumVol = 0
-                    vp.tsh = 0.85
-                    maxVol, maxIdx, sumVol = d2dm_check_melt_fracton(gp, vp, mf_rock_arr)
-                    sumVol = (sumVol * (dxl * dyl) / 1.e9) * 1.e4 * (1 - vp.gamma)
-                    append!(gp.cum_mf_85, sumVol)
+                    #sumVol = 0
+                    #vp.tsh = 0.85
+                    #maxVol, maxIdx, sumVol = d2dm_check_melt_fracton(gp, vp, mf_rock_arr)
+                    #sumVol = (sumVol * (dxl * dyl) / 1.e9) * 1.e4 * (1 - vp.gamma)
+                    #append!(gp.cum_mf_85, sumVol)
+
+					#sumVol = 0
+                    #vp.tsh = 0.95
+                    #maxVol, maxIdx, sumVol = d2dm_check_melt_fracton(gp, vp, mf_rock_arr)
+                    #sumVol = (sumVol * (dxl * dyl) / 1.e9) * 1.e4 * (1 - vp.gamma)
+                    #append!(gp.cum_mf_95, sumVol)
+
 
                     vp.tsh = tsh_tmp
                     sumVol = 0

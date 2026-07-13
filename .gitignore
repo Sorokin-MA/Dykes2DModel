@@ -23,6 +23,7 @@ untitled*
 *~
 *.exe
 *.cu
+*.jld2
 
 #For debugging purpose onlye
 *6ms*

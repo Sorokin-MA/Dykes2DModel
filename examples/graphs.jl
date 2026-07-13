@@ -119,7 +119,7 @@ function dykes_graph()
 
 
     p_rock = PlotlyJS.scatter(x=A_x, y=d2dm_mf_rock(A_x), mode="lines", name="mf, rock", marker_color="rgba(255, 0, 0, 1)")
-    # p_rock = plot(A_x, d2dm_mf_rock(A_x), markersize=7,
+    # p_rock = plot(A_x, d2d0_mf_rock(A_x), markersize=7,
     #     markershape=:circle, color=:red, legend=true,
     #     framestyle=:origin, yaxis=false, grid=false, aspect_ratio=1.0, label="mf, rock")
 
@@ -247,12 +247,12 @@ end
 
 
 function d2dm_mf_graph()
-    #fid_after = h5open(data_folder * "d2d_snapshot_23000_2025_07_12_18_09_17.hdf5", "r")
-    fid_after = h5open("E:\\Melnik\\campri\\Dykes2DModel\\d2d_snapshot_23000_2025_07_12_18_09_17.hdf5", "r")
+    fid_after = h5open(data_folder * "julia_grid.22001.true.h5", "r")
+    #fid_after = h5open("E:\\Melnik\\campi\\Dykes2DModel\\d2d_snapshot_23000_2025_07_12_18_09_17.hdf5", "r")
 
     cumulutive_time = read(fid_after, "cumulutive_time")
     nt = read(fid_after, "nt")
-    calc_years = 230000
+    calc_years = 220000
     cum_mf_01 = read(fid_after, "cum_mf_01")
     cum_mf_05 = read(fid_after, "cum_mf_05")
     cum_mf_10 = read(fid_after, "cum_mf_10")
@@ -269,7 +269,7 @@ function d2dm_mf_graph()
     	Plots.plot!(cumulutive_time, cum_mf_05, label="5%")
     =#
 
-    Plots.plot!(cumulutive_time, cum_mf_10, label="10%")
+    #Plots.plot!(cumulutive_time, cum_mf_10, label="10%")
 
     #=
     	Plots.plot!(cumulutive_time, cum_mf_25, label="25%")
