@@ -180,8 +180,8 @@ Base.@kwdef mutable struct InitVarParams
     dyke_nu::Float64 = -1
     dyke_dev::Float64 = 0.4
 
-    #dyke_y_rng_bot::Float64 = 2000
-    #dyke_y_rng_top::Float64 = 15000
+    dyke_y_rng_bot::Float64 = 2000
+    dyke_y_rng_top::Float64 = 15000
 
     dyke_type::Int64 = 3
 
