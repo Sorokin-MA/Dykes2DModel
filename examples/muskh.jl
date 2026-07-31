@@ -22,15 +22,13 @@ function meshgrid(x, y)
     return [X, Y]
 end
 
-
+# 2D to 1D coordinates
 function idc(ix, iy, nx)
     return ((iy) * nx + ix + 1)
 end
 
-
 function log_println(str, level = 1)
-    println(("-> "^level) * str)
-    #pritnln(str)
+    println(("\t"^(level-1)) * ("└─ ") * str)
 end
 
 function set_init_sigma(S, g, rhp_r, depth::Float32, nx, ny)
@@ -64,7 +62,6 @@ function set_init_sigma_cald_xx(S, g, rhp_r, dx, Lx::Float32, Ly::Float32, nx, n
     S[idc(ix, iy, nx)] = S[idc(ix, iy, nx)] + (-p_0 / pi * ((atan((x + a) / y) - atan((x - a) / y)) + (y * (x + a) / (y^2 + (x + a)^2)) - (y * (x - a)) / (y^2 + (x - a)^2)))
     return
 end
-
 
 function set_init_sigma_cald_xy(S, g, rhp_r, dx, Lx::Float32, Ly::Float32, nx, ny)
     ix = (blockIdx().x - 1) * blockDim().x + threadIdx().x - 1
@@ -170,7 +167,6 @@ function init_stress_fields(file_paths::Dict{Symbol, String}, grid_resolution::I
 end
 
 
-
 """
     init_stress_fields_simple(nx::Int=400, nz::Int=120)
 
@@ -231,11 +227,6 @@ function visualize_propagation_path_simple(propagation_x, propagation_y, xpoints
                                            initial_x=3000.0, initial_y=2000.0,
                                            xlim=(0,20000), ylim=(0,6000),
                                            bottom_threshold=1001.0)
-    """
-    Simplified visualization with same color for all dykes, no arrows, just lines.
-    Returns a plot object for combining with other plots.
-    """
-    
     # Detect segments based on bottom starts
     segments = []
     current_segment_x = Float64[]
@@ -344,7 +335,7 @@ function visualize_propagation_path_simple(propagation_x, propagation_y, xpoints
     end
     
     # Plot local tip points
-#=
+	#=
     if !isempty(xpoints) && !isempty(ypoints)
         Plots.scatter!(figure, xpoints, ypoints,
                  markersize=1.5,
@@ -357,12 +348,7 @@ function visualize_propagation_path_simple(propagation_x, propagation_y, xpoints
     =#
     
     # Print statistics
-    println("\n" * "="^70)
-    println("ENUMERATED DYKE PROPAGATION STATISTICS")
-    println("="^70)
-    println("Total propagation points: $(length(propagation_x))")
-    println("Number of dyke segments: $(length(segments))")
-    
+
     total_length = 0.0
     for (idx, (seg_x, seg_y)) in enumerate(segments)
         if length(seg_x) > 1
@@ -372,27 +358,33 @@ function visualize_propagation_path_simple(propagation_x, propagation_y, xpoints
             dx = seg_x[end] - seg_x[1]
             dy = seg_y[end] - seg_y[1]
             direction = atan(dy, dx) * 180 / π
-            
+
+           #= 
             println("\n" * "-"^50)
             println("DYKE $idx:")
             println("  ├─ Points: $(length(seg_x))")
             println("  ├─ Length: $(round(seg_length, digits=2)) m")
             println("  ├─ Start: ($(round(seg_x[1], digits=2)), $(round(seg_y[1], digits=2)))")
-            println("  ├─ End:   ($(round(seg_x[end], digits=2)), $(round(seg_y[end], digits=2)))")
-            println("  ├─ Direction: $(round(direction, digits=1))°")
-            println("  ├─ X disp: $(round(seg_x[end] - seg_x[1], digits=2)) m")
-            println("  └─ Z disp: $(round(seg_y[end] - seg_y[1], digits=2)) m")
+            println("  └─ End:   ($(round(seg_x[end], digits=2)), $(round(seg_y[end], digits=2)))")
+            println("  └─ Direction: $(round(direction, digits=1))°")
+            println("  └─ X disp: $(round(seg_x[end] - seg_x[1], digits=2)) m")
+            println("     └─ Z disp: $(round(seg_y[end] - seg_y[1], digits=2)) m")
+		    =#
             
         elseif length(seg_x) == 1
+#=
             println("\n" * "-"^50)
             println("DYKE $idx:")
             println("  └─ Single point at ($(round(seg_x[1], digits=2)), $(round(seg_y[1], digits=2)))")
+=#
         end
     end
     
+    #=
     println("\n" * "="^70)
     println("TOTAL PROPAGATION LENGTH: $(round(total_length, digits=2)) m")
     println("="^70)
+	=#
     
     return figure
 end
@@ -584,19 +576,23 @@ function calculate_climits(data, percentile_val=99.0)
     return (cmin, cmax)
 end
 
+"""Convert stress from Pa to MPa (1 MPa = 1e6 Pa)"""
 function convert_stress_to_MPa(stress_pa)
-    """Convert stress from Pa to MPa (1 MPa = 1e6 Pa)"""
     return stress_pa / 1e6
 end
 
+"""Convert distance from meters to kilometers"""
 function convert_distance_to_km(distance_m)
-    """Convert distance from meters to kilometers"""
     return distance_m / 1000.0
 end
 
+"""Main funciton to test dykes propagation based on Muskelishvilli solution"""
 function d2dm_pres_test()
-    log_println("Init")
+	log_println("Start of $(stacktrace()[1].func)")
     Random.seed!(1234)
+
+    # Number of modeled dykes
+    num_of_dykes = 5
     
     # Define domain boundaries
     X_left_lim, X_right_lim = 0.0, 20000.0
@@ -604,7 +600,7 @@ function d2dm_pres_test()
     z_limit = Z_right_lim - 700
     
     # Initialize stress fields
-    println("Initializing stress fields...")
+    log_println("Initializing stress fields...")
     data = StressFieldLoader.get_all_stress_data(resolution=5, on_gpu=true)
     
     # Extract data
@@ -619,10 +615,10 @@ function d2dm_pres_test()
     Szz_plot = data["Szz_plot"]
     Sxz_plot = data["Sxz_plot"]
     
-    println("\n=== DIAGNOSTICS ===")
-    println("Grid size: $nx x $nz")
-    println("X range: $(minimum(x_range)) to $(maximum(x_range))")
-    println("Z range: $(minimum(z_range)) to $(maximum(z_range))")
+    log_println("Diagnostics")
+    log_println("Grid size: $nx x $nz", 2)
+    log_println("X range: $(minimum(x_range)) to $(maximum(x_range))", 2)
+    log_println("Z range: $(minimum(z_range)) to $(maximum(z_range))", 2)
     
     # Create GPU arrays for coordinates
     x_range_gpu = CuArray(collect(Float64, x_range))
@@ -641,8 +637,8 @@ function d2dm_pres_test()
     gridSize = (Int(ceil((nx + blockSize[1] - 1) / blockSize[1])), 
                 Int(ceil((nz + blockSize[2] - 1) / blockSize[2])))
     
-    println("\nGrid size for kernel: ($(gridSize[1]), $(gridSize[2]))")
-    println("Block size: ($(blockSize[1]), $(blockSize[2]))")
+    log_println("Grid size for kernel: ($(gridSize[1]), $(gridSize[2]))", 2)
+    log_println("Block size: ($(blockSize[1]), $(blockSize[2]))", 2)
     
     log_println("Main loop", 1)
 
@@ -653,9 +649,8 @@ function d2dm_pres_test()
     all_tip_points_x = Vector{Vector{Float64}}()
     all_tip_points_y = Vector{Vector{Float64}}()
     
-    
-    for i in 1:0
-        @time begin
+    for i in 1:num_of_dykes
+         begin
             @cuda blocks=gridSize[1], gridSize[2] threads=blockSize[1], blockSize[2] insert_dyke_gpu!(Sxx_gpu, Szz_gpu, Sxz_gpu, x_range_gpu, z_range_gpu, nx, nz,
                     Float64(dyke_param.a), Float64(dyke_param.b), Float64(dyke_param.P_in), 
                     Float64(dyke_param.x), Float64(dyke_param.y), Float64(dyke_param.phi))
@@ -676,7 +671,7 @@ function d2dm_pres_test()
             push!(all_tip_points_y, copy(ypoints))
 
             log_println("Dyke #$i inserted!", 2)
-            log_println("Coordinates - ($next_point_x, $next_point_y) inserted!", 2)
+            #log_println("Coordinates - ($next_point_x, $next_point_y) inserted!", 2)
 
             _, phi_tmp = d2dm_cart_to_polar(l_vecs[3], l_vecs[4])
             dyke_param = DykeParam(x=next_point_x, y=next_point_y, phi=phi_tmp)
@@ -688,135 +683,111 @@ function d2dm_pres_test()
             copyto!(vec(Szz_plot), Szz_gpu)
             copyto!(vec(Sxz_plot), Sxz_gpu)
     
-   # Visualize
-    log_println("Visualising", 1)
-    
-    # Print statistics to help choose limits
-    Sxx_plot_MPa = convert_stress_to_MPa.(Sxx_plot)
-    Szz_plot_MPa = convert_stress_to_MPa.(Szz_plot)
-    Sxz_plot_MPa = convert_stress_to_MPa.(Sxz_plot)
-    
-    # Convert coordinates from meters to kilometers
-    x_range_km = convert_distance_to_km.(x_range)
-    z_range_km = convert_distance_to_km.(z_range)
-    
-    # Print statistics in MPa
-    println("\n=== STRESS FIELD STATISTICS (MPa) ===")
-    println("Sxx:")
-    println("  Min: $(round(minimum(Sxx_plot_MPa), digits=2)) MPa")
-    println("  Max: $(round(maximum(Sxx_plot_MPa), digits=2)) MPa")
-    println("  Mean: $(round(mean(Sxx_plot_MPa), digits=2)) MPa")
-    println("  Std: $(round(std(Sxx_plot_MPa), digits=2)) MPa")
-    
-    println("\nSzz:")
-    println("  Min: $(round(minimum(Szz_plot_MPa), digits=2)) MPa")
-    println("  Max: $(round(maximum(Szz_plot_MPa), digits=2)) MPa")
-    println("  Mean: $(round(mean(Szz_plot_MPa), digits=2)) MPa")
-    println("  Std: $(round(std(Szz_plot_MPa), digits=2)) MPa")
-    
-    println("\nSxz:")
-    println("  Min: $(round(minimum(Sxz_plot_MPa), digits=2)) MPa")
-    println("  Max: $(round(maximum(Sxz_plot_MPa), digits=2)) MPa")
-    println("  Mean: $(round(mean(Sxz_plot_MPa), digits=2)) MPa")
-    println("  Std: $(round(std(Sxz_plot_MPa), digits=2)) MPa")
-    
+	# Visualize
+	log_println("Building graphs", 1)
+
+	# Print statistics to help choose limits
+	Sxx_plot_MPa = convert_stress_to_MPa.(Sxx_plot)
+	Szz_plot_MPa = convert_stress_to_MPa.(Szz_plot)
+	Sxz_plot_MPa = convert_stress_to_MPa.(Sxz_plot)
+
+	# Convert coordinates from meters to kilometers
+	x_range_km = convert_distance_to_km.(x_range)
+	z_range_km = convert_distance_to_km.(z_range)
+
+	# Print statistics in MPa
     # Calculate appropriate limits in MPa
-    # For Sxx and Szz (compressive stresses)
-    sxx_min_MPa = minimum(Sxx_plot_MPa)
-    sxx_max_MPa = maximum(Sxx_plot_MPa)
-    szz_min_MPa = minimum(Szz_plot_MPa)
-    szz_max_MPa = maximum(Szz_plot_MPa)
-    
-    # For Sxz (shear stress) - symmetric around zero
-    sxz_max_abs_MPa = max(abs(minimum(Sxz_plot_MPa)), abs(maximum(Sxz_plot_MPa)))
-    sxz_min_MPa = -sxz_max_abs_MPa
-    sxz_max_MPa = sxz_max_abs_MPa
-    
-    println("\n=== USING CLIMITS (MPa) ===")
-    println("Sxx: ($(round(sxx_min_MPa, digits=2)), $(round(sxx_max_MPa, digits=2))) MPa")
-    println("Szz: ($(round(szz_min_MPa, digits=2)), $(round(szz_max_MPa, digits=2))) MPa")
-    println("Sxz: ($(round(sxz_min_MPa, digits=2)), $(round(sxz_max_MPa, digits=2))) MPa")
-    
-    # Create transposed views for plotting (z vs x)
-    Sxx_viz_MPa = Sxx_plot_MPa'
-    Szz_viz_MPa = Szz_plot_MPa'
-    Sxz_viz_MPa = Sxz_plot_MPa'
-    
-    x_plot_km = collect(x_range_km)
-    z_plot_km = collect(z_range_km)
-    
-    x_lim_km = (minimum(x_range_km), maximum(x_range_km))
-    z_lim_km = (minimum(z_range_km), maximum(z_range_km))    
+	# For Sxx and Szz (compressive stresses)
+	sxx_min_MPa = minimum(Sxx_plot_MPa)
+	sxx_max_MPa = maximum(Sxx_plot_MPa)
+	szz_min_MPa = minimum(Szz_plot_MPa)
+	szz_max_MPa = maximum(Szz_plot_MPa)
+
+	# For Sxz (shear stress) - symmetric around zero
+	sxz_max_abs_MPa = max(abs(minimum(Sxz_plot_MPa)), abs(maximum(Sxz_plot_MPa)))
+	sxz_min_MPa = -sxz_max_abs_MPa
+	sxz_max_MPa = sxz_max_abs_MPa
+
+	# Create transposed views for plotting (z vs x)
+	Sxx_viz_MPa = Sxx_plot_MPa'
+	Szz_viz_MPa = Szz_plot_MPa'
+	Sxz_viz_MPa = Sxz_plot_MPa'
+
+	x_plot_km = collect(x_range_km)
+	z_plot_km = collect(z_range_km)
+
+	x_lim_km = (minimum(x_range_km), maximum(x_range_km))
+	z_lim_km = (minimum(z_range_km), maximum(z_range_km))    
 
 
 
 	p1 = Plots.heatmap(x_plot_km, z_plot_km, Sxx_viz_MPa, 
-                 title="Sxx (MPa) - Compressive",
-                 xlabel="X (km)", ylabel="Z (km)",
-                 xlim=x_lim_km, ylim=z_lim_km,
-                 clim=(sxx_min_MPa, sxx_max_MPa),
-                 c=:viridis,
-                 aspect_ratio=:equal, framestyle=:box,
-                 grid=true, gridlinewidth=0.5,
-                 titlefontsize=10, guidefontsize=9)
+				 title="Sxx (MPa) - Compressive",
+				 xlabel="X (km)", ylabel="Z (km)",
+				 xlim=x_lim_km, ylim=z_lim_km,
+				 clim=(sxx_min_MPa, sxx_max_MPa),
+				 c=:viridis,
+				 aspect_ratio=:equal, framestyle=:box,
+				 grid=true, gridlinewidth=0.5,
+				 titlefontsize=10, guidefontsize=9)
 
-    p2 = Plots.heatmap(x_plot_km, z_plot_km, Szz_viz_MPa, 
-                 title="Szz (MPa) - Compressive",
-                 xlabel="X (km)", ylabel="Z (km)",
-                 xlim=x_lim_km, ylim=z_lim_km,
-                 clim=(szz_min_MPa, szz_max_MPa),
-                 c=:viridis,
-                 aspect_ratio=:equal, framestyle=:box,
-                 grid=true, gridlinewidth=0.5,
-                 titlefontsize=10, guidefontsize=9)
+	p2 = Plots.heatmap(x_plot_km, z_plot_km, Szz_viz_MPa, 
+				 title="Szz (MPa) - Compressive",
+				 xlabel="X (km)", ylabel="Z (km)",
+				 xlim=x_lim_km, ylim=z_lim_km,
+				 clim=(szz_min_MPa, szz_max_MPa),
+				 c=:viridis,
+				 aspect_ratio=:equal, framestyle=:box,
+				 grid=true, gridlinewidth=0.5,
+				 titlefontsize=10, guidefontsize=9)
 
-    p3 = Plots.heatmap(x_plot_km, z_plot_km, Sxz_viz_MPa, 
-                 title="Sxz (MPa) - Shear",
-                 xlabel="X (km)", ylabel="Z (km)",
-                 xlim=x_lim_km, ylim=z_lim_km,
-                 clim=(sxz_min_MPa, sxz_max_MPa),
-                 c=:balance,
-                 aspect_ratio=:equal, framestyle=:box,
-                 grid=true, gridlinewidth=0.5,
-                 titlefontsize=10, guidefontsize=9)
-    
-    # Also update the propagation path plot to use km
-    propagation_x_km = convert_distance_to_km.(propagation_x)
-    propagation_y_km = convert_distance_to_km.(propagation_y)
-    xpoints_km = convert_distance_to_km.(xpoints)
-    ypoints_km = convert_distance_to_km.(ypoints)
-    initial_x_km = 3.0  # 3000m = 3km
-    initial_y_km = 2.0  # 2000m = 2km
-    
-    # Create propagation path plot with km units
-    p4 = visualize_propagation_path_simple(propagation_x_km, propagation_y_km, 
-                                           xpoints_km, ypoints_km,
-                                           initial_x_km, initial_y_km,
-                                           (0, 20), (0, 6),  # xlim, ylim in km
-                                           1.001)  # bottom_threshold in km
-    # Combine all plots - now 5 plots (2x3 layout, but 5 plots so one empty)
-    final_plot = Plots.plot(p1, p2, p3, p4,
-                     layout=(2,2),
-                     size=(1800, 1200),
-                     margin=5*Plots.mm,
-                     plot_title="Dyke Propagation Simulation Results - Complete Analysis",
-                     plot_titlefontsize=14)
+	p3 = Plots.heatmap(x_plot_km, z_plot_km, Sxz_viz_MPa, 
+				 title="Sxz (MPa) - Shear",
+				 xlabel="X (km)", ylabel="Z (km)",
+				 xlim=x_lim_km, ylim=z_lim_km,
+				 clim=(sxz_min_MPa, sxz_max_MPa),
+				 c=:balance,
+				 aspect_ratio=:equal, framestyle=:box,
+				 grid=true, gridlinewidth=0.5,
+				 titlefontsize=10, guidefontsize=9)
 
-    display(final_plot)
-    
-    # Save individual plots if needed
-    Plots.savefig(final_plot, "final.png")
-    
-    # Print tip points evolution summary
-    println("\n" * "="^70)
-    println("TIP POINTS EVOLUTION SUMMARY")
-    println("="^70)
-    for i in 1:length(all_tip_points_x)
-        n_points = length(all_tip_points_x[i])
-        if n_points > 0
-            println("Dyke $i: $(n_points) tip points at position ($(propagation_x[i]), $(propagation_y[i]))")
-        end
-    end
-    println("="^70)
-    
-    log_println("Success!!!", 1)end
+	# Also update the propagation path plot to use km
+	propagation_x_km = convert_distance_to_km.(propagation_x)
+	propagation_y_km = convert_distance_to_km.(propagation_y)
+	xpoints_km = convert_distance_to_km.(xpoints)
+	ypoints_km = convert_distance_to_km.(ypoints)
+	initial_x_km = 3.0  # 3000m = 3km
+	initial_y_km = 2.0  # 2000m = 2km
+
+	# Create propagation path plot with km units
+	p4 = visualize_propagation_path_simple(propagation_x_km, propagation_y_km, 
+										   xpoints_km, ypoints_km,
+										   initial_x_km, initial_y_km,
+										   (0, 20), (0, 6),  # xlim, ylim in km
+										   1.001)  # bottom_threshold in km
+	# Combine all plots - now 5 plots (2x3 layout, but 5 plots so one empty)
+	final_plot = Plots.plot(p1, p2, p3, p4,
+					 layout=(2,2),
+					 size=(1800, 1200),
+					 margin=5*Plots.mm,
+					 plot_title="Dyke Propagation Simulation Results - Complete Analysis",
+					 plot_titlefontsize=14)
+
+	#display(final_plot)
+
+	# Save individual plots if needed
+	name_of_figure_file::String = "final.png"
+	log_println("Saving graphs")
+	Plots.savefig(final_plot, name_of_figure_file)
+
+	# Print tip points evolution summary
+	log_println("Tip points evolution summary")
+	for i in 1:length(all_tip_points_x)
+		n_points = length(all_tip_points_x[i])
+		if n_points > 0
+			log_println("Dyke $i: $(n_points) tip points at position ($(propagation_x[i]), $(propagation_y[i]))", 2)
+		end
+	end
+
+	log_println("End of $(stacktrace()[1].func)!", 1)
+end
