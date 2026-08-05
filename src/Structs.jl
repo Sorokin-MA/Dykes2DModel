@@ -136,7 +136,7 @@ Base.@kwdef mutable struct VarParams
     iSample::Int32 = 1
     it::Int64 = 1
 
-    calc_years::Float64 = 400e3#Temperature on the top of area (°C)
+    calc_years::Float64 = 400e3
 end
 
 Base.@kwdef mutable struct InitVarParams

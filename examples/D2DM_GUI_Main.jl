@@ -195,9 +195,9 @@ module D2DM_GUI_Main
 			
 				fid = h5open(filename, "r")
 				
-
 				for n in fieldnames(typeof(vp))
 					setfield!(vp, n, read(fid, string(n)))
+					println(string(n))
 					println(getfield(vp, n))
 				end
 				

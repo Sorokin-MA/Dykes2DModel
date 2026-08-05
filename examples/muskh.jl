@@ -75,7 +75,7 @@ function set_init_sigma_cald_xy(S, g, rhp_r, dx, Lx::Float32, Ly::Float32, nx, n
     return
 end
 
-function init_stress_fields(file_paths::Dict{Symbol, String}, grid_resolution::Int=5)
+function init_stress_fields(file_paths::Dict{Symbol, String}, grid_resolution::Int=1)
     
     log_println("Loading stress fields from HDF5 files...", 1)
     
@@ -131,7 +131,7 @@ function init_stress_fields(file_paths::Dict{Symbol, String}, grid_resolution::I
         itp = interpolate(data, BSpline(Cubic(Line(OnGrid()))))
         itp = Interpolations.scale(itp, z_coords, x_coords)
         
-        # Interpolate onto regular grid (x first for column-major order)
+        # Interpolate onto regular erid (x first for column-major order)
         if component == :Sxx
             for (ix, x) in enumerate(x_plot)
                 for (iz, z) in enumerate(z_plot)
@@ -469,7 +469,6 @@ function visualize_local_tip_points(xpoints, ypoints, x_range, z_range, Sxx_plot
     return p_tip
 end
 
-
 function my_percentile(data, p)
     """
     Calculate percentile of an array.
@@ -592,7 +591,7 @@ function d2dm_pres_test()
     Random.seed!(1234)
 
     # Number of modeled dykes
-    num_of_dykes = 5
+    num_of_dykes = 8
     
     # Define domain boundaries
     X_left_lim, X_right_lim = 0.0, 20000.0
@@ -604,9 +603,10 @@ function d2dm_pres_test()
     data = StressFieldLoader.get_all_stress_data(resolution=5, on_gpu=true)
     
     # Extract data
-    Sxx_gpu = data["Sxx_gpu"]
-    Szz_gpu = data["Szz_gpu"]
+    Sxx_gpu = reverse(data["Sxx_gpu"], dims=1)
+    Szz_gpu = reverse(data["Szz_gpu"], dims=1)
     Sxz_gpu = data["Sxz_gpu"]
+
     x_range = data["x_range"]
     z_range = data["z_range"]
     nx = data["nx"]
@@ -661,7 +661,7 @@ function d2dm_pres_test()
             copyto!(vec(Szz_plot), Szz_gpu)
             copyto!(vec(Sxz_plot), Sxz_gpu)
             
-            next_point_x, next_point_y, xpoints, ypoints, l_vecs = calc_cent_of_next_dyke(dyke_param, Sxx_plot', Szz_plot', Sxz_plot', x_range, z_range, z_limit, Z_right_lim, X_right_lim)
+            next_point_x, next_point_y, xpoints, ypoints, l_vecs = calc_cent_of_next_dyke(dyke_param, Sxx_plot, Szz_plot, Sxz_plot, x_range, z_range, z_limit, Z_right_lim, X_right_lim)
 
             push!(propagation_x, next_point_x)
             push!(propagation_y, next_point_y)
@@ -678,11 +678,10 @@ function d2dm_pres_test()
         end
     end
 
+	copyto!(vec(Sxx_plot), Sxx_gpu)
+	copyto!(vec(Szz_plot), Szz_gpu)
+	copyto!(vec(Sxz_plot), Sxz_gpu)
 
-            copyto!(vec(Sxx_plot), Sxx_gpu)
-            copyto!(vec(Szz_plot), Szz_gpu)
-            copyto!(vec(Sxz_plot), Sxz_gpu)
-    
 	# Visualize
 	log_println("Building graphs", 1)
 
@@ -719,39 +718,37 @@ function d2dm_pres_test()
 	x_lim_km = (minimum(x_range_km), maximum(x_range_km))
 	z_lim_km = (minimum(z_range_km), maximum(z_range_km))    
 
-
-
+	# In the heatmap plotting section, change ylim to be reversed
 	p1 = Plots.heatmap(x_plot_km, z_plot_km, Sxx_viz_MPa, 
-				 title="Sxx (MPa) - Compressive",
-				 xlabel="X (km)", ylabel="Z (km)",
+					 title="Sxx (MPa) - Compressive",
+					 xlabel="X (km)", ylabel="Z (km)",
 				 xlim=x_lim_km, ylim=z_lim_km,
-				 clim=(sxx_min_MPa, sxx_max_MPa),
-				 c=:viridis,
-				 aspect_ratio=:equal, framestyle=:box,
-				 grid=true, gridlinewidth=0.5,
-				 titlefontsize=10, guidefontsize=9)
+					 clim=(sxx_min_MPa, sxx_max_MPa),
+					 c=:viridis,
+					 aspect_ratio=:equal, framestyle=:box,
+					 grid=true, gridlinewidth=0.5,
+					 titlefontsize=10, guidefontsize=9)
 
 	p2 = Plots.heatmap(x_plot_km, z_plot_km, Szz_viz_MPa, 
-				 title="Szz (MPa) - Compressive",
-				 xlabel="X (km)", ylabel="Z (km)",
+					 title="Szz (MPa) - Compressive",
+					 xlabel="X (km)", ylabel="Z (km)",
 				 xlim=x_lim_km, ylim=z_lim_km,
-				 clim=(szz_min_MPa, szz_max_MPa),
-				 c=:viridis,
-				 aspect_ratio=:equal, framestyle=:box,
-				 grid=true, gridlinewidth=0.5,
-				 titlefontsize=10, guidefontsize=9)
+					 clim=(szz_min_MPa, szz_max_MPa),
+					 c=:viridis,
+					 aspect_ratio=:equal, framestyle=:box,
+					 grid=true, gridlinewidth=0.5,
+					 titlefontsize=10, guidefontsize=9)
 
 	p3 = Plots.heatmap(x_plot_km, z_plot_km, Sxz_viz_MPa, 
-				 title="Sxz (MPa) - Shear",
-				 xlabel="X (km)", ylabel="Z (km)",
+					 title="Sxz (MPa) - Shear",
+					 xlabel="X (km)", ylabel="Z (km)",
 				 xlim=x_lim_km, ylim=z_lim_km,
-				 clim=(sxz_min_MPa, sxz_max_MPa),
-				 c=:balance,
-				 aspect_ratio=:equal, framestyle=:box,
-				 grid=true, gridlinewidth=0.5,
-				 titlefontsize=10, guidefontsize=9)
+					 clim=(sxz_min_MPa, sxz_max_MPa),
+					 c=:balance,
+					 aspect_ratio=:equal, framestyle=:box,
+					 grid=true, gridlinewidth=0.5,
+					 titlefontsize=10, guidefontsize=9)	# Also update the propagation path plot to use km
 
-	# Also update the propagation path plot to use km
 	propagation_x_km = convert_distance_to_km.(propagation_x)
 	propagation_y_km = convert_distance_to_km.(propagation_y)
 	xpoints_km = convert_distance_to_km.(xpoints)
@@ -778,7 +775,7 @@ function d2dm_pres_test()
 	# Save individual plots if needed
 	name_of_figure_file::String = "final.png"
 	log_println("Saving graphs")
-	Plots.savefig(final_plot, name_of_figure_file)
+#	Plots.savefig(final_plot, name_of_figure_file)
 
 	# Print tip points evolution summary
 	log_println("Tip points evolution summary")
@@ -790,4 +787,5 @@ function d2dm_pres_test()
 	end
 
 	log_println("End of $(stacktrace()[1].func)!", 1)
+	return final_plot
 end
