@@ -17,7 +17,8 @@ export InitVarParams, GridParams, VarParams
 #Muskh
 export DykeParam, insert_dyke_gpu!,
     d2dm_polar_to_cart, d2dm_cart_to_polar,
-    calc_cent_of_next_dyke
+    calc_cent_of_next_dyke, interpolate_stress,
+    calc_equilibrium_p_in
 
 #For generating dykes
 export dykes_rand_param

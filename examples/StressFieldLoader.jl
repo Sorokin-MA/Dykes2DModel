@@ -50,6 +50,24 @@ function _load_stress_fields(resolution::Int)
     Sxz_z = read(Sxz_file["/z"])
     close(Sxz_file)
     
+    # Normalize raw arrays to [x, z] orientation (x along dim 1, z along dim 2).
+    # When read in Julia the dataset may come back as [z, x]; fix that here.
+    if size(Sxx, 1) == length(Sxx_z) && size(Sxx, 2) == length(Sxx_x)
+        Sxx = permutedims(Sxx)
+    end
+    if size(Szz, 1) == length(Szz_z) && size(Szz, 2) == length(Szz_x)
+        Szz = permutedims(Szz)
+    end
+    if size(Sxz, 1) == length(Sxz_z) && size(Sxz, 2) == length(Sxz_x)
+        Sxz = permutedims(Sxz)
+    end
+
+    # The stored z axis runs surface -> depth (z[1] is the surface). The model uses
+    # z = 0 for the bottom (depth) and z = max for the surface, so flip the z dimension.
+    Sxx = reverse(Sxx, dims=2)
+    Szz = reverse(Szz, dims=2)
+    Sxz = reverse(Sxz, dims=2)
+    
     # Create ranges (matching your original code)
     x_range = range(0, maximum(Sxx_x) - minimum(Sxx_x), length=length(Sxx_x))
     z_range = range(0, maximum(Sxx_z) - minimum(Sxx_z), length=length(Sxx_z))
@@ -63,26 +81,41 @@ function _load_stress_fields(resolution::Int)
     @info "Original grid size: $(length(Sxx_x)) x $(length(Sxx_z))"
     @info "Downsampled grid size: $nx x $nz"
     
-    # Create interpolation objects (matching your original approach)
+    # Create interpolation objects (raw HDF5 data is [x, z] - x along dim 1, z along dim 2)
     @info "  Creating interpolation objects..."
     itp_xx = interpolate(Sxx, BSpline(Cubic(Line(OnGrid()))))
-    itp_xx = scale(itp_xx, z_range, x_range)
+    itp_xx = scale(itp_xx, x_range, z_range)
     
     itp_zz = interpolate(Szz, BSpline(Cubic(Line(OnGrid()))))
-    itp_zz = scale(itp_zz, z_range, x_range)
+    itp_zz = scale(itp_zz, x_range, z_range)
     
     itp_xz = interpolate(Sxz, BSpline(Cubic(Line(OnGrid()))))
-    itp_xz = scale(itp_xz, z_range, x_range)
+    itp_xz = scale(itp_xz, x_range, z_range)
     
-    # Interpolate onto grid (matching your original [z, x] order)
+    # Interpolate onto grid in explicit [x, z] order (x = rows dim1, z = cols dim2)
     @info "  Interpolating Sxx..."
-    Sxx_plot = [itp_xx(z, x) for z in z_plot, x in x_plot]
+    Sxx_plot = Matrix{Float64}(undef, nx, nz)
+    for (ix, x) in enumerate(x_plot)
+        for (iz, z) in enumerate(z_plot)
+            Sxx_plot[ix, iz] = itp_xx(x, z)
+        end
+    end
     
     @info "  Interpolating Szz..."
-    Szz_plot = [itp_zz(z, x) for z in z_plot, x in x_plot]
+    Szz_plot = Matrix{Float64}(undef, nx, nz)
+    for (ix, x) in enumerate(x_plot)
+        for (iz, z) in enumerate(z_plot)
+            Szz_plot[ix, iz] = itp_zz(x, z)
+        end
+    end
     
     @info "  Interpolating Sxz..."
-    Sxz_plot = [itp_xz(z, x) for z in z_plot, x in x_plot]
+    Sxz_plot = Matrix{Float64}(undef, nx, nz)
+    for (ix, x) in enumerate(x_plot)
+        for (iz, z) in enumerate(z_plot)
+            Sxz_plot[ix, iz] = itp_xz(x, z)
+        end
+    end
     
     # Prepare result
     result = Dict{String,Any}(
@@ -105,11 +138,13 @@ end
 function get_gpu_arrays(; resolution::Int=5)
     cache = get_stress_fields(resolution=resolution)
     
-    # Note: The data is [z, x] orientation, need to transpose for GPU kernel
-    # GPU kernel expects [x, z] orientation (x first, then z)
-    Sxx_matrix = cache["Sxx_plot"]'  # Transpose to [x, z]
-    Szz_matrix = cache["Szz_plot"]'  # Transpose to [x, z]
-    Sxz_matrix = cache["Sxz_plot"]'  # Transpose to [x, z]
+    # Note: The data is already [x, z] orientation, which is what the GPU kernel expects.
+    # GPU kernel expects [x, z] orientation (x first, then z), so no transpose is needed.
+    # vec() flattens column-major: element [ix, iz] at index (ix-1) + nx*(iz-1),
+    # matching cur_index = ix + nx*(iy-1) in insert_dyke_gpu!.
+    Sxx_matrix = cache["Sxx_plot"]
+    Szz_matrix = cache["Szz_plot"]
+    Sxz_matrix = cache["Sxz_plot"]
     
     # Create GPU arrays
     return (

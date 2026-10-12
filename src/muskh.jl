@@ -6,7 +6,7 @@ Base.@kwdef mutable struct DykeParam
     x::Float64 = 0
     y::Float64 = 0
     phi::Float64 = 0
-    P_in::Float64 = 20000000 #TODO: dimensions and value
+    P_in::Float64 = 10000000 #TODO: dimensions and value
 end
 
 
@@ -47,9 +47,9 @@ function insert_dyke_gpu!(Sxx, Syy, Sxy, XX, YY, nx, ny,
 
     #Reverse Zhoukovski
     if (real(Z_real) >= 0)
-        Zr_rev_z = Z_real + sqrt(Z_real^2 - m)
+        Zr_rev_z = Z_real + sqrt(Z_real^2 - (dyke_param_a + dyke_param_b)^2 * m)
     else
-        Zr_rev_z = Z_real - sqrt(Z_real^2 - m)
+        Zr_rev_z = Z_real - sqrt(Z_real^2 - (dyke_param_a + dyke_param_b)^2 * m)
     end
 
 	Zr_rev_z = Zr_rev_z/(dyke_param_a+dyke_param_b)
@@ -225,43 +225,125 @@ function get_sigma2(x, y, XX, YY, Sxx, Syy, Sxy)
 
     mat_local = [Sxx_local Sxy_local; Sxy_local Syy_local]
 
-    l_vecs = eigvecs(mat_local)
-    l_vals = eigvals(mat_local)
+    # Symmetric wrapper -> eigvals sorted ascending, so l_vals[2] is always the max
+    # principal stress (least compressive) and l_vecs[:,2] its direction
+    l_vecs = eigvecs(Symmetric(mat_local))
+    l_vals = eigvals(Symmetric(mat_local))
 
-    #TODO:check if sorted right
     return l_vals[2], l_vecs
 end
 
+function interpolate_stress(x, y, XX, YY, Sxx, Syy, Sxy)
+    x_idx = findlast(XX .<= x)
+    y_idx = findlast(YY .<= y)
 
-function calc_cent_of_next_dyke(dyke_param, Sxx, Syy, Sxy, XX, YY, y_limit, Y_right_lim, X_lim)
+    if isnothing(x_idx) || isnothing(y_idx) || x_idx >= length(XX) || y_idx >= length(YY)
+        return (0.0, 0.0, 0.0)
+    end
+
+    sxx_local = d2dm_blerp(XX[x_idx], XX[x_idx+1], YY[y_idx], YY[y_idx+1],
+                           Sxx[x_idx, y_idx], Sxx[x_idx, y_idx+1],
+                           Sxx[x_idx+1, y_idx], Sxx[x_idx+1, y_idx+1], x, y)
+    syy_local = d2dm_blerp(XX[x_idx], XX[x_idx+1], YY[y_idx], YY[y_idx+1],
+                           Syy[x_idx, y_idx], Syy[x_idx, y_idx+1],
+                           Syy[x_idx+1, y_idx], Syy[x_idx+1, y_idx+1], x, y)
+    sxy_local = d2dm_blerp(XX[x_idx], XX[x_idx+1], YY[y_idx], YY[y_idx+1],
+                           Sxy[x_idx, y_idx], Sxy[x_idx, y_idx+1],
+                           Sxy[x_idx+1, y_idx], Sxy[x_idx+1, y_idx+1], x, y)
+
+    return sxx_local, syy_local, sxy_local
+end
+
+function calc_equilibrium_p_in(dyke_param, XX, YY, Sxx, Syy, Sxy; num_points::Int = 360)
+    # Normal stress on the crack plane, averaged over the ellipse perimeter instead of the
+    # center point only, so the vertical stress gradient and shear are accounted for
+    xpts, ypts, _, _ = get_points!(dyke_param, num_points)
+    phi = dyke_param.phi
+    sf, cf = sin(phi), cos(phi)
+
+    sxx_c, syy_c, sxy_c = interpolate_stress(dyke_param.x, dyke_param.y, XX, YY, Sxx, Syy, Sxy)
+    sigma_n_center = sxx_c * sf^2 - 2 * sxy_c * sf * cf + syy_c * cf^2
+
+    sigma_n_vals = Float64[]
+    for k in eachindex(xpts)
+        sxx_k, syy_k, sxy_k = interpolate_stress(xpts[k], ypts[k], XX, YY, Sxx, Syy, Sxy)
+        push!(sigma_n_vals, sxx_k * sf^2 - 2 * sxy_k * sf * cf + syy_k * cf^2)
+    end
+    sigma_n_mean = sum(sigma_n_vals) / length(sigma_n_vals)
+
+    @info "P_in debug" x=dyke_param.x y=dyke_param.y phi=phi size_Sxx=size(Sxx) n_points=length(xpts) center_sigma_n=sigma_n_center wall_mean_sigma_n=sigma_n_mean wall_min_sigma_n=minimum(sigma_n_vals) wall_max_sigma_n=maximum(sigma_n_vals)
+    return max(0.0, -sigma_n_mean)
+end
+
+function rivalta_criteria(propagation_phi; num_sills::Int = 15)
+    n = length(propagation_phi)
+    if n >= num_sills
+        # A sill is a horizontal dyke: its axis angle is near 0 or pi (mod pi).
+        # abs(sin(x)) < sin(0.5) detects right- AND leftward sills, incl. negative angles
+        all_sills = all(x -> abs(sin(x)) < sin(0.15), propagation_phi[n-num_sills+1:n])
+        return !all_sills
+    end
+    return true
+end
+
+function calc_cent_of_next_dyke(dyke_param, Sxx, Syy, Sxy, XX, YY, y_limit, Y_right_lim, X_lim, propagation_phi)
 
     num_of_points_on_ellipsis::Int = 1134
     xpoints, ypoints, point_dist, point_angle = get_points!(dyke_param, num_of_points_on_ellipsis)
     l_vecs = Matrix{Float64}(undef, 2, 2)
 
     for i in eachindex(ypoints)
-        x_new = X_lim / 4 + X_lim / 2 * rand()
+        x_new = X_lim / 3 + X_lim / 3 * rand()
         y_new = 1000.0
-        #println(ypoints)
+#=
+		println("propagation_phi")
+		if length(propagation_phi) > 0
+			println(propagation_phi[end])
+		end
+=#
+
         if ypoints[i] > y_limit
             println("REACHED SURFACE!")
+            println("x_new - $x_new")
+            println("y_new - $y_new")
+
             _, l_vecs = get_sigma2(x_new, y_new, XX, YY, Sxx, Syy, Sxy)
             #tmp, l_vecs = get_sigma2(xpoints[1], ypoints[1], XX, YY, Sxx, Syy, Sxy)
+
             return x_new, y_new, xpoints, ypoints, l_vecs
         end
-        if (xpoints[i] >= X_lim) || (xpoints[i] <= 0)
+		if ypoints[i] < 0 
+            println("REACHED bottom!")
+            println("x_new - $x_new")
+            println("y_new - $y_new")
+
+            _, l_vecs = get_sigma2(x_new, y_new, XX, YY, Sxx, Syy, Sxy)
+            #tmp, l_vecs = get_sigma2(xpoints[1], ypoints[1], XX, YY, Sxx, Syy, Sxy)
+
+            return x_new, y_new, xpoints, ypoints, l_vecs
+        end
+
+        if ((xpoints[i] >= X_lim) || (xpoints[i] <= 0))
             println("REACHED BOUNDARY!")
             println("x_new - $x_new")
             println("y_new - $y_new")
 
-			println("Sxx")
-			println(size(Sxx))
 
             _, l_vecs = get_sigma2(x_new, y_new, XX, YY, Sxx, Syy, Sxy)
-            #tmp, l_vecs = get_sigma2(xpoints[1], ypoints[1], XX, YY, Sxx, Syy, Sxy)
+
             return x_new, y_new, xpoints, ypoints, l_vecs
         end
+		if (!rivalta_criteria(propagation_phi))
+            println("Rivalta Criteria not meet")
+            println("x_new - $x_new")
+            println("y_new - $y_new")
 
+			empty!(propagation_phi)
+
+            _, l_vecs = get_sigma2(x_new, y_new, XX, YY, Sxx, Syy, Sxy)
+
+            return x_new, y_new, xpoints, ypoints, l_vecs
+        end
     end
 
     #println(xpoints)

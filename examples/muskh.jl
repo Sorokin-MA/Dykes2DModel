@@ -127,27 +127,27 @@ function init_stress_fields(file_paths::Dict{Symbol, String}, grid_resolution::I
         
         x_coords, z_coords = coordinates[component]
         
-        # Create interpolation object (assuming data is [z, x] as per comment)
+        # Create interpolation object (raw HDF5 data is [x, z] - x along dim 1, z along dim 2)
         itp = interpolate(data, BSpline(Cubic(Line(OnGrid()))))
-        itp = Interpolations.scale(itp, z_coords, x_coords)
+        itp = Interpolations.scale(itp, x_coords, z_coords)
         
-        # Interpolate onto regular erid (x first for column-major order)
+        # Interpolate onto regular grid (x first for column-major order, [x, z] orientation)
         if component == :Sxx
             for (ix, x) in enumerate(x_plot)
                 for (iz, z) in enumerate(z_plot)
-                    Sxx_matrix[ix, iz] = itp(z, x)
+                    Sxx_matrix[ix, iz] = itp(x, z)
                 end
             end
         elseif component == :Szz
             for (ix, x) in enumerate(x_plot)
                 for (iz, z) in enumerate(z_plot)
-                    Szz_matrix[ix, iz] = itp(z, x)
+                    Szz_matrix[ix, iz] = itp(x, z)
                 end
             end
         elseif component == :Sxz
             for (ix, x) in enumerate(x_plot)
                 for (iz, z) in enumerate(z_plot)
-                    Sxz_matrix[ix, iz] = itp(z, x)
+                    Sxz_matrix[ix, iz] = itp(x, z)
                 end
             end
         end
@@ -224,7 +224,6 @@ function init_stress_fields_simple(nx::Int=400, nz::Int=120)
 end
 
 function visualize_propagation_path_simple(propagation_x, propagation_y, xpoints, ypoints, 
-                                           initial_x=3000.0, initial_y=2000.0,
                                            xlim=(0,20000), ylim=(0,6000),
                                            bottom_threshold=1001.0)
     # Detect segments based on bottom starts
@@ -262,7 +261,6 @@ function visualize_propagation_path_simple(propagation_x, propagation_y, xpoints
                   ylabel="Z (m)",
                   xlim=xlim,
                   ylim=ylim,
-                  aspect_ratio=:equal,
                   legend=:topright,
                   framestyle=:box,
                   grid=true,
@@ -310,15 +308,6 @@ function visualize_propagation_path_simple(propagation_x, propagation_y, xpoints
             end
         end
     end
-    
-    # Mark initial dyke start point
-    Plots.scatter!(figure, [initial_x], [initial_y], 
-             markersize=8,
-             markercolor=:red,
-             marker=:star,
-             label="Initial dyke start",
-             markerstrokewidth=0.5,
-             markerstrokecolor=:black)
     
     # Mark end points
     if !isempty(segments)
@@ -591,7 +580,7 @@ function d2dm_pres_test()
     Random.seed!(1234)
 
     # Number of modeled dykes
-    num_of_dykes = 8
+    num_of_dykes = 188
     
     # Define domain boundaries
     X_left_lim, X_right_lim = 0.0, 20000.0
@@ -602,18 +591,33 @@ function d2dm_pres_test()
     log_println("Initializing stress fields...")
     data = StressFieldLoader.get_all_stress_data(resolution=5, on_gpu=true)
     
-    # Extract data
-    Sxx_gpu = reverse(data["Sxx_gpu"], dims=1)
-    Szz_gpu = reverse(data["Szz_gpu"], dims=1)
+    # Extract data (already [x, z] orientation, z increasing toward surface)
+    Sxx_gpu = data["Sxx_gpu"]
+    Szz_gpu = data["Szz_gpu"]
     Sxz_gpu = data["Sxz_gpu"]
 
     x_range = data["x_range"]
     z_range = data["z_range"]
     nx = data["nx"]
     nz = data["nz"]
-    Sxx_plot = data["Sxx_plot"]
-    Szz_plot = data["Szz_plot"]
-    Sxz_plot = data["Sxz_plot"]
+    # Fresh copies so the cached pristine field (in _STRESS_CACHE) is never mutated
+    Sxx_plot = copy(data["Sxx_plot"])
+    Szz_plot = copy(data["Szz_plot"])
+    Sxz_plot = copy(data["Sxz_plot"])
+
+    # Pristine ambient field for equilibrium P_in (Sxx_plot is mutated by dyke insertion below)
+    Sxx_ambient = copy(Sxx_plot)
+    Szz_ambient = copy(Szz_plot)
+    Sxz_ambient = copy(Sxz_plot)
+
+    # Pristine ambient field on GPU - working field is reset to this before each dyke is
+    # inserted so the K-criterion never samples overlapping perturbations from earlier dykes
+    Sxx_ambient_gpu = copy(Sxx_gpu)
+    Szz_ambient_gpu = copy(Szz_gpu)
+    Sxz_ambient_gpu = copy(Sxz_gpu)
+    Sxx_acc_gpu = copy(Sxx_gpu)
+    Szz_acc_gpu = copy(Szz_gpu)
+    Sxz_acc_gpu = copy(Sxz_gpu)
     
     log_println("Diagnostics")
     log_println("Grid size: $nx x $nz", 2)
@@ -625,7 +629,8 @@ function d2dm_pres_test()
     z_range_gpu = CuArray(collect(Float64, z_range))
     
     # Initialize dyke parameter
-    dyke_param = DykeParam(x=3000.0, y=2000.0, phi=π/2, a=500.0, b=20.0, P_in=2e6)
+    dyke_param = DykeParam(x=3000.0, y=1000.0, phi=π/2, a=500.0, b=20.0)
+    dyke_param.P_in = calc_equilibrium_p_in(dyke_param, x_range, z_range, Sxx_ambient, Szz_ambient, Sxz_ambient)
     
     # Storage for dyke propagation path
     xpoints = Float64[]
@@ -644,6 +649,7 @@ function d2dm_pres_test()
 
     propagation_x = Float64[]
     propagation_y = Float64[]
+    propagation_phi = Float64[]
 
     # Storage for tip points of each dyke (to show evolution)
     all_tip_points_x = Vector{Vector{Float64}}()
@@ -651,7 +657,20 @@ function d2dm_pres_test()
     
     for i in 1:num_of_dykes
          begin
+            dyke_param.P_in = calc_equilibrium_p_in(dyke_param, x_range, z_range, Sxx_ambient, Szz_ambient, Sxz_ambient) 
+            #dyke_param.P_in = 40000000
+
+            log_println("Dyke #$i equilibrium P_in: $(round(dyke_param.P_in / 1e6, digits=3)) MPa", 2)
+
+            Sxx_gpu .= Sxx_ambient_gpu
+            Szz_gpu .= Szz_ambient_gpu
+            Sxz_gpu .= Sxz_ambient_gpu
+
             @cuda blocks=gridSize[1], gridSize[2] threads=blockSize[1], blockSize[2] insert_dyke_gpu!(Sxx_gpu, Szz_gpu, Sxz_gpu, x_range_gpu, z_range_gpu, nx, nz,
+                    Float64(dyke_param.a), Float64(dyke_param.b), Float64(dyke_param.P_in), 
+                    Float64(dyke_param.x), Float64(dyke_param.y), Float64(dyke_param.phi))
+
+            @cuda blocks=gridSize[1], gridSize[2] threads=blockSize[1], blockSize[2] insert_dyke_gpu!(Sxx_acc_gpu, Szz_acc_gpu, Sxz_acc_gpu, x_range_gpu, z_range_gpu, nx, nz,
                     Float64(dyke_param.a), Float64(dyke_param.b), Float64(dyke_param.P_in), 
                     Float64(dyke_param.x), Float64(dyke_param.y), Float64(dyke_param.phi))
             
@@ -661,7 +680,7 @@ function d2dm_pres_test()
             copyto!(vec(Szz_plot), Szz_gpu)
             copyto!(vec(Sxz_plot), Sxz_gpu)
             
-            next_point_x, next_point_y, xpoints, ypoints, l_vecs = calc_cent_of_next_dyke(dyke_param, Sxx_plot, Szz_plot, Sxz_plot, x_range, z_range, z_limit, Z_right_lim, X_right_lim)
+            next_point_x, next_point_y, xpoints, ypoints, l_vecs = calc_cent_of_next_dyke(dyke_param, Sxx_plot, Szz_plot, Sxz_plot, x_range, z_range, z_limit, Z_right_lim, X_right_lim, propagation_phi)
 
             push!(propagation_x, next_point_x)
             push!(propagation_y, next_point_y)
@@ -674,13 +693,15 @@ function d2dm_pres_test()
             #log_println("Coordinates - ($next_point_x, $next_point_y) inserted!", 2)
 
             _, phi_tmp = d2dm_cart_to_polar(l_vecs[3], l_vecs[4])
+            push!(propagation_phi, phi_tmp)
+
             dyke_param = DykeParam(x=next_point_x, y=next_point_y, phi=phi_tmp)
         end
     end
 
-	copyto!(vec(Sxx_plot), Sxx_gpu)
-	copyto!(vec(Szz_plot), Szz_gpu)
-	copyto!(vec(Sxz_plot), Sxz_gpu)
+	copyto!(vec(Sxx_plot), Sxx_acc_gpu)
+	copyto!(vec(Szz_plot), Szz_acc_gpu)
+	copyto!(vec(Sxz_plot), Sxz_acc_gpu)
 
 	# Visualize
 	log_println("Building graphs", 1)
@@ -725,7 +746,7 @@ function d2dm_pres_test()
 				 xlim=x_lim_km, ylim=z_lim_km,
 					 clim=(sxx_min_MPa, sxx_max_MPa),
 					 c=:viridis,
-					 aspect_ratio=:equal, framestyle=:box,
+					 framestyle=:box,
 					 grid=true, gridlinewidth=0.5,
 					 titlefontsize=10, guidefontsize=9)
 
@@ -735,7 +756,7 @@ function d2dm_pres_test()
 				 xlim=x_lim_km, ylim=z_lim_km,
 					 clim=(szz_min_MPa, szz_max_MPa),
 					 c=:viridis,
-					 aspect_ratio=:equal, framestyle=:box,
+					 framestyle=:box,
 					 grid=true, gridlinewidth=0.5,
 					 titlefontsize=10, guidefontsize=9)
 
@@ -745,7 +766,7 @@ function d2dm_pres_test()
 				 xlim=x_lim_km, ylim=z_lim_km,
 					 clim=(sxz_min_MPa, sxz_max_MPa),
 					 c=:balance,
-					 aspect_ratio=:equal, framestyle=:box,
+					 framestyle=:box,
 					 grid=true, gridlinewidth=0.5,
 					 titlefontsize=10, guidefontsize=9)	# Also update the propagation path plot to use km
 
@@ -753,20 +774,16 @@ function d2dm_pres_test()
 	propagation_y_km = convert_distance_to_km.(propagation_y)
 	xpoints_km = convert_distance_to_km.(xpoints)
 	ypoints_km = convert_distance_to_km.(ypoints)
-	initial_x_km = 3.0  # 3000m = 3km
-	initial_y_km = 2.0  # 2000m = 2km
 
 	# Create propagation path plot with km units
 	p4 = visualize_propagation_path_simple(propagation_x_km, propagation_y_km, 
 										   xpoints_km, ypoints_km,
-										   initial_x_km, initial_y_km,
 										   (0, 20), (0, 6),  # xlim, ylim in km
 										   1.001)  # bottom_threshold in km
 	# Combine all plots - now 5 plots (2x3 layout, but 5 plots so one empty)
 	final_plot = Plots.plot(p1, p2, p3, p4,
 					 layout=(2,2),
 					 size=(1800, 1200),
-					 margin=5*Plots.mm,
 					 plot_title="Dyke Propagation Simulation Results - Complete Analysis",
 					 plot_titlefontsize=14)
 
